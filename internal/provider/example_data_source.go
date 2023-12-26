@@ -3,12 +3,11 @@ package provider
 import (
 	"context"
 	"fmt"
-	"net/http"
-
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
 )
 
 var _ datasource.DataSource = &ExampleDataSource{}
@@ -18,7 +17,7 @@ func NewExampleDataSource() datasource.DataSource {
 }
 
 type ExampleDataSource struct {
-	client *http.Client
+	hyperstack *client.HyperstackClient
 }
 
 type ExampleDataSourceModel struct {
@@ -52,18 +51,18 @@ func (d *ExampleDataSource) Configure(ctx context.Context, req datasource.Config
 		return
 	}
 
-	client, ok := req.ProviderData.(*http.Client)
+	hyperstack, ok := req.ProviderData.(*client.HyperstackClient)
 
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *http.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *client.HyperstackClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
 		return
 	}
 
-	d.client = client
+	d.hyperstack = hyperstack
 }
 
 func (d *ExampleDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {

@@ -18,6 +18,9 @@ vars:
 
 env:
   TF_CLI_CONFIG_FILE: "{{.DIR_EXAMPLES}}/dev.tfrc"
+  HYPERSTACK_STAGING: "true"
+  HYPERSTACK_API_KEY: ~
+
 
 tasks:
   init:
@@ -48,6 +51,7 @@ tasks:
   test:
     desc: |
       Tests the provider
+    dotenv: ['.env']
     cmds:
       - task: build
       # language=bash
@@ -57,6 +61,7 @@ tasks:
   test-examples:
     desc: |
       Tests the provider
+    dotenv: ['.env']
     cmds:
       - task: build
       # language=bash
@@ -66,3 +71,14 @@ tasks:
           terraform plan
           cd - > /dev/null
         done
+
+  debug-me:
+    desc: |
+      Checks API token
+    dotenv: ['.env']
+    cmds:
+      # language=bash
+      - |
+        curl -X GET "https://infrahub-api-stg.ngbackend.cloud/v1/auth/me" \
+          -H "accept: application/json" \
+          -H "api_key: ${HYPERSTACK_API_KEY}" 
