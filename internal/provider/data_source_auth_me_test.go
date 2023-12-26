@@ -15,7 +15,7 @@ func TestAccExampleDataSource(t *testing.T) {
 			{
 				Config: testAccExampleDataSourceConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.hyperstack_example.test", "id", "example-id"),
+					resource.TestCheckResourceAttr("data.hyperstack_auth_me.this", "name", "example-id 2"),
 				),
 			},
 		},
@@ -23,7 +23,6 @@ func TestAccExampleDataSource(t *testing.T) {
 }
 
 const testAccExampleDataSourceConfig = `
-data "hyperstack_example" "test" {
-  configurable_attribute = "example"
+data "hyperstack_auth_me" "this" {
 }
 `

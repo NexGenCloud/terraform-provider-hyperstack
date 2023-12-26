@@ -5,9 +5,9 @@ import (
 )
 
 type HyperstackClient struct {
-	client    *http.Client
-	apiToken  string
-	apiServer string
+	Client    *http.Client
+	ApiToken  string
+	ApiServer string
 }
 
 func NewHyperstackClient(
@@ -15,8 +15,8 @@ func NewHyperstackClient(
 	apiServer string,
 ) *HyperstackClient {
 	return &HyperstackClient{
-		client:    http.DefaultClient,
-		apiToken:  apiToken,
-		apiServer: apiServer,
+		Client:    http.DefaultClient,
+		ApiToken:  apiToken,
+		ApiServer: apiServer,
 	}
 }

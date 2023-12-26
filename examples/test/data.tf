@@ -1,3 +1,2 @@
-data "hyperstack_example" "example" {
-  configurable_attribute = "some-value"
+data "hyperstack_auth_me" "this" {
 }
