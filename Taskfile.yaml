@@ -1,0 +1,68 @@
+version: '3'
+
+silent: true
+
+vars:
+  NAME: "terraform-provider-hyperstack"
+  DIR_EXAMPLES: "{{.ROOT_DIR}}/examples"
+  DIR_ARTIFACTS: "{{.ROOT_DIR}}/artifacts"
+  DIR_PROVIDER: "{{.DIR_ARTIFACTS}}/provider"
+
+  ARCH:
+    # language=bash
+    sh: echo "$(go env GOOS)_$(go env GOARCH)"
+
+  TF_PROVIDER_VERSION: "0.0.1"
+  TF_PROVIDER_PATH: |-
+    registry.terraform.io/nexgen/hyperstack/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}/
+
+env:
+  TF_CLI_CONFIG_FILE: "{{.DIR_EXAMPLES}}/dev.tfrc"
+
+tasks:
+  init:
+    desc: |
+      Initializes repo for usage
+    cmds:
+      # language=bash
+      - |
+        go install
+
+  update:
+    desc: |
+      Updates dependencies
+    cmds:
+      # language=bash
+      - |
+        go mod tidy
+
+  build:
+    desc: |
+      Builds the provider
+    cmds:
+      # language=bash
+      - |
+        mkdir -p "{{.DIR_PROVIDER}}"
+        go build -o "{{.DIR_PROVIDER}}/{{.NAME}}"
+
+  test:
+    desc: |
+      Tests the provider
+    cmds:
+      - task: build
+      # language=bash
+      - |
+        TF_ACC=1 go test ./... -v -timeout 120m
+
+  test-examples:
+    desc: |
+      Tests the provider
+    cmds:
+      - task: build
+      # language=bash
+      - |
+        for module in "test"; do
+          cd "{{.DIR_EXAMPLES}}/${module}"
+          terraform plan
+          cd - > /dev/null
+        done
