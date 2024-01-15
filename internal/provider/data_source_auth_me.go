@@ -2,14 +2,14 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/nexgen/hyperstack-sdk-go/lib/auth"
 	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
+	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/datasource_auth_me"
 	"io/ioutil"
-	"net/http"
 )
 
 var _ datasource.DataSource = &DataSourceAuthMe{}
@@ -18,26 +18,9 @@ func NewDataSourceAuthMe() datasource.DataSource {
 	return &DataSourceAuthMe{}
 }
 
-type AuthMeResponse struct {
-	Status  bool   `json:"status"`
-	Message string `json:"message"`
-	User    struct {
-		Email     string `json:"email"`
-		Name      string `json:"name"`
-		Username  string `json:"username"`
-		CreatedAt string `json:"created_at"`
-	} `json:"user"`
-}
-
 type DataSourceAuthMe struct {
 	hyperstack *client.HyperstackClient
-}
-
-type DataSourceAuthMeModel struct {
-	Email     types.String `tfsdk:"email"`
-	Name      types.String `tfsdk:"name"`
-	Username  types.String `tfsdk:"username"`
-	CreatedAt types.String `tfsdk:"created_at"`
+	client     *auth.ClientWithResponses
 }
 
 func (d *DataSourceAuthMe) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -45,28 +28,7 @@ func (d *DataSourceAuthMe) Metadata(ctx context.Context, req datasource.Metadata
 }
 
 func (d *DataSourceAuthMe) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
-		MarkdownDescription: "Get me information",
-
-		Attributes: map[string]schema.Attribute{
-			"email": schema.StringAttribute{
-				MarkdownDescription: "User email",
-				Computed:            true,
-			},
-			"name": schema.StringAttribute{
-				MarkdownDescription: "User name",
-				Computed:            true,
-			},
-			"username": schema.StringAttribute{
-				MarkdownDescription: "User username",
-				Computed:            true,
-			},
-			"created_at": schema.StringAttribute{
-				MarkdownDescription: "User created_at",
-				Computed:            true,
-			},
-		},
-	}
+	resp.Schema = datasource_auth_me.AuthMeDataSourceSchema(ctx)
 }
 
 func (d *DataSourceAuthMe) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
@@ -74,22 +36,25 @@ func (d *DataSourceAuthMe) Configure(ctx context.Context, req datasource.Configu
 		return
 	}
 
-	hyperstack, ok := req.ProviderData.(*client.HyperstackClient)
+	d.hyperstack, _ = req.ProviderData.(*client.HyperstackClient)
 
-	if !ok {
+	var err error
+	d.client, err = auth.NewClientWithResponses(
+		d.hyperstack.ApiServer,
+		auth.WithRequestEditorFn(d.hyperstack.GetAddHeadersFn()),
+	)
+
+	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *client.HyperstackClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			"Unexpected error",
+			fmt.Sprintf("%s", err),
 		)
-
 		return
 	}
-
-	d.hyperstack = hyperstack
 }
 
 func (d *DataSourceAuthMe) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data DataSourceAuthMeModel
+	var data datasource_auth_me.AuthMeModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
@@ -97,11 +62,7 @@ func (d *DataSourceAuthMe) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	// URL of the API
-	url := d.hyperstack.ApiServer + "/auth/me"
-
-	// Create a new request
-	hreq, err := http.NewRequest("GET", url, nil)
+	result, err := d.client.AuthUserInformationWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error",
@@ -110,47 +71,35 @@ func (d *DataSourceAuthMe) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	// Add required headers
-	hreq.Header.Add("accept", "application/json")
-	hreq.Header.Add("api_key", d.hyperstack.ApiToken)
-
-	// Create an HTTP client and send the request
-	hresp, err := d.hyperstack.Client.Do(hreq)
-	if err != nil {
+	if result.JSON200 == nil {
+		bodyBytes, _ := ioutil.ReadAll(result.HTTPResponse.Body)
 		resp.Diagnostics.AddError(
-			"Error",
-			fmt.Sprintf("%s", err),
-		)
-		return
-	}
-	defer hresp.Body.Close()
-
-	// Read the response body
-	body, err := ioutil.ReadAll(hresp.Body)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error",
-			fmt.Sprintf("%s", err),
-		)
-		return
-	}
-	//panic(string(body))
-
-	// Unmarshal the JSON response into the ApiResponse struct
-	var apiResponse AuthMeResponse
-	err = json.Unmarshal(body, &apiResponse)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error",
-			fmt.Sprintf("%s", err),
+			"Wrong API json response",
+			fmt.Sprintf("%s", string(bodyBytes)),
 		)
 		return
 	}
 
-	data.Email = types.StringValue(apiResponse.User.Email)
-	data.Name = types.StringValue(apiResponse.User.Name)
-	data.Username = types.StringValue(apiResponse.User.Username)
-	data.CreatedAt = types.StringValue(apiResponse.User.CreatedAt)
+	userResult := result.JSON200.User
+	if userResult == nil {
+		resp.Diagnostics.AddWarning(
+			"No user data",
+			"",
+		)
+		return
+	}
+
+	user, diag := datasource_auth_me.NewUserValue(
+		datasource_auth_me.UserValue{}.AttributeTypes(ctx),
+		map[string]attr.Value{
+			"email":      types.StringValue(*userResult.Email),
+			"name":       types.StringValue(*userResult.Name),
+			"username":   types.StringValue(*userResult.Username),
+			"created_at": types.StringValue(userResult.CreatedAt.String()),
+		},
+	)
+	resp.Diagnostics.Append(diag...)
+	data.User = user
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

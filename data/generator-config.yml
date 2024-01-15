@@ -1,0 +1,15 @@
+provider:
+  name: hyperstack
+  #schema_ref: '#/components/schemas/hyperstack_provider_schema'
+
+#resources: []
+
+data_sources:
+  auth_me:
+    read:
+      path: /auth/me
+      method: GET
+    schema:
+      ignores:
+        - message
+        - status
