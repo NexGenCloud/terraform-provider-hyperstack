@@ -80,8 +80,8 @@ func (d *DataSourceAuthMe) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	userResult := result.JSON200.User
-	if userResult == nil {
+	callResult := result.JSON200.User
+	if callResult == nil {
 		resp.Diagnostics.AddWarning(
 			"No user data",
 			"",
@@ -92,10 +92,10 @@ func (d *DataSourceAuthMe) Read(ctx context.Context, req datasource.ReadRequest,
 	user, diag := datasource_auth_me.NewUserValue(
 		datasource_auth_me.UserValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
-			"email":      types.StringValue(*userResult.Email),
-			"name":       types.StringValue(*userResult.Name),
-			"username":   types.StringValue(*userResult.Username),
-			"created_at": types.StringValue(userResult.CreatedAt.String()),
+			"email":      types.StringValue(*callResult.Email),
+			"name":       types.StringValue(*callResult.Name),
+			"username":   types.StringValue(*callResult.Username),
+			"created_at": types.StringValue(callResult.CreatedAt.String()),
 		},
 	)
 	resp.Diagnostics.Append(diag...)

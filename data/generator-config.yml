@@ -13,3 +13,11 @@ data_sources:
       ignores:
         - message
         - status
+  auth_organizations:
+    read:
+      path: /auth/organizations
+      method: GET
+    schema:
+      ignores:
+        - message
+        - status
