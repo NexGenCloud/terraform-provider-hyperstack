@@ -7,4 +7,6 @@ terraform {
   }
 }
 
-provider "hyperstack" {}
+provider "hyperstack" {
+  staging = true
+}

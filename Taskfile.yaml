@@ -4,9 +4,14 @@ silent: true
 
 vars:
   NAME: "terraform-provider-hyperstack"
+  DIR_DATA: "{{.ROOT_DIR}}/data"
   DIR_EXAMPLES: "{{.ROOT_DIR}}/examples"
   DIR_ARTIFACTS: "{{.ROOT_DIR}}/artifacts"
-  DIR_PROVIDER: "{{.DIR_ARTIFACTS}}/provider"
+  DIR_BINPROVIDER: "{{.DIR_ARTIFACTS}}/provider"
+  DIR_PROVIDER: "{{.ROOT_DIR}}/internal/provider"
+  DIR_GENPROVIDER: "{{.ROOT_DIR}}/internal/genprovider"
+  API_JSON_PATH: "{{.DIR_ARTIFACTS}}/api.json"
+  PROVIDER_SPEC_PATH: "{{.DIR_ARTIFACTS}}/provider-spec.json"
 
   ARCH:
     # language=bash
@@ -18,15 +23,21 @@ vars:
 
 env:
   TF_CLI_CONFIG_FILE: "{{.DIR_EXAMPLES}}/dev.tfrc"
+  HYPERSTACK_STAGING: "true"
+  HYPERSTACK_API_KEY: ~
+
 
 tasks:
   init:
     desc: |
-      Initializes repo for usage
+      Install all the necessary dependencies
     cmds:
       # language=bash
       - |
+        # TODO: check go.mod
         go install
+        go install github.com/hashicorp/terraform-plugin-codegen-openapi/cmd/tfplugingen-openapi@latest
+        go install github.com/hashicorp/terraform-plugin-codegen-framework/cmd/tfplugingen-framework@latest
 
   update:
     desc: |
@@ -42,12 +53,13 @@ tasks:
     cmds:
       # language=bash
       - |
-        mkdir -p "{{.DIR_PROVIDER}}"
-        go build -o "{{.DIR_PROVIDER}}/{{.NAME}}"
+        mkdir -p "{{.DIR_BINPROVIDER}}"
+        go build -o "{{.DIR_BINPROVIDER}}/{{.NAME}}"
 
   test:
     desc: |
       Tests the provider
+    dotenv: ['.env']
     cmds:
       - task: build
       # language=bash
@@ -57,6 +69,7 @@ tasks:
   test-examples:
     desc: |
       Tests the provider
+    dotenv: ['.env']
     cmds:
       - task: build
       # language=bash
@@ -65,4 +78,61 @@ tasks:
           cd "{{.DIR_EXAMPLES}}/${module}"
           terraform plan
           cd - > /dev/null
+        done
+
+  debug-me:
+    desc: |
+      Checks API token
+    dotenv: ['.env']
+    cmds:
+      # language=bash
+      - |
+        curl -X GET "https://infrahub-api-stg.ngbackend.cloud/v1/auth/me" \
+          -H "accept: application/json" \
+          -H "api_key: ${HYPERSTACK_API_KEY}"
+        done
+
+  pull-api:
+    desc: |
+      Pulls the latest api.json from the server
+    vars:
+      SPEC_PATH: |-
+        https://infrahub-api-doc.nexgencloud.com/api.json
+    cmds:
+      # language=bash
+      - |
+        echo "Pulling the latest swagger spec and generating Go SDK..."
+        curl "{{.SPEC_PATH}}"  | \
+          python3 -c "import sys, urllib.parse; print(urllib.parse.unquote(sys.stdin.read()))" \
+            > "{{.API_JSON_PATH}}"
+
+  gen-openapi:
+    desc: |
+      Gen schemas
+    cmds:
+      # language=bash
+      - |
+        tfplugingen-openapi generate \
+          --config "{{.DIR_DATA}}/generator-config.yml" \
+          --output "{{.PROVIDER_SPEC_PATH}}" \
+          "{{.API_JSON_PATH}}"
+      # language=bash
+      - |
+        rm -Rf "{{.DIR_GENPROVIDER}}"
+        mkdir -p "{{.DIR_GENPROVIDER}}"
+        tfplugingen-framework generate data-sources \
+          --input "{{.DIR_ARTIFACTS}}/provider-spec.json" \
+          --output "{{.DIR_GENPROVIDER}}"
+        tfplugingen-framework generate resources \
+          --input "{{.DIR_ARTIFACTS}}/provider-spec.json" \
+          --output "{{.DIR_GENPROVIDER}}"
+      # language=bash
+      - |
+        rm -Rf "{{.DIR_PROVIDER}}/data_source"
+        mkdir -p "{{.DIR_PROVIDER}}/data_source"
+        for module in "user_me"; do
+          tfplugingen-framework scaffold data-source \
+            --name "${module}" \
+            --force \
+            --output-dir "{{.DIR_PROVIDER}}/data_source"
         done
