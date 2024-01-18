@@ -105,6 +105,7 @@ tasks:
         curl "{{.SPEC_PATH}}"  | \
           python3 -c "import sys, urllib.parse; print(urllib.parse.unquote(sys.stdin.read()))" \
             > "{{.API_JSON_PATH}}"
+        python3 scripts/apifixer.py artifacts/api.json
 
   gen-openapi:
     desc: |

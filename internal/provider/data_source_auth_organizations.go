@@ -83,7 +83,7 @@ func (d *DataSourceAuthOrganizations) Read(ctx context.Context, req datasource.R
 	callResult := result.JSON200.Organization
 	if callResult == nil {
 		resp.Diagnostics.AddWarning(
-			"No user data",
+			"No organization data",
 			"",
 		)
 		return
