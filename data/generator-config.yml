@@ -21,3 +21,19 @@ data_sources:
       ignores:
         - message
         - status
+  auth_roles:
+    read:
+      path: /auth/roles
+      method: GET
+    schema:
+      ignores:
+        - message
+        - status
+  auth_role:
+    read:
+      path: /auth/roles/{id}
+      method: GET
+    schema:
+      ignores:
+        - message
+        - status

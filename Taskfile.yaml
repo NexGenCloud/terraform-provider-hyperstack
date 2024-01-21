@@ -70,13 +70,17 @@ tasks:
     desc: |
       Tests the provider
     dotenv: ['.env']
+    vars:
+      TF_EXAMPLES: |-
+        org_roles
     cmds:
       - task: build
       # language=bash
       - |
-        for module in "test"; do
+        for module in {{join " " (splitArgs .TF_EXAMPLES)}}; do
           cd "{{.DIR_EXAMPLES}}/${module}"
-          terraform plan
+          terraform plan -out tfplan
+          terraform apply tfplan
           cd - > /dev/null
         done
 
@@ -110,6 +114,10 @@ tasks:
   gen-openapi:
     desc: |
       Gen schemas
+    vars:
+      TF_DATA_SOURCES:
+        # language=bash
+        sh: cat "{{.DIR_DATA}}/generator-config.yml" | yq e -o=c ".data_sources | keys | .[]"
     cmds:
       # language=bash
       - |
@@ -131,9 +139,9 @@ tasks:
       - |
         rm -Rf "{{.DIR_PROVIDER}}/data_source"
         mkdir -p "{{.DIR_PROVIDER}}/data_source"
-        for module in "user_me"; do
+        for row in {{join " " (splitArgs .TF_DATA_SOURCES)}}; do
           tfplugingen-framework scaffold data-source \
-            --name "${module}" \
+            --name "${row}" \
             --force \
             --output-dir "{{.DIR_PROVIDER}}/data_source"
         done
