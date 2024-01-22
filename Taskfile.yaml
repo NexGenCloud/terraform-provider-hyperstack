@@ -81,6 +81,8 @@ tasks:
           cd "{{.DIR_EXAMPLES}}/${module}"
           terraform plan -out tfplan
           terraform apply tfplan
+          terraform plan -out tfplan -destroy
+          terraform apply tfplan
           cd - > /dev/null
         done
 

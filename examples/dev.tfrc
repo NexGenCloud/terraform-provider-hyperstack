@@ -4,5 +4,6 @@ provider_installation {
     "nexgen/hyperstack" = "../../artifacts/provider"
   }
 
-  direct {}
+  direct {
+  }
 }

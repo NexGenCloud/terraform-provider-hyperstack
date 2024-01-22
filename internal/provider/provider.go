@@ -91,7 +91,7 @@ func (p *hyperstackProvider) Configure(ctx context.Context, req provider.Configu
 
 func (p *hyperstackProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewExampleResource,
+		NewResourceAuthRole,
 	}
 }
 
