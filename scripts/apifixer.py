@@ -28,6 +28,8 @@ def process_components_schemas(json_data):
     if new_key != key:
       schemas[new_key] = schemas.pop(key)
 
+  schemas["InstanceFlavorFields"]["properties"]["ram"]["type"] = "number"
+
 
 def main(file_path):
   with open(file_path, 'r') as file:

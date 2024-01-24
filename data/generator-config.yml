@@ -93,8 +93,7 @@ data_sources:
   virtual_machine:
     read:
       path: /core/virtual-machines/{id}
+  core_virtual_machines:
+    read:
+      path: /core/virtual-machines
       method: GET
-    schema:
-      ignores:
-        - message
-        - status

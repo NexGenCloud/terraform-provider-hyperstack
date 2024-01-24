@@ -33,9 +33,6 @@ func (r *ResourceAuthRole) Metadata(ctx context.Context, req resource.MetadataRe
 
 func (r *ResourceAuthRole) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_auth_role.AuthRoleResourceSchema(ctx)
-	//resp.Schema.Attributes["id"] = schema.Int64Attribute{
-	//	Computed: true,
-	//}
 }
 
 func (r *ResourceAuthRole) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
