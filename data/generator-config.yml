@@ -2,7 +2,18 @@ provider:
   name: hyperstack
   #schema_ref: '#/components/schemas/hyperstack_provider_schema'
 
-#resources: []
+resources:
+  auth_role:
+    read:
+      path: /auth/roles/{id}
+      method: GET
+    create:
+      path: /auth/roles
+      method: POST
+    schema:
+      ignores:
+        - message
+        - status
 
 data_sources:
   auth_me:
@@ -16,6 +27,22 @@ data_sources:
   auth_organizations:
     read:
       path: /auth/organizations
+      method: GET
+    schema:
+      ignores:
+        - message
+        - status
+  auth_roles:
+    read:
+      path: /auth/roles
+      method: GET
+    schema:
+      ignores:
+        - message
+        - status
+  auth_role:
+    read:
+      path: /auth/roles/{id}
       method: GET
     schema:
       ignores:
