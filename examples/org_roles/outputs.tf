@@ -10,3 +10,8 @@ output "roles_map" {
 output "role_test" {
   value = hyperstack_auth_role.this
 }
+
+output "keypair_test" {
+  value = data.hyperstack_keypairs.this
+}
+
