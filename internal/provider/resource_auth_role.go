@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/nexgen/hyperstack-sdk-go/lib/rbac_role"
@@ -115,9 +114,7 @@ func (r *ResourceAuthRole) Create(
 		return
 	}
 
-	data.Role = r.MapRole(ctx, resp.State, resp.Diagnostics, *callResult)
-	data.Id = types.Int64Value(data.Role.Id.ValueInt64())
-
+	data = r.ApiToModel(ctx, &resp.Diagnostics, callResult)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -163,8 +160,7 @@ func (r *ResourceAuthRole) Read(
 		return
 	}
 
-	data.Role = r.MapRole(ctx, resp.State, resp.Diagnostics, *callResult)
-
+	data = r.ApiToModel(ctx, &resp.Diagnostics, callResult)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -228,9 +224,7 @@ func (r *ResourceAuthRole) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	data.Role = r.MapRole(ctx, resp.State, resp.Diagnostics, *callResult)
-	data.Id = data.Role.Id
-
+	data = r.ApiToModel(ctx, &resp.Diagnostics, callResult)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -267,52 +261,56 @@ func (r *ResourceAuthRole) ImportState(ctx context.Context, req resource.ImportS
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *ResourceAuthRole) MapRole(
+func (r *ResourceAuthRole) ApiToModel(
 	ctx context.Context,
-	state tfsdk.State,
-	diags diag.Diagnostics,
-	data rbac_role.RBACRoleFields,
-) resource_auth_role.RoleValue {
-	createdAt := types.StringNull()
-	if data.CreatedAt != nil {
-		createdAt = types.StringValue(data.CreatedAt.String())
+	diags *diag.Diagnostics,
+	response *rbac_role.RBACRoleFields,
+) resource_auth_role.AuthRoleModel {
+	return resource_auth_role.AuthRoleModel{
+		Id: func() types.Int64 {
+			if response.Id == nil {
+				return types.Int64Null()
+			}
+			return types.Int64Value(int64(*response.Id))
+		}(),
+		Name: func() types.String {
+			if response.Name == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(*response.Name)
+		}(),
+		Description: func() types.String {
+			if response.Description == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(*response.Description)
+		}(),
+		Policies: func() types.List {
+			return r.MapRolesPolicies(ctx, diags, *response.Policies)
+		}(),
+		Permissions: func() types.List {
+			return r.MapRolesPermissions(ctx, diags, *response.Permissions)
+		}(),
+		CreatedAt: func() types.String {
+			if response.CreatedAt == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(response.CreatedAt.String())
+		}(),
 	}
-
-	model, diagnostic := resource_auth_role.NewRoleValue(
-		resource_auth_role.RoleValue{}.AttributeTypes(ctx),
-		map[string]attr.Value{
-			"id":          types.Int64Value(int64(*data.Id)),
-			"name":        types.StringValue(*data.Name),
-			"description": types.StringValue(*data.Description),
-			"policies":    r.MapRolesPolicies(ctx, state, diags, *data.Policies),
-			"permissions": r.MapRolesPermissions(ctx, state, diags, *data.Permissions),
-			"created_at":  createdAt,
-		},
-	)
-	diags.Append(diagnostic...)
-	return model
 }
 
 func (r *ResourceAuthRole) MapRolesPolicies(
 	ctx context.Context,
-	state tfsdk.State,
-	diags diag.Diagnostics,
+	diags *diag.Diagnostics,
 	data []rbac_role.RolePolicyFields,
 ) types.List {
 	model, diagnostic := types.ListValue(
-		resource_auth_role.PoliciesValue{}.Type(ctx),
+		types.Int64Type,
 		func() []attr.Value {
 			roles := make([]attr.Value, 0)
 			for _, row := range data {
-				model, diagnostic := resource_auth_role.NewPoliciesValue(
-					resource_auth_role.PoliciesValue{}.AttributeTypes(ctx),
-					map[string]attr.Value{
-						"id":          types.Int64Value(int64(*row.Id)),
-						"name":        types.StringValue(*row.Name),
-						"description": types.StringValue(*row.Description),
-					},
-				)
-				diags.Append(diagnostic...)
+				model := types.Int64Value(int64(*row.Id))
 				roles = append(roles, model)
 			}
 			return roles
@@ -324,24 +322,15 @@ func (r *ResourceAuthRole) MapRolesPolicies(
 
 func (r *ResourceAuthRole) MapRolesPermissions(
 	ctx context.Context,
-	state tfsdk.State,
-	diags diag.Diagnostics,
+	diags *diag.Diagnostics,
 	data []rbac_role.RolePermissionFields,
 ) types.List {
 	model, diagnostic := types.ListValue(
-		resource_auth_role.PermissionsValue{}.Type(ctx),
+		types.Int64Type,
 		func() []attr.Value {
 			roles := make([]attr.Value, 0)
 			for _, row := range data {
-				model, diagnostic := resource_auth_role.NewPermissionsValue(
-					resource_auth_role.PermissionsValue{}.AttributeTypes(ctx),
-					map[string]attr.Value{
-						"id":         types.Int64Value(int64(*row.Id)),
-						"resource":   types.StringValue(*row.Resource),
-						"permission": types.StringValue(*row.Permission),
-					},
-				)
-				diags.Append(diagnostic...)
+				model := types.Int64Value(int64(*row.Id))
 				roles = append(roles, model)
 			}
 			return roles

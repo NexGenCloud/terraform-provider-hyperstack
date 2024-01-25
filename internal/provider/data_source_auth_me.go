@@ -3,8 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/nexgen/hyperstack-sdk-go/lib/auth"
 	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
@@ -89,17 +89,39 @@ func (d *DataSourceAuthMe) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	user, diag := datasource_auth_me.NewUserValue(
-		datasource_auth_me.UserValue{}.AttributeTypes(ctx),
-		map[string]attr.Value{
-			"email":      types.StringValue(*callResult.Email),
-			"name":       types.StringValue(*callResult.Name),
-			"username":   types.StringValue(*callResult.Username),
-			"created_at": types.StringValue(callResult.CreatedAt.String()),
-		},
-	)
-	resp.Diagnostics.Append(diag...)
-	data.User = user
-
+	data = d.ApiToModel(ctx, &resp.Diagnostics, callResult)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (d *DataSourceAuthMe) ApiToModel(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	response *auth.UserFields,
+) datasource_auth_me.AuthMeModel {
+	return datasource_auth_me.AuthMeModel{
+		CreatedAt: func() types.String {
+			if response.CreatedAt == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(response.CreatedAt.String())
+		}(),
+		Email: func() types.String {
+			if response.Email == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(*response.Email)
+		}(),
+		Name: func() types.String {
+			if response.Name == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(*response.Name)
+		}(),
+		Username: func() types.String {
+			if response.Username == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(*response.Username)
+		}(),
+	}
 }

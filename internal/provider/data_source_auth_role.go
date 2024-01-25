@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/nexgen/hyperstack-sdk-go/lib/rbac_role"
 	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
@@ -89,45 +90,55 @@ func (d *DataSourceAuthRole) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	data.Role = d.MapRole(ctx, resp, *callResult)
-
+	data = d.ApiToModel(ctx, &resp.Diagnostics, callResult)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (d *DataSourceAuthRole) MapRole(
+func (d *DataSourceAuthRole) ApiToModel(
 	ctx context.Context,
-	resp *datasource.ReadResponse,
-	data rbac_role.RBACRoleFields,
-) datasource_auth_role.RoleValue {
-	createdAt := types.StringNull()
-	if data.CreatedAt != nil {
-		createdAt = types.StringValue(data.CreatedAt.String())
+	diags *diag.Diagnostics,
+	response *rbac_role.RBACRoleFields,
+) datasource_auth_role.AuthRoleModel {
+	return datasource_auth_role.AuthRoleModel{
+		Id: func() types.Int64 {
+			return types.Int64Value(int64(*response.Id))
+		}(),
+		Name: func() types.String {
+			if response.Name == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(*response.Name)
+		}(),
+		Description: func() types.String {
+			if response.Description == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(*response.Description)
+		}(),
+		Policies: func() types.List {
+			return d.MapRolesPolicies(ctx, diags, *response.Policies)
+		}(),
+		Permissions: func() types.List {
+			return d.MapRolesPermissions(ctx, diags, *response.Permissions)
+		}(),
+		CreatedAt: func() types.String {
+			if response.CreatedAt == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(response.CreatedAt.String())
+		}(),
 	}
-
-	model, diagnostic := datasource_auth_role.NewRoleValue(
-		datasource_auth_role.RoleValue{}.AttributeTypes(ctx),
-		map[string]attr.Value{
-			"id":          types.Int64Value(int64(*data.Id)),
-			"name":        types.StringValue(*data.Name),
-			"description": types.StringValue(*data.Description),
-			"policies":    d.MapRolesPolicies(ctx, resp, *data.Policies),
-			"permissions": d.MapRolesPermissions(ctx, resp, *data.Permissions),
-			"created_at":  createdAt,
-		},
-	)
-	resp.Diagnostics.Append(diagnostic...)
-	return model
 }
 
 func (d *DataSourceAuthRole) MapRolesPolicies(
 	ctx context.Context,
-	resp *datasource.ReadResponse,
+	diags *diag.Diagnostics,
 	data []rbac_role.RolePolicyFields,
 ) types.List {
 	model, diagnostic := types.ListValue(
 		datasource_auth_role.PoliciesValue{}.Type(ctx),
 		func() []attr.Value {
-			roles := make([]attr.Value, 0)
+			list := make([]attr.Value, 0)
 			for _, row := range data {
 				model, diagnostic := datasource_auth_role.NewPoliciesValue(
 					datasource_auth_role.PoliciesValue{}.AttributeTypes(ctx),
@@ -137,25 +148,25 @@ func (d *DataSourceAuthRole) MapRolesPolicies(
 						"description": types.StringValue(*row.Description),
 					},
 				)
-				resp.Diagnostics.Append(diagnostic...)
-				roles = append(roles, model)
+				diags.Append(diagnostic...)
+				list = append(list, model)
 			}
-			return roles
+			return list
 		}(),
 	)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 	return model
 }
 
 func (d *DataSourceAuthRole) MapRolesPermissions(
 	ctx context.Context,
-	resp *datasource.ReadResponse,
+	diags *diag.Diagnostics,
 	data []rbac_role.RolePermissionFields,
 ) types.List {
 	model, diagnostic := types.ListValue(
 		datasource_auth_role.PermissionsValue{}.Type(ctx),
 		func() []attr.Value {
-			roles := make([]attr.Value, 0)
+			list := make([]attr.Value, 0)
 			for _, row := range data {
 				model, diagnostic := datasource_auth_role.NewPermissionsValue(
 					datasource_auth_role.PermissionsValue{}.AttributeTypes(ctx),
@@ -165,12 +176,12 @@ func (d *DataSourceAuthRole) MapRolesPermissions(
 						"permission": types.StringValue(*row.Permission),
 					},
 				)
-				resp.Diagnostics.Append(diagnostic...)
-				roles = append(roles, model)
+				diags.Append(diagnostic...)
+				list = append(list, model)
 			}
-			return roles
+			return list
 		}(),
 	)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 	return model
 }

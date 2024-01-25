@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/nexgen/hyperstack-sdk-go/lib/virtual_machine"
 	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
@@ -88,23 +89,34 @@ func (d *DataSourceCoreVirtualMachines) Read(ctx context.Context, req datasource
 		return
 	}
 
-	data.Instances = d.MapInstances(ctx, resp, *callResult)
-
+	data = d.ApiToModel(ctx, &resp.Diagnostics, callResult)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (d *DataSourceCoreVirtualMachines) ApiToModel(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	response *[]virtual_machine.InstanceAdminFields,
+) datasource_core_virtual_machines.CoreVirtualMachinesModel {
+	return datasource_core_virtual_machines.CoreVirtualMachinesModel{
+		CoreVirtualMachines: func() types.Set {
+			return d.MapInstances(ctx, diags, *response)
+		}(),
+	}
 }
 
 func (d *DataSourceCoreVirtualMachines) MapInstances(
 	ctx context.Context,
-	resp *datasource.ReadResponse,
+	diags *diag.Diagnostics,
 	data []virtual_machine.InstanceAdminFields,
-) types.List {
-	model, diagnostic := types.ListValue(
-		datasource_core_virtual_machines.InstancesValue{}.Type(ctx),
+) types.Set {
+	model, diagnostic := types.SetValue(
+		datasource_core_virtual_machines.CoreVirtualMachinesValue{}.Type(ctx),
 		func() []attr.Value {
-			roles := make([]attr.Value, 0)
+			list := make([]attr.Value, 0)
 			for _, row := range data {
-				model, diagnostic := datasource_core_virtual_machines.NewInstancesValue(
-					datasource_core_virtual_machines.InstancesValue{}.AttributeTypes(ctx),
+				model, diagnostic := datasource_core_virtual_machines.NewCoreVirtualMachinesValue(
+					datasource_core_virtual_machines.CoreVirtualMachinesValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
 						"id":                 types.Int64Value(int64(*row.Id)),
 						"name":               types.StringValue(*row.Name),
@@ -126,27 +138,27 @@ func (d *DataSourceCoreVirtualMachines) MapInstances(
 							}
 							return types.StringValue(row.CreatedAt.String())
 						}(),
-						"environment":        d.MapEnvironment(ctx, resp, *row.Environment),
-						"image":              d.MapImage(ctx, resp, *row.Image),
-						"flavor":             d.MapFlavor(ctx, resp, *row.Flavor),
-						"keypair":            d.MapKeypair(ctx, resp, *row.Keypair),
-						"volume_attachments": d.MapVolumeAttachments(ctx, resp, *row.VolumeAttachments),
-						"security_rules":     d.MapSecurityRules(ctx, resp, *row.SecurityRules),
+						"environment":        d.MapEnvironment(ctx, diags, *row.Environment),
+						"image":              d.MapImage(ctx, diags, *row.Image),
+						"flavor":             d.MapFlavor(ctx, diags, *row.Flavor),
+						"keypair":            d.MapKeypair(ctx, diags, *row.Keypair),
+						"volume_attachments": d.MapVolumeAttachments(ctx, diags, *row.VolumeAttachments),
+						"security_rules":     d.MapSecurityRules(ctx, diags, *row.SecurityRules),
 					},
 				)
-				resp.Diagnostics.Append(diagnostic...)
-				roles = append(roles, model)
+				diags.Append(diagnostic...)
+				list = append(list, model)
 			}
-			return roles
+			return list
 		}(),
 	)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 	return model
 }
 
 func (d *DataSourceCoreVirtualMachines) MapEnvironment(
 	ctx context.Context,
-	resp *datasource.ReadResponse,
+	diags *diag.Diagnostics,
 	data virtual_machine.InstanceEnvironmentFields,
 ) attr.Value {
 	model, diagnostic := datasource_core_virtual_machines.NewEnvironmentValue(
@@ -157,17 +169,17 @@ func (d *DataSourceCoreVirtualMachines) MapEnvironment(
 			"region": types.StringValue(*data.Region),
 		},
 	)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 
 	result, diagnostic := model.ToObjectValue(ctx)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 
 	return result
 }
 
 func (d *DataSourceCoreVirtualMachines) MapImage(
 	ctx context.Context,
-	resp *datasource.ReadResponse,
+	diags *diag.Diagnostics,
 	data virtual_machine.InstanceImageFields,
 ) attr.Value {
 	model, diagnostic := datasource_core_virtual_machines.NewImageValue(
@@ -176,17 +188,17 @@ func (d *DataSourceCoreVirtualMachines) MapImage(
 			"name": types.StringValue(*data.Name),
 		},
 	)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 
 	result, diagnostic := model.ToObjectValue(ctx)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 
 	return result
 }
 
 func (d *DataSourceCoreVirtualMachines) MapFlavor(
 	ctx context.Context,
-	resp *datasource.ReadResponse,
+	diags *diag.Diagnostics,
 	data virtual_machine.InstanceFlavorFields,
 ) attr.Value {
 	model, diagnostic := datasource_core_virtual_machines.NewFlavorValue(
@@ -201,17 +213,17 @@ func (d *DataSourceCoreVirtualMachines) MapFlavor(
 			"gpu_count": types.Int64Value(int64(*data.GpuCount)),
 		},
 	)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 
 	result, diagnostic := model.ToObjectValue(ctx)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 
 	return result
 }
 
 func (d *DataSourceCoreVirtualMachines) MapKeypair(
 	ctx context.Context,
-	resp *datasource.ReadResponse,
+	diags *diag.Diagnostics,
 	data virtual_machine.InstanceKeypairFields,
 ) attr.Value {
 	model, diagnostic := datasource_core_virtual_machines.NewKeypairValue(
@@ -220,17 +232,17 @@ func (d *DataSourceCoreVirtualMachines) MapKeypair(
 			"name": types.StringValue(*data.Name),
 		},
 	)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 
 	result, diagnostic := model.ToObjectValue(ctx)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 
 	return result
 }
 
 func (d *DataSourceCoreVirtualMachines) MapVolumeAttachments(
 	ctx context.Context,
-	resp *datasource.ReadResponse,
+	diags *diag.Diagnostics,
 	data []virtual_machine.VolumeAttachmentFields,
 ) types.List {
 	model, diagnostic := types.ListValue(
@@ -249,22 +261,22 @@ func (d *DataSourceCoreVirtualMachines) MapVolumeAttachments(
 							}
 							return types.StringValue(row.CreatedAt.String())
 						}(),
-						"volume": d.MapVolume(ctx, resp, *row.Volume),
+						"volume": d.MapVolume(ctx, diags, *row.Volume),
 					},
 				)
-				resp.Diagnostics.Append(diagnostic...)
+				diags.Append(diagnostic...)
 				roles = append(roles, model)
 			}
 			return roles
 		}(),
 	)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 	return model
 }
 
 func (d *DataSourceCoreVirtualMachines) MapVolume(
 	ctx context.Context,
-	resp *datasource.ReadResponse,
+	diags *diag.Diagnostics,
 	data virtual_machine.VolumeFieldsForInstance,
 ) attr.Value {
 	model, diagnostic := datasource_core_virtual_machines.NewVolumeValue(
@@ -277,17 +289,17 @@ func (d *DataSourceCoreVirtualMachines) MapVolume(
 			"size":        types.Int64Value(int64(*data.Size)),
 		},
 	)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 
 	result, diagnostic := model.ToObjectValue(ctx)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 
 	return result
 }
 
 func (d *DataSourceCoreVirtualMachines) MapSecurityRules(
 	ctx context.Context,
-	resp *datasource.ReadResponse,
+	diags *diag.Diagnostics,
 	data []virtual_machine.SecurityRulesFieldsForInstance,
 ) types.List {
 	model, diagnostic := types.ListValue(
@@ -295,11 +307,6 @@ func (d *DataSourceCoreVirtualMachines) MapSecurityRules(
 		func() []attr.Value {
 			roles := make([]attr.Value, 0)
 			for _, row := range data {
-				createdAt := types.StringNull()
-				if row.CreatedAt != nil {
-					createdAt = types.StringValue(row.CreatedAt.String())
-				}
-
 				model, diagnostic := datasource_core_virtual_machines.NewSecurityRulesValue(
 					datasource_core_virtual_machines.SecurityRulesValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
@@ -321,15 +328,20 @@ func (d *DataSourceCoreVirtualMachines) MapSecurityRules(
 						"ethertype":        types.StringValue(*row.Ethertype),
 						"remote_ip_prefix": types.StringValue(*row.RemoteIpPrefix),
 						"status":           types.StringValue(*row.Status),
-						"created_at":       createdAt,
+						"created_at": func() attr.Value {
+							if row.CreatedAt == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(row.CreatedAt.String())
+						}(),
 					},
 				)
-				resp.Diagnostics.Append(diagnostic...)
+				diags.Append(diagnostic...)
 				roles = append(roles, model)
 			}
 			return roles
 		}(),
 	)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 	return model
 }

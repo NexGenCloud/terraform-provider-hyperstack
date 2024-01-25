@@ -1,5 +1,5 @@
 output "roles" {
-  value = data.hyperstack_auth_roles.this.roles
+  value = data.hyperstack_auth_roles.this.auth_roles
 }
 
 output "roles_map" {

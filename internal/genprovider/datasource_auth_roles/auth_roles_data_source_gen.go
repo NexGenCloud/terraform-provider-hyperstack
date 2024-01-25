@@ -18,7 +18,7 @@ import (
 func AuthRolesDataSourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"roles": schema.ListNestedAttribute{
+			"auth_roles": schema.SetNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"created_at": schema.StringAttribute{
@@ -76,9 +76,9 @@ func AuthRolesDataSourceSchema(ctx context.Context) schema.Schema {
 							Computed: true,
 						},
 					},
-					CustomType: RolesType{
+					CustomType: AuthRolesType{
 						ObjectType: types.ObjectType{
-							AttrTypes: RolesValue{}.AttributeTypes(ctx),
+							AttrTypes: AuthRolesValue{}.AttributeTypes(ctx),
 						},
 					},
 				},
@@ -89,17 +89,17 @@ func AuthRolesDataSourceSchema(ctx context.Context) schema.Schema {
 }
 
 type AuthRolesModel struct {
-	Roles types.List `tfsdk:"roles"`
+	AuthRoles types.Set `tfsdk:"auth_roles"`
 }
 
-var _ basetypes.ObjectTypable = RolesType{}
+var _ basetypes.ObjectTypable = AuthRolesType{}
 
-type RolesType struct {
+type AuthRolesType struct {
 	basetypes.ObjectType
 }
 
-func (t RolesType) Equal(o attr.Type) bool {
-	other, ok := o.(RolesType)
+func (t AuthRolesType) Equal(o attr.Type) bool {
+	other, ok := o.(AuthRolesType)
 
 	if !ok {
 		return false
@@ -108,11 +108,11 @@ func (t RolesType) Equal(o attr.Type) bool {
 	return t.ObjectType.Equal(other.ObjectType)
 }
 
-func (t RolesType) String() string {
-	return "RolesType"
+func (t AuthRolesType) String() string {
+	return "AuthRolesType"
 }
 
-func (t RolesType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+func (t AuthRolesType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	attributes := in.Attributes()
@@ -229,7 +229,7 @@ func (t RolesType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue
 		return nil, diags
 	}
 
-	return RolesValue{
+	return AuthRolesValue{
 		CreatedAt:   createdAtVal,
 		Description: descriptionVal,
 		Id:          idVal,
@@ -240,19 +240,19 @@ func (t RolesType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue
 	}, diags
 }
 
-func NewRolesValueNull() RolesValue {
-	return RolesValue{
+func NewAuthRolesValueNull() AuthRolesValue {
+	return AuthRolesValue{
 		state: attr.ValueStateNull,
 	}
 }
 
-func NewRolesValueUnknown() RolesValue {
-	return RolesValue{
+func NewAuthRolesValueUnknown() AuthRolesValue {
+	return AuthRolesValue{
 		state: attr.ValueStateUnknown,
 	}
 }
 
-func NewRolesValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (RolesValue, diag.Diagnostics) {
+func NewAuthRolesValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (AuthRolesValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
@@ -263,11 +263,11 @@ func NewRolesValue(attributeTypes map[string]attr.Type, attributes map[string]at
 
 		if !ok {
 			diags.AddError(
-				"Missing RolesValue Attribute Value",
-				"While creating a RolesValue value, a missing attribute value was detected. "+
-					"A RolesValue must contain values for all attributes, even if null or unknown. "+
+				"Missing AuthRolesValue Attribute Value",
+				"While creating a AuthRolesValue value, a missing attribute value was detected. "+
+					"A AuthRolesValue must contain values for all attributes, even if null or unknown. "+
 					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("RolesValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+					fmt.Sprintf("AuthRolesValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
 			)
 
 			continue
@@ -275,12 +275,12 @@ func NewRolesValue(attributeTypes map[string]attr.Type, attributes map[string]at
 
 		if !attributeType.Equal(attribute.Type(ctx)) {
 			diags.AddError(
-				"Invalid RolesValue Attribute Type",
-				"While creating a RolesValue value, an invalid attribute value was detected. "+
-					"A RolesValue must use a matching attribute type for the value. "+
+				"Invalid AuthRolesValue Attribute Type",
+				"While creating a AuthRolesValue value, an invalid attribute value was detected. "+
+					"A AuthRolesValue must use a matching attribute type for the value. "+
 					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("RolesValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
-					fmt.Sprintf("RolesValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+					fmt.Sprintf("AuthRolesValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("AuthRolesValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
 			)
 		}
 	}
@@ -290,17 +290,17 @@ func NewRolesValue(attributeTypes map[string]attr.Type, attributes map[string]at
 
 		if !ok {
 			diags.AddError(
-				"Extra RolesValue Attribute Value",
-				"While creating a RolesValue value, an extra attribute value was detected. "+
-					"A RolesValue must not contain values beyond the expected attribute types. "+
+				"Extra AuthRolesValue Attribute Value",
+				"While creating a AuthRolesValue value, an extra attribute value was detected. "+
+					"A AuthRolesValue must not contain values beyond the expected attribute types. "+
 					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("Extra RolesValue Attribute Name: %s", name),
+					fmt.Sprintf("Extra AuthRolesValue Attribute Name: %s", name),
 			)
 		}
 	}
 
 	if diags.HasError() {
-		return NewRolesValueUnknown(), diags
+		return NewAuthRolesValueUnknown(), diags
 	}
 
 	createdAtAttribute, ok := attributes["created_at"]
@@ -310,7 +310,7 @@ func NewRolesValue(attributeTypes map[string]attr.Type, attributes map[string]at
 			"Attribute Missing",
 			`created_at is missing from object`)
 
-		return NewRolesValueUnknown(), diags
+		return NewAuthRolesValueUnknown(), diags
 	}
 
 	createdAtVal, ok := createdAtAttribute.(basetypes.StringValue)
@@ -328,7 +328,7 @@ func NewRolesValue(attributeTypes map[string]attr.Type, attributes map[string]at
 			"Attribute Missing",
 			`description is missing from object`)
 
-		return NewRolesValueUnknown(), diags
+		return NewAuthRolesValueUnknown(), diags
 	}
 
 	descriptionVal, ok := descriptionAttribute.(basetypes.StringValue)
@@ -346,7 +346,7 @@ func NewRolesValue(attributeTypes map[string]attr.Type, attributes map[string]at
 			"Attribute Missing",
 			`id is missing from object`)
 
-		return NewRolesValueUnknown(), diags
+		return NewAuthRolesValueUnknown(), diags
 	}
 
 	idVal, ok := idAttribute.(basetypes.Int64Value)
@@ -364,7 +364,7 @@ func NewRolesValue(attributeTypes map[string]attr.Type, attributes map[string]at
 			"Attribute Missing",
 			`name is missing from object`)
 
-		return NewRolesValueUnknown(), diags
+		return NewAuthRolesValueUnknown(), diags
 	}
 
 	nameVal, ok := nameAttribute.(basetypes.StringValue)
@@ -382,7 +382,7 @@ func NewRolesValue(attributeTypes map[string]attr.Type, attributes map[string]at
 			"Attribute Missing",
 			`permissions is missing from object`)
 
-		return NewRolesValueUnknown(), diags
+		return NewAuthRolesValueUnknown(), diags
 	}
 
 	permissionsVal, ok := permissionsAttribute.(basetypes.ListValue)
@@ -400,7 +400,7 @@ func NewRolesValue(attributeTypes map[string]attr.Type, attributes map[string]at
 			"Attribute Missing",
 			`policies is missing from object`)
 
-		return NewRolesValueUnknown(), diags
+		return NewAuthRolesValueUnknown(), diags
 	}
 
 	policiesVal, ok := policiesAttribute.(basetypes.ListValue)
@@ -412,10 +412,10 @@ func NewRolesValue(attributeTypes map[string]attr.Type, attributes map[string]at
 	}
 
 	if diags.HasError() {
-		return NewRolesValueUnknown(), diags
+		return NewAuthRolesValueUnknown(), diags
 	}
 
-	return RolesValue{
+	return AuthRolesValue{
 		CreatedAt:   createdAtVal,
 		Description: descriptionVal,
 		Id:          idVal,
@@ -426,8 +426,8 @@ func NewRolesValue(attributeTypes map[string]attr.Type, attributes map[string]at
 	}, diags
 }
 
-func NewRolesValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) RolesValue {
-	object, diags := NewRolesValue(attributeTypes, attributes)
+func NewAuthRolesValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) AuthRolesValue {
+	object, diags := NewAuthRolesValue(attributeTypes, attributes)
 
 	if diags.HasError() {
 		// This could potentially be added to the diag package.
@@ -441,15 +441,15 @@ func NewRolesValueMust(attributeTypes map[string]attr.Type, attributes map[strin
 				diagnostic.Detail()))
 		}
 
-		panic("NewRolesValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+		panic("NewAuthRolesValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
 	}
 
 	return object
 }
 
-func (t RolesType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+func (t AuthRolesType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
 	if in.Type() == nil {
-		return NewRolesValueNull(), nil
+		return NewAuthRolesValueNull(), nil
 	}
 
 	if !in.Type().Equal(t.TerraformType(ctx)) {
@@ -457,11 +457,11 @@ func (t RolesType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (at
 	}
 
 	if !in.IsKnown() {
-		return NewRolesValueUnknown(), nil
+		return NewAuthRolesValueUnknown(), nil
 	}
 
 	if in.IsNull() {
-		return NewRolesValueNull(), nil
+		return NewAuthRolesValueNull(), nil
 	}
 
 	attributes := map[string]attr.Value{}
@@ -484,16 +484,16 @@ func (t RolesType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (at
 		attributes[k] = a
 	}
 
-	return NewRolesValueMust(RolesValue{}.AttributeTypes(ctx), attributes), nil
+	return NewAuthRolesValueMust(AuthRolesValue{}.AttributeTypes(ctx), attributes), nil
 }
 
-func (t RolesType) ValueType(ctx context.Context) attr.Value {
-	return RolesValue{}
+func (t AuthRolesType) ValueType(ctx context.Context) attr.Value {
+	return AuthRolesValue{}
 }
 
-var _ basetypes.ObjectValuable = RolesValue{}
+var _ basetypes.ObjectValuable = AuthRolesValue{}
 
-type RolesValue struct {
+type AuthRolesValue struct {
 	CreatedAt   basetypes.StringValue `tfsdk:"created_at"`
 	Description basetypes.StringValue `tfsdk:"description"`
 	Id          basetypes.Int64Value  `tfsdk:"id"`
@@ -503,7 +503,7 @@ type RolesValue struct {
 	state       attr.ValueState
 }
 
-func (v RolesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+func (v AuthRolesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
 	attrTypes := make(map[string]tftypes.Type, 6)
 
 	var val tftypes.Value
@@ -588,19 +588,19 @@ func (v RolesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error)
 	}
 }
 
-func (v RolesValue) IsNull() bool {
+func (v AuthRolesValue) IsNull() bool {
 	return v.state == attr.ValueStateNull
 }
 
-func (v RolesValue) IsUnknown() bool {
+func (v AuthRolesValue) IsUnknown() bool {
 	return v.state == attr.ValueStateUnknown
 }
 
-func (v RolesValue) String() string {
-	return "RolesValue"
+func (v AuthRolesValue) String() string {
+	return "AuthRolesValue"
 }
 
-func (v RolesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+func (v AuthRolesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	permissions := types.ListValueMust(
@@ -686,8 +686,8 @@ func (v RolesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, d
 	return objVal, diags
 }
 
-func (v RolesValue) Equal(o attr.Value) bool {
-	other, ok := o.(RolesValue)
+func (v AuthRolesValue) Equal(o attr.Value) bool {
+	other, ok := o.(AuthRolesValue)
 
 	if !ok {
 		return false
@@ -728,15 +728,15 @@ func (v RolesValue) Equal(o attr.Value) bool {
 	return true
 }
 
-func (v RolesValue) Type(ctx context.Context) attr.Type {
-	return RolesType{
+func (v AuthRolesValue) Type(ctx context.Context) attr.Type {
+	return AuthRolesType{
 		basetypes.ObjectType{
 			AttrTypes: v.AttributeTypes(ctx),
 		},
 	}
 }
 
-func (v RolesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+func (v AuthRolesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
 		"created_at":  basetypes.StringType{},
 		"description": basetypes.StringType{},

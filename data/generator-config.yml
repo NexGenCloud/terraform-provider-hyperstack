@@ -22,10 +22,7 @@ resources:
     create:
       path: /auth/roles
       method: POST
-    schema:
-      ignores:
-        - message
-        - status
+
   keypair:
     read:
       path: /core/keypairs
@@ -46,53 +43,36 @@ data_sources:
     read:
       path: /core/environments
       method: GET
-    schema:
-      ignores:
-        - message
-        - status
+
   auth_me:
     read:
       path: /auth/me
       method: GET
-    schema:
-      ignores:
-        - message
-        - status
+
   auth_organizations:
     read:
       path: /auth/organizations
       method: GET
-    schema:
-      ignores:
-        - message
-        - status
+
   auth_roles:
     read:
       path: /auth/roles
       method: GET
-    schema:
-      ignores:
-        - message
-        - status
+
   auth_role:
     read:
       path: /auth/roles/{id}
       method: GET
-    schema:
-      ignores:
-        - message
-        - status
+
   keypairs:
     read:
       path: /core/keypairs
       method: GET
-    schema:
-      ignores:
-        - message
-        - status
+
   virtual_machine:
     read:
       path: /core/virtual-machines/{id}
+
   core_virtual_machines:
     read:
       path: /core/virtual-machines

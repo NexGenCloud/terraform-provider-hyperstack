@@ -18,7 +18,7 @@ import (
 func CoreVirtualMachinesDataSourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"instances": schema.ListNestedAttribute{
+			"core_virtual_machines": schema.SetNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"created_at": schema.StringAttribute{
@@ -213,9 +213,9 @@ func CoreVirtualMachinesDataSourceSchema(ctx context.Context) schema.Schema {
 							Computed: true,
 						},
 					},
-					CustomType: InstancesType{
+					CustomType: CoreVirtualMachinesType{
 						ObjectType: types.ObjectType{
-							AttrTypes: InstancesValue{}.AttributeTypes(ctx),
+							AttrTypes: CoreVirtualMachinesValue{}.AttributeTypes(ctx),
 						},
 					},
 				},
@@ -226,17 +226,17 @@ func CoreVirtualMachinesDataSourceSchema(ctx context.Context) schema.Schema {
 }
 
 type CoreVirtualMachinesModel struct {
-	Instances types.List `tfsdk:"instances"`
+	CoreVirtualMachines types.Set `tfsdk:"core_virtual_machines"`
 }
 
-var _ basetypes.ObjectTypable = InstancesType{}
+var _ basetypes.ObjectTypable = CoreVirtualMachinesType{}
 
-type InstancesType struct {
+type CoreVirtualMachinesType struct {
 	basetypes.ObjectType
 }
 
-func (t InstancesType) Equal(o attr.Type) bool {
-	other, ok := o.(InstancesType)
+func (t CoreVirtualMachinesType) Equal(o attr.Type) bool {
+	other, ok := o.(CoreVirtualMachinesType)
 
 	if !ok {
 		return false
@@ -245,11 +245,11 @@ func (t InstancesType) Equal(o attr.Type) bool {
 	return t.ObjectType.Equal(other.ObjectType)
 }
 
-func (t InstancesType) String() string {
-	return "InstancesType"
+func (t CoreVirtualMachinesType) String() string {
+	return "CoreVirtualMachinesType"
 }
 
-func (t InstancesType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+func (t CoreVirtualMachinesType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	attributes := in.Attributes()
@@ -546,7 +546,7 @@ func (t InstancesType) ValueFromObject(ctx context.Context, in basetypes.ObjectV
 		return nil, diags
 	}
 
-	return InstancesValue{
+	return CoreVirtualMachinesValue{
 		CreatedAt:         createdAtVal,
 		Environment:       environmentVal,
 		FixedIp:           fixedIpVal,
@@ -567,19 +567,19 @@ func (t InstancesType) ValueFromObject(ctx context.Context, in basetypes.ObjectV
 	}, diags
 }
 
-func NewInstancesValueNull() InstancesValue {
-	return InstancesValue{
+func NewCoreVirtualMachinesValueNull() CoreVirtualMachinesValue {
+	return CoreVirtualMachinesValue{
 		state: attr.ValueStateNull,
 	}
 }
 
-func NewInstancesValueUnknown() InstancesValue {
-	return InstancesValue{
+func NewCoreVirtualMachinesValueUnknown() CoreVirtualMachinesValue {
+	return CoreVirtualMachinesValue{
 		state: attr.ValueStateUnknown,
 	}
 }
 
-func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (InstancesValue, diag.Diagnostics) {
+func NewCoreVirtualMachinesValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (CoreVirtualMachinesValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
@@ -590,11 +590,11 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 
 		if !ok {
 			diags.AddError(
-				"Missing InstancesValue Attribute Value",
-				"While creating a InstancesValue value, a missing attribute value was detected. "+
-					"A InstancesValue must contain values for all attributes, even if null or unknown. "+
+				"Missing CoreVirtualMachinesValue Attribute Value",
+				"While creating a CoreVirtualMachinesValue value, a missing attribute value was detected. "+
+					"A CoreVirtualMachinesValue must contain values for all attributes, even if null or unknown. "+
 					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("InstancesValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+					fmt.Sprintf("CoreVirtualMachinesValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
 			)
 
 			continue
@@ -602,12 +602,12 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 
 		if !attributeType.Equal(attribute.Type(ctx)) {
 			diags.AddError(
-				"Invalid InstancesValue Attribute Type",
-				"While creating a InstancesValue value, an invalid attribute value was detected. "+
-					"A InstancesValue must use a matching attribute type for the value. "+
+				"Invalid CoreVirtualMachinesValue Attribute Type",
+				"While creating a CoreVirtualMachinesValue value, an invalid attribute value was detected. "+
+					"A CoreVirtualMachinesValue must use a matching attribute type for the value. "+
 					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("InstancesValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
-					fmt.Sprintf("InstancesValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+					fmt.Sprintf("CoreVirtualMachinesValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("CoreVirtualMachinesValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
 			)
 		}
 	}
@@ -617,17 +617,17 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 
 		if !ok {
 			diags.AddError(
-				"Extra InstancesValue Attribute Value",
-				"While creating a InstancesValue value, an extra attribute value was detected. "+
-					"A InstancesValue must not contain values beyond the expected attribute types. "+
+				"Extra CoreVirtualMachinesValue Attribute Value",
+				"While creating a CoreVirtualMachinesValue value, an extra attribute value was detected. "+
+					"A CoreVirtualMachinesValue must not contain values beyond the expected attribute types. "+
 					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("Extra InstancesValue Attribute Name: %s", name),
+					fmt.Sprintf("Extra CoreVirtualMachinesValue Attribute Name: %s", name),
 			)
 		}
 	}
 
 	if diags.HasError() {
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	createdAtAttribute, ok := attributes["created_at"]
@@ -637,7 +637,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`created_at is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	createdAtVal, ok := createdAtAttribute.(basetypes.StringValue)
@@ -655,7 +655,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`environment is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	environmentVal, ok := environmentAttribute.(basetypes.ObjectValue)
@@ -673,7 +673,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`fixed_ip is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	fixedIpVal, ok := fixedIpAttribute.(basetypes.StringValue)
@@ -691,7 +691,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`flavor is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	flavorVal, ok := flavorAttribute.(basetypes.ObjectValue)
@@ -709,7 +709,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`floating_ip is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	floatingIpVal, ok := floatingIpAttribute.(basetypes.StringValue)
@@ -727,7 +727,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`floating_ip_status is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	floatingIpStatusVal, ok := floatingIpStatusAttribute.(basetypes.StringValue)
@@ -745,7 +745,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`id is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	idVal, ok := idAttribute.(basetypes.Int64Value)
@@ -763,7 +763,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`image is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	imageVal, ok := imageAttribute.(basetypes.ObjectValue)
@@ -781,7 +781,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`keypair is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	keypairVal, ok := keypairAttribute.(basetypes.ObjectValue)
@@ -799,7 +799,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`name is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	nameVal, ok := nameAttribute.(basetypes.StringValue)
@@ -817,7 +817,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`openstack_id is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	openstackIdVal, ok := openstackIdAttribute.(basetypes.StringValue)
@@ -835,7 +835,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`power_state is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	powerStateVal, ok := powerStateAttribute.(basetypes.StringValue)
@@ -853,7 +853,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`security_rules is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	securityRulesVal, ok := securityRulesAttribute.(basetypes.ListValue)
@@ -871,7 +871,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`status is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	statusVal, ok := statusAttribute.(basetypes.StringValue)
@@ -889,7 +889,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`vm_state is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	vmStateVal, ok := vmStateAttribute.(basetypes.StringValue)
@@ -907,7 +907,7 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 			"Attribute Missing",
 			`volume_attachments is missing from object`)
 
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
 	volumeAttachmentsVal, ok := volumeAttachmentsAttribute.(basetypes.ListValue)
@@ -919,10 +919,10 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 	}
 
 	if diags.HasError() {
-		return NewInstancesValueUnknown(), diags
+		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
-	return InstancesValue{
+	return CoreVirtualMachinesValue{
 		CreatedAt:         createdAtVal,
 		Environment:       environmentVal,
 		FixedIp:           fixedIpVal,
@@ -943,8 +943,8 @@ func NewInstancesValue(attributeTypes map[string]attr.Type, attributes map[strin
 	}, diags
 }
 
-func NewInstancesValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) InstancesValue {
-	object, diags := NewInstancesValue(attributeTypes, attributes)
+func NewCoreVirtualMachinesValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) CoreVirtualMachinesValue {
+	object, diags := NewCoreVirtualMachinesValue(attributeTypes, attributes)
 
 	if diags.HasError() {
 		// This could potentially be added to the diag package.
@@ -958,15 +958,15 @@ func NewInstancesValueMust(attributeTypes map[string]attr.Type, attributes map[s
 				diagnostic.Detail()))
 		}
 
-		panic("NewInstancesValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+		panic("NewCoreVirtualMachinesValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
 	}
 
 	return object
 }
 
-func (t InstancesType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+func (t CoreVirtualMachinesType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
 	if in.Type() == nil {
-		return NewInstancesValueNull(), nil
+		return NewCoreVirtualMachinesValueNull(), nil
 	}
 
 	if !in.Type().Equal(t.TerraformType(ctx)) {
@@ -974,11 +974,11 @@ func (t InstancesType) ValueFromTerraform(ctx context.Context, in tftypes.Value)
 	}
 
 	if !in.IsKnown() {
-		return NewInstancesValueUnknown(), nil
+		return NewCoreVirtualMachinesValueUnknown(), nil
 	}
 
 	if in.IsNull() {
-		return NewInstancesValueNull(), nil
+		return NewCoreVirtualMachinesValueNull(), nil
 	}
 
 	attributes := map[string]attr.Value{}
@@ -1001,16 +1001,16 @@ func (t InstancesType) ValueFromTerraform(ctx context.Context, in tftypes.Value)
 		attributes[k] = a
 	}
 
-	return NewInstancesValueMust(InstancesValue{}.AttributeTypes(ctx), attributes), nil
+	return NewCoreVirtualMachinesValueMust(CoreVirtualMachinesValue{}.AttributeTypes(ctx), attributes), nil
 }
 
-func (t InstancesType) ValueType(ctx context.Context) attr.Value {
-	return InstancesValue{}
+func (t CoreVirtualMachinesType) ValueType(ctx context.Context) attr.Value {
+	return CoreVirtualMachinesValue{}
 }
 
-var _ basetypes.ObjectValuable = InstancesValue{}
+var _ basetypes.ObjectValuable = CoreVirtualMachinesValue{}
 
-type InstancesValue struct {
+type CoreVirtualMachinesValue struct {
 	CreatedAt         basetypes.StringValue `tfsdk:"created_at"`
 	Environment       basetypes.ObjectValue `tfsdk:"environment"`
 	FixedIp           basetypes.StringValue `tfsdk:"fixed_ip"`
@@ -1030,7 +1030,7 @@ type InstancesValue struct {
 	state             attr.ValueState
 }
 
-func (v InstancesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+func (v CoreVirtualMachinesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
 	attrTypes := make(map[string]tftypes.Type, 16)
 
 	var val tftypes.Value
@@ -1213,19 +1213,19 @@ func (v InstancesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, er
 	}
 }
 
-func (v InstancesValue) IsNull() bool {
+func (v CoreVirtualMachinesValue) IsNull() bool {
 	return v.state == attr.ValueStateNull
 }
 
-func (v InstancesValue) IsUnknown() bool {
+func (v CoreVirtualMachinesValue) IsUnknown() bool {
 	return v.state == attr.ValueStateUnknown
 }
 
-func (v InstancesValue) String() string {
-	return "InstancesValue"
+func (v CoreVirtualMachinesValue) String() string {
+	return "CoreVirtualMachinesValue"
 }
 
-func (v InstancesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+func (v CoreVirtualMachinesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	var environment basetypes.ObjectValue
@@ -1423,8 +1423,8 @@ func (v InstancesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValu
 	return objVal, diags
 }
 
-func (v InstancesValue) Equal(o attr.Value) bool {
-	other, ok := o.(InstancesValue)
+func (v CoreVirtualMachinesValue) Equal(o attr.Value) bool {
+	other, ok := o.(CoreVirtualMachinesValue)
 
 	if !ok {
 		return false
@@ -1505,15 +1505,15 @@ func (v InstancesValue) Equal(o attr.Value) bool {
 	return true
 }
 
-func (v InstancesValue) Type(ctx context.Context) attr.Type {
-	return InstancesType{
+func (v CoreVirtualMachinesValue) Type(ctx context.Context) attr.Type {
+	return CoreVirtualMachinesType{
 		basetypes.ObjectType{
 			AttrTypes: v.AttributeTypes(ctx),
 		},
 	}
 }
 
-func (v InstancesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+func (v CoreVirtualMachinesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
 		"created_at": basetypes.StringType{},
 		"environment": basetypes.ObjectType{
