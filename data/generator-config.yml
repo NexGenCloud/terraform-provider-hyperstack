@@ -3,6 +3,18 @@ provider:
   #schema_ref: '#/components/schemas/hyperstack_provider_schema'
 
 resources:
+  environments:
+    read:
+      path: /core/environments/{id}
+      method: GET
+    schema:
+      ignores:
+        - message
+        - status
+    create:
+      path: /core/environments
+      method: POST
+
   auth_role:
     read:
       path: /auth/roles/{id}
@@ -30,6 +42,14 @@ resources:
         - status
 
 data_sources:
+  environments:
+    read:
+      path: /core/environments
+      method: GET
+    schema:
+      ignores:
+        - message
+        - status
   auth_me:
     read:
       path: /auth/me

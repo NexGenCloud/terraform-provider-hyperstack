@@ -10,3 +10,6 @@ data "hyperstack_auth_role" "this" {
 data "hyperstack_keypairs" "this" {
 
 }
+
+data "hyperstack_environments" "this" {
+}

@@ -15,3 +15,6 @@ output "keypair_test" {
   value = data.hyperstack_keypairs.this
 }
 
+output "env_test" {
+  value = data.hyperstack_environments.this
+}
