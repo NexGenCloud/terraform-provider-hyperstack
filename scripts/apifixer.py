@@ -28,6 +28,28 @@ def process_components_schemas(json_data):
     if new_key != key:
       schemas[new_key] = schemas.pop(key)
 
+    props = schemas[new_key]["properties"]
+    if "status" in props and "message" in props:
+      print("Fixing %s" % new_key)
+      del props["status"]
+      del props["message"]
+
+      if new_key == "Instances":
+        del props["instance_count"]
+
+      if len(props.keys()) > 1:
+        print("Warning: check this key")
+
+      props = {} if len(props.keys()) == 0 else list(props.values())[0]
+      if "type" not in props:
+        props["type"] = "object"
+
+      schemas[new_key] = props
+      # print(props)
+      # print(schemas[new_key]["properties"])
+
+  schemas["InstanceFlavorFields"]["properties"]["ram"]["type"] = "number"
+
 
 def main(file_path):
   with open(file_path, 'r') as file:
