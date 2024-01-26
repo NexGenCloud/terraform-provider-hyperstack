@@ -7,9 +7,8 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -29,6 +28,7 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
 				},
+				Default: booldefault.StaticBool(false),
 			},
 			"callback_url": schema.StringAttribute{
 				Optional: true,
@@ -43,32 +43,21 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
 				},
+				Default: booldefault.StaticBool(false),
 			},
 			"created_at": schema.StringAttribute{
 				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 			"environment": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
 					"name": schema.StringAttribute{
 						Computed: true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.RequiresReplace(),
-						},
 					},
 					"org_id": schema.Int64Attribute{
 						Computed: true,
-						PlanModifiers: []planmodifier.Int64{
-							int64planmodifier.RequiresReplace(),
-						},
 					},
 					"region": schema.StringAttribute{
 						Computed: true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.RequiresReplace(),
-						},
 					},
 				},
 				CustomType: EnvironmentType{
@@ -77,9 +66,6 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Computed: true,
-				PlanModifiers: []planmodifier.Object{
-					objectplanmodifier.RequiresReplace(),
-				},
 			},
 			"environment_name": schema.StringAttribute{
 				Required: true,
@@ -98,42 +84,24 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 					"cpu": schema.Int64Attribute{
 						Optional: true,
 						Computed: true,
-						PlanModifiers: []planmodifier.Int64{
-							int64planmodifier.RequiresReplace(),
-						},
 					},
 					"disk": schema.Int64Attribute{
 						Optional: true,
 						Computed: true,
-						PlanModifiers: []planmodifier.Int64{
-							int64planmodifier.RequiresReplace(),
-						},
 					},
 					"gpu": schema.StringAttribute{
 						Optional: true,
 						Computed: true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.RequiresReplace(),
-						},
 					},
 					"gpu_count": schema.Int64Attribute{
 						Optional: true,
 						Computed: true,
-						PlanModifiers: []planmodifier.Int64{
-							int64planmodifier.RequiresReplace(),
-						},
 					},
 					"id": schema.Int64Attribute{
 						Computed: true,
-						PlanModifiers: []planmodifier.Int64{
-							int64planmodifier.RequiresReplace(),
-						},
 					},
 					"name": schema.StringAttribute{
 						Computed: true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.RequiresReplace(),
-						},
 					},
 					"ram": schema.NumberAttribute{
 						Optional: true,
@@ -147,9 +115,6 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				},
 				Optional: true,
 				Computed: true,
-				PlanModifiers: []planmodifier.Object{
-					objectplanmodifier.RequiresReplace(),
-				},
 			},
 			"flavor_name": schema.StringAttribute{
 				Optional: true,
@@ -166,23 +131,14 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"floating_ip_status": schema.StringAttribute{
 				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 			"id": schema.Int64Attribute{
 				Computed: true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
-				},
 			},
 			"image": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
 					"name": schema.StringAttribute{
 						Computed: true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.RequiresReplace(),
-						},
 					},
 				},
 				CustomType: ImageType{
@@ -191,9 +147,6 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Computed: true,
-				PlanModifiers: []planmodifier.Object{
-					objectplanmodifier.RequiresReplace(),
-				},
 			},
 			"image_name": schema.StringAttribute{
 				Optional: true,
@@ -212,9 +165,6 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				Attributes: map[string]schema.Attribute{
 					"name": schema.StringAttribute{
 						Computed: true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.RequiresReplace(),
-						},
 					},
 				},
 				CustomType: KeypairType{
@@ -223,9 +173,6 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Computed: true,
-				PlanModifiers: []planmodifier.Object{
-					objectplanmodifier.RequiresReplace(),
-				},
 			},
 			"name": schema.StringAttribute{
 				Required: true,
@@ -243,33 +190,6 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"profile": schema.SingleNestedAttribute{
-				Attributes: map[string]schema.Attribute{
-					"description": schema.StringAttribute{
-						Optional: true,
-						Computed: true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.RequiresReplace(),
-						},
-					},
-					"name": schema.StringAttribute{
-						Required: true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.RequiresReplace(),
-						},
-					},
-				},
-				CustomType: ProfileType{
-					ObjectType: types.ObjectType{
-						AttrTypes: ProfileValue{}.AttributeTypes(ctx),
-					},
-				},
-				Optional: true,
-				Computed: true,
-				PlanModifiers: []planmodifier.Object{
-					objectplanmodifier.RequiresReplace(),
 				},
 			},
 			"security_rules": schema.ListNestedAttribute{
@@ -313,9 +233,6 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"status": schema.StringAttribute{
 				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 			"user_data": schema.StringAttribute{
 				Optional: true,
@@ -384,6 +301,26 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Blocks: map[string]schema.Block{
+			"profile": schema.ListNestedBlock{
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"description": schema.StringAttribute{
+							Optional: true,
+							Computed: true,
+						},
+						"name": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+					CustomType: ProfileType{
+						ObjectType: types.ObjectType{
+							AttrTypes: ProfileValue{}.AttributeTypes(ctx),
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -407,13 +344,13 @@ type CoreVirtualMachineModel struct {
 	Name                 types.String     `tfsdk:"name"`
 	OpenstackId          types.String     `tfsdk:"openstack_id"`
 	PowerState           types.String     `tfsdk:"power_state"`
-	Profile              ProfileValue     `tfsdk:"profile"`
 	SecurityRules        types.List       `tfsdk:"security_rules"`
 	Status               types.String     `tfsdk:"status"`
 	UserData             types.String     `tfsdk:"user_data"`
 	VmState              types.String     `tfsdk:"vm_state"`
 	VolumeAttachments    types.List       `tfsdk:"volume_attachments"`
 	VolumeName           types.String     `tfsdk:"volume_name"`
+	Profile              types.List       `tfsdk:"profile"`
 }
 
 var _ basetypes.ObjectTypable = EnvironmentType{}
@@ -2109,375 +2046,6 @@ func (v KeypairValue) Type(ctx context.Context) attr.Type {
 func (v KeypairValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
 		"name": basetypes.StringType{},
-	}
-}
-
-var _ basetypes.ObjectTypable = ProfileType{}
-
-type ProfileType struct {
-	basetypes.ObjectType
-}
-
-func (t ProfileType) Equal(o attr.Type) bool {
-	other, ok := o.(ProfileType)
-
-	if !ok {
-		return false
-	}
-
-	return t.ObjectType.Equal(other.ObjectType)
-}
-
-func (t ProfileType) String() string {
-	return "ProfileType"
-}
-
-func (t ProfileType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	attributes := in.Attributes()
-
-	descriptionAttribute, ok := attributes["description"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`description is missing from object`)
-
-		return nil, diags
-	}
-
-	descriptionVal, ok := descriptionAttribute.(basetypes.StringValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`description expected to be basetypes.StringValue, was: %T`, descriptionAttribute))
-	}
-
-	nameAttribute, ok := attributes["name"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`name is missing from object`)
-
-		return nil, diags
-	}
-
-	nameVal, ok := nameAttribute.(basetypes.StringValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
-	}
-
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	return ProfileValue{
-		Description: descriptionVal,
-		Name:        nameVal,
-		state:       attr.ValueStateKnown,
-	}, diags
-}
-
-func NewProfileValueNull() ProfileValue {
-	return ProfileValue{
-		state: attr.ValueStateNull,
-	}
-}
-
-func NewProfileValueUnknown() ProfileValue {
-	return ProfileValue{
-		state: attr.ValueStateUnknown,
-	}
-}
-
-func NewProfileValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (ProfileValue, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
-	ctx := context.Background()
-
-	for name, attributeType := range attributeTypes {
-		attribute, ok := attributes[name]
-
-		if !ok {
-			diags.AddError(
-				"Missing ProfileValue Attribute Value",
-				"While creating a ProfileValue value, a missing attribute value was detected. "+
-					"A ProfileValue must contain values for all attributes, even if null or unknown. "+
-					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("ProfileValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
-			)
-
-			continue
-		}
-
-		if !attributeType.Equal(attribute.Type(ctx)) {
-			diags.AddError(
-				"Invalid ProfileValue Attribute Type",
-				"While creating a ProfileValue value, an invalid attribute value was detected. "+
-					"A ProfileValue must use a matching attribute type for the value. "+
-					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("ProfileValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
-					fmt.Sprintf("ProfileValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
-			)
-		}
-	}
-
-	for name := range attributes {
-		_, ok := attributeTypes[name]
-
-		if !ok {
-			diags.AddError(
-				"Extra ProfileValue Attribute Value",
-				"While creating a ProfileValue value, an extra attribute value was detected. "+
-					"A ProfileValue must not contain values beyond the expected attribute types. "+
-					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("Extra ProfileValue Attribute Name: %s", name),
-			)
-		}
-	}
-
-	if diags.HasError() {
-		return NewProfileValueUnknown(), diags
-	}
-
-	descriptionAttribute, ok := attributes["description"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`description is missing from object`)
-
-		return NewProfileValueUnknown(), diags
-	}
-
-	descriptionVal, ok := descriptionAttribute.(basetypes.StringValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`description expected to be basetypes.StringValue, was: %T`, descriptionAttribute))
-	}
-
-	nameAttribute, ok := attributes["name"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`name is missing from object`)
-
-		return NewProfileValueUnknown(), diags
-	}
-
-	nameVal, ok := nameAttribute.(basetypes.StringValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
-	}
-
-	if diags.HasError() {
-		return NewProfileValueUnknown(), diags
-	}
-
-	return ProfileValue{
-		Description: descriptionVal,
-		Name:        nameVal,
-		state:       attr.ValueStateKnown,
-	}, diags
-}
-
-func NewProfileValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) ProfileValue {
-	object, diags := NewProfileValue(attributeTypes, attributes)
-
-	if diags.HasError() {
-		// This could potentially be added to the diag package.
-		diagsStrings := make([]string, 0, len(diags))
-
-		for _, diagnostic := range diags {
-			diagsStrings = append(diagsStrings, fmt.Sprintf(
-				"%s | %s | %s",
-				diagnostic.Severity(),
-				diagnostic.Summary(),
-				diagnostic.Detail()))
-		}
-
-		panic("NewProfileValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
-	}
-
-	return object
-}
-
-func (t ProfileType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
-	if in.Type() == nil {
-		return NewProfileValueNull(), nil
-	}
-
-	if !in.Type().Equal(t.TerraformType(ctx)) {
-		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
-	}
-
-	if !in.IsKnown() {
-		return NewProfileValueUnknown(), nil
-	}
-
-	if in.IsNull() {
-		return NewProfileValueNull(), nil
-	}
-
-	attributes := map[string]attr.Value{}
-
-	val := map[string]tftypes.Value{}
-
-	err := in.As(&val)
-
-	if err != nil {
-		return nil, err
-	}
-
-	for k, v := range val {
-		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
-
-		if err != nil {
-			return nil, err
-		}
-
-		attributes[k] = a
-	}
-
-	return NewProfileValueMust(ProfileValue{}.AttributeTypes(ctx), attributes), nil
-}
-
-func (t ProfileType) ValueType(ctx context.Context) attr.Value {
-	return ProfileValue{}
-}
-
-var _ basetypes.ObjectValuable = ProfileValue{}
-
-type ProfileValue struct {
-	Description basetypes.StringValue `tfsdk:"description"`
-	Name        basetypes.StringValue `tfsdk:"name"`
-	state       attr.ValueState
-}
-
-func (v ProfileValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 2)
-
-	var val tftypes.Value
-	var err error
-
-	attrTypes["description"] = basetypes.StringType{}.TerraformType(ctx)
-	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
-
-	objectType := tftypes.Object{AttributeTypes: attrTypes}
-
-	switch v.state {
-	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 2)
-
-		val, err = v.Description.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["description"] = val
-
-		val, err = v.Name.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["name"] = val
-
-		if err := tftypes.ValidateValue(objectType, vals); err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		return tftypes.NewValue(objectType, vals), nil
-	case attr.ValueStateNull:
-		return tftypes.NewValue(objectType, nil), nil
-	case attr.ValueStateUnknown:
-		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
-	default:
-		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
-	}
-}
-
-func (v ProfileValue) IsNull() bool {
-	return v.state == attr.ValueStateNull
-}
-
-func (v ProfileValue) IsUnknown() bool {
-	return v.state == attr.ValueStateUnknown
-}
-
-func (v ProfileValue) String() string {
-	return "ProfileValue"
-}
-
-func (v ProfileValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"description": basetypes.StringType{},
-			"name":        basetypes.StringType{},
-		},
-		map[string]attr.Value{
-			"description": v.Description,
-			"name":        v.Name,
-		})
-
-	return objVal, diags
-}
-
-func (v ProfileValue) Equal(o attr.Value) bool {
-	other, ok := o.(ProfileValue)
-
-	if !ok {
-		return false
-	}
-
-	if v.state != other.state {
-		return false
-	}
-
-	if v.state != attr.ValueStateKnown {
-		return true
-	}
-
-	if !v.Description.Equal(other.Description) {
-		return false
-	}
-
-	if !v.Name.Equal(other.Name) {
-		return false
-	}
-
-	return true
-}
-
-func (v ProfileValue) Type(ctx context.Context) attr.Type {
-	return ProfileType{
-		basetypes.ObjectType{
-			AttrTypes: v.AttributeTypes(ctx),
-		},
-	}
-}
-
-func (v ProfileValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
-	return map[string]attr.Type{
-		"description": basetypes.StringType{},
-		"name":        basetypes.StringType{},
 	}
 }
 
@@ -4272,5 +3840,374 @@ func (v VolumeValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 		"name":        basetypes.StringType{},
 		"size":        basetypes.Int64Type{},
 		"volume_type": basetypes.StringType{},
+	}
+}
+
+var _ basetypes.ObjectTypable = ProfileType{}
+
+type ProfileType struct {
+	basetypes.ObjectType
+}
+
+func (t ProfileType) Equal(o attr.Type) bool {
+	other, ok := o.(ProfileType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t ProfileType) String() string {
+	return "ProfileType"
+}
+
+func (t ProfileType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	descriptionAttribute, ok := attributes["description"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`description is missing from object`)
+
+		return nil, diags
+	}
+
+	descriptionVal, ok := descriptionAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`description expected to be basetypes.StringValue, was: %T`, descriptionAttribute))
+	}
+
+	nameAttribute, ok := attributes["name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`name is missing from object`)
+
+		return nil, diags
+	}
+
+	nameVal, ok := nameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return ProfileValue{
+		Description: descriptionVal,
+		Name:        nameVal,
+		state:       attr.ValueStateKnown,
+	}, diags
+}
+
+func NewProfileValueNull() ProfileValue {
+	return ProfileValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewProfileValueUnknown() ProfileValue {
+	return ProfileValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewProfileValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (ProfileValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing ProfileValue Attribute Value",
+				"While creating a ProfileValue value, a missing attribute value was detected. "+
+					"A ProfileValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("ProfileValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid ProfileValue Attribute Type",
+				"While creating a ProfileValue value, an invalid attribute value was detected. "+
+					"A ProfileValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("ProfileValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("ProfileValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra ProfileValue Attribute Value",
+				"While creating a ProfileValue value, an extra attribute value was detected. "+
+					"A ProfileValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra ProfileValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewProfileValueUnknown(), diags
+	}
+
+	descriptionAttribute, ok := attributes["description"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`description is missing from object`)
+
+		return NewProfileValueUnknown(), diags
+	}
+
+	descriptionVal, ok := descriptionAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`description expected to be basetypes.StringValue, was: %T`, descriptionAttribute))
+	}
+
+	nameAttribute, ok := attributes["name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`name is missing from object`)
+
+		return NewProfileValueUnknown(), diags
+	}
+
+	nameVal, ok := nameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
+	}
+
+	if diags.HasError() {
+		return NewProfileValueUnknown(), diags
+	}
+
+	return ProfileValue{
+		Description: descriptionVal,
+		Name:        nameVal,
+		state:       attr.ValueStateKnown,
+	}, diags
+}
+
+func NewProfileValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) ProfileValue {
+	object, diags := NewProfileValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewProfileValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t ProfileType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewProfileValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewProfileValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewProfileValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewProfileValueMust(ProfileValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t ProfileType) ValueType(ctx context.Context) attr.Value {
+	return ProfileValue{}
+}
+
+var _ basetypes.ObjectValuable = ProfileValue{}
+
+type ProfileValue struct {
+	Description basetypes.StringValue `tfsdk:"description"`
+	Name        basetypes.StringValue `tfsdk:"name"`
+	state       attr.ValueState
+}
+
+func (v ProfileValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 2)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["description"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 2)
+
+		val, err = v.Description.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["description"] = val
+
+		val, err = v.Name.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["name"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v ProfileValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v ProfileValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v ProfileValue) String() string {
+	return "ProfileValue"
+}
+
+func (v ProfileValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	objVal, diags := types.ObjectValue(
+		map[string]attr.Type{
+			"description": basetypes.StringType{},
+			"name":        basetypes.StringType{},
+		},
+		map[string]attr.Value{
+			"description": v.Description,
+			"name":        v.Name,
+		})
+
+	return objVal, diags
+}
+
+func (v ProfileValue) Equal(o attr.Value) bool {
+	other, ok := o.(ProfileValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.Description.Equal(other.Description) {
+		return false
+	}
+
+	if !v.Name.Equal(other.Name) {
+		return false
+	}
+
+	return true
+}
+
+func (v ProfileValue) Type(ctx context.Context) attr.Type {
+	return ProfileType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v ProfileValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"description": basetypes.StringType{},
+		"name":        basetypes.StringType{},
 	}
 }

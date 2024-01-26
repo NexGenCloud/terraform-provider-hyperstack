@@ -12,6 +12,7 @@ import (
 	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
 	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/resource_core_virtual_machine"
 	"math/big"
+	"time"
 )
 
 var _ resource.Resource = &ResourceCoreVirtualMachine{}
@@ -61,9 +62,9 @@ func (r *ResourceCoreVirtualMachine) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var data resource_core_virtual_machine.CoreVirtualMachineModel
+	var dataOld resource_core_virtual_machine.CoreVirtualMachineModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &dataOld)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -71,66 +72,67 @@ func (r *ResourceCoreVirtualMachine) Create(
 
 	result, err := r.client.CreateInstancesWithResponse(ctx, func() virtual_machine.CreateInstancesJSONRequestBody {
 		return virtual_machine.CreateInstancesJSONRequestBody{
-			Name:                 data.Name.ValueString(),
-			EnvironmentName:      data.EnvironmentName.ValueString(),
-			ImageName:            data.ImageName.ValueStringPointer(),
-			VolumeName:           data.VolumeName.ValueStringPointer(),
-			CreateBootableVolume: data.CreateBootableVolume.ValueBoolPointer(),
-			FlavorName:           data.FlavorName.ValueStringPointer(),
+			Name:                 dataOld.Name.ValueString(),
+			EnvironmentName:      dataOld.EnvironmentName.ValueString(),
+			ImageName:            dataOld.ImageName.ValueStringPointer(),
+			VolumeName:           dataOld.VolumeName.ValueStringPointer(),
+			CreateBootableVolume: dataOld.CreateBootableVolume.ValueBoolPointer(),
+			FlavorName:           dataOld.FlavorName.ValueStringPointer(),
 			Flavor: func() *virtual_machine.FlavorObjectFields {
-				if data.Flavor.IsNull() {
+				if dataOld.Flavor.IsNull() {
 					return nil
 				}
 				return &virtual_machine.FlavorObjectFields{
 					Cpu: func() *int {
-						if data.Flavor.Cpu.IsNull() {
+						if dataOld.Flavor.Cpu.IsNull() {
 							return nil
 						}
 
-						val := int(data.Flavor.Cpu.ValueInt64())
+						val := int(dataOld.Flavor.Cpu.ValueInt64())
 						return &val
 					}(),
 					Disk: func() *int {
-						if data.Flavor.Disk.IsNull() {
+						if dataOld.Flavor.Disk.IsNull() {
 							return nil
 						}
 
-						val := int(data.Flavor.Disk.ValueInt64())
+						val := int(dataOld.Flavor.Disk.ValueInt64())
 						return &val
 					}(),
-					Gpu: data.Flavor.Gpu.ValueStringPointer(),
+					Gpu: dataOld.Flavor.Gpu.ValueStringPointer(),
 					GpuCount: func() *int {
-						if data.Flavor.GpuCount.IsNull() {
+						if dataOld.Flavor.GpuCount.IsNull() {
 							return nil
 						}
 
-						val := int(data.Flavor.GpuCount.ValueInt64())
+						val := int(dataOld.Flavor.GpuCount.ValueInt64())
 						return &val
 					}(),
 					Ram: func() *float32 {
-						if data.Flavor.Ram.IsNull() {
+						if dataOld.Flavor.Ram.IsNull() {
 							return nil
 						}
 
-						val, _ := data.Flavor.Ram.ValueBigFloat().Float32()
+						val, _ := dataOld.Flavor.Ram.ValueBigFloat().Float32()
 						return &val
 					}(),
 				}
 			}(),
-			KeyName:          data.KeyName.ValueString(),
-			UserData:         data.UserData.ValueStringPointer(),
-			CallbackUrl:      data.CallbackUrl.ValueStringPointer(),
-			AssignFloatingIp: data.AssignFloatingIp.ValueBoolPointer(),
+			KeyName:          dataOld.KeyName.ValueString(),
+			UserData:         dataOld.UserData.ValueStringPointer(),
+			CallbackUrl:      dataOld.CallbackUrl.ValueStringPointer(),
+			AssignFloatingIp: dataOld.AssignFloatingIp.ValueBoolPointer(),
 			Profile: func() *virtual_machine.ProfileObjectFields {
-				if data.Profile.IsNull() {
+				if dataOld.Profile.IsNull() {
 					return nil
 				}
+				prof := dataOld.Profile.Elements()[0].(resource_core_virtual_machine.ProfileValue)
 				return &virtual_machine.ProfileObjectFields{
-					Name:        data.Profile.Name.ValueString(),
-					Description: data.Profile.Description.ValueStringPointer(),
+					Name:        prof.Name.ValueString(),
+					Description: prof.Description.ValueStringPointer(),
 				}
 			}(),
-			Count: 0,
+			Count: 1,
 		}
 	}())
 	if err != nil {
@@ -152,7 +154,7 @@ func (r *ResourceCoreVirtualMachine) Create(
 	callResult := result.JSON200.Instances
 	if callResult == nil {
 		resp.Diagnostics.AddWarning(
-			"No data in API result",
+			"No dataOld in API result",
 			fmt.Sprintf("Status: %s, body: %s", result.Status(), string(result.Body)),
 		)
 		return
@@ -167,7 +169,42 @@ func (r *ResourceCoreVirtualMachine) Create(
 	}
 
 	list := *callResult
-	data = r.ApiToModel(ctx, &resp.Diagnostics, &list[0])
+	instanceModel := &list[0]
+
+	id := *instanceModel.Id
+	err = r.WaitForResult(
+		ctx,
+		3*time.Second,
+		300*time.Second,
+		func(ctx context.Context) (bool, error) {
+			result, err := r.client.GetAnInstanceDetailsWithResponse(ctx, id)
+			if err != nil {
+				return false, err
+			}
+
+			if result.JSON200 == nil {
+				return false, fmt.Errorf("Wrong API result: %s", result.StatusCode())
+			}
+
+			status := *result.JSON200.Instance.Status
+			if status == "CREATING" || status == "BUILD" {
+				return false, nil
+			}
+
+			instanceModel = result.JSON200.Instance
+			return true, nil
+		},
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Waiting for state change error",
+			fmt.Sprintf("%s", err),
+		)
+		return
+	}
+
+	data := r.ApiToModel(ctx, &resp.Diagnostics, instanceModel)
+	r.MergeData(&data, &dataOld)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -176,13 +213,13 @@ func (r *ResourceCoreVirtualMachine) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var data resource_core_virtual_machine.CoreVirtualMachineModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	var dataOld resource_core_virtual_machine.CoreVirtualMachineModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &dataOld)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	result, err := r.client.GetAnInstanceDetailsWithResponse(ctx, int(data.Id.ValueInt64()))
+	result, err := r.client.GetAnInstanceDetailsWithResponse(ctx, int(dataOld.Id.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -207,14 +244,50 @@ func (r *ResourceCoreVirtualMachine) Read(
 	callResult := result.JSON200.Instance
 	if callResult == nil {
 		resp.Diagnostics.AddWarning(
-			"No data in API result",
+			"No dataOld in API result",
 			fmt.Sprintf("Status: %s, body: %s", result.Status(), string(result.Body)),
 		)
 		return
 	}
 
-	data = r.ApiToModel(ctx, &resp.Diagnostics, callResult)
+	data := r.ApiToModel(ctx, &resp.Diagnostics, callResult)
+	r.MergeData(&data, &dataOld)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *ResourceCoreVirtualMachine) WaitForResult(
+	ctx context.Context,
+	pollInterval,
+	timeout time.Duration,
+	checker func(ctx context.Context) (bool, error),
+) error {
+	timeoutTimer := time.NewTimer(timeout)
+	pollTicker := time.NewTicker(pollInterval)
+
+	defer timeoutTimer.Stop()
+	defer pollTicker.Stop()
+
+	for {
+		select {
+		case <-timeoutTimer.C:
+			return fmt.Errorf(
+				"Timeout %s reached waiting for resource state change",
+				timeout.String(),
+			)
+		case <-pollTicker.C:
+			status, err := checker(ctx)
+			if err != nil {
+				return fmt.Errorf(
+					"Error calling checker while waiting: %e",
+					err,
+				)
+			}
+			if status {
+				return nil // Resource is created
+			}
+			// Continue waiting
+		}
+	}
 }
 
 func (r *ResourceCoreVirtualMachine) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -251,11 +324,54 @@ func (r *ResourceCoreVirtualMachine) Delete(ctx context.Context, req resource.De
 		return
 	}
 
+	err = r.WaitForResult(
+		ctx,
+		3*time.Second,
+		120*time.Second,
+		func(ctx context.Context) (bool, error) {
+			result, err := r.client.GetAnInstanceDetailsWithResponse(ctx, id)
+			if err != nil {
+				return false, err
+			}
+
+			return result.JSON404 != nil, nil
+		},
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Waiting for state change error",
+			fmt.Sprintf("%s", err),
+		)
+		return
+	}
+
 	resp.State.RemoveResource(ctx)
 }
 
 func (r *ResourceCoreVirtualMachine) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *ResourceCoreVirtualMachine) MergeData(
+	data *resource_core_virtual_machine.CoreVirtualMachineModel,
+	dataOld *resource_core_virtual_machine.CoreVirtualMachineModel,
+) {
+	data.AssignFloatingIp = dataOld.AssignFloatingIp
+	if !dataOld.CallbackUrl.IsUnknown() {
+		data.CallbackUrl = dataOld.CallbackUrl
+	}
+	data.CreateBootableVolume = dataOld.CreateBootableVolume
+	data.EnvironmentName = dataOld.EnvironmentName
+	data.FlavorName = dataOld.FlavorName
+	data.ImageName = dataOld.ImageName
+	data.KeyName = dataOld.KeyName
+	data.Profile = dataOld.Profile
+	if !dataOld.UserData.IsUnknown() {
+		data.UserData = dataOld.UserData
+	}
+	if !dataOld.VolumeName.IsUnknown() {
+		data.VolumeName = dataOld.VolumeName
+	}
 }
 
 func (r *ResourceCoreVirtualMachine) ApiToModel(
@@ -318,6 +434,7 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 			}
 			return types.StringValue(*response.OpenstackId)
 		}(),
+		Keypair:           r.MapKeypair(ctx, diags, *response.Keypair),
 		Environment:       r.MapEnvironment(ctx, diags, *response.Environment),
 		Image:             r.MapImage(ctx, diags, *response.Image),
 		Flavor:            r.MapFlavor(ctx, diags, *response.Flavor),
@@ -330,17 +447,16 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 			return types.StringValue(response.CreatedAt.String())
 		}(),
 
-		AssignFloatingIp:     types.Bool{},
-		CallbackUrl:          types.String{},
-		CreateBootableVolume: types.Bool{},
-		EnvironmentName:      types.String{},
-		FlavorName:           types.String{},
-		ImageName:            types.String{},
-		KeyName:              types.String{},
-		Keypair:              resource_core_virtual_machine.KeypairValue{},
-		Profile:              resource_core_virtual_machine.ProfileValue{},
-		UserData:             types.String{},
-		VolumeName:           types.String{},
+		AssignFloatingIp:     types.BoolNull(),
+		CallbackUrl:          types.StringNull(),
+		CreateBootableVolume: types.BoolNull(),
+		EnvironmentName:      types.StringNull(),
+		FlavorName:           types.StringNull(),
+		ImageName:            types.StringNull(),
+		KeyName:              types.StringNull(),
+		Profile:              types.ListNull(resource_core_virtual_machine.ProfileType{}),
+		UserData:             types.StringNull(),
+		VolumeName:           types.StringNull(),
 	}
 }
 
@@ -404,7 +520,7 @@ func (r *ResourceCoreVirtualMachine) MapKeypair(
 	ctx context.Context,
 	diags *diag.Diagnostics,
 	data virtual_machine.InstanceKeypairFields,
-) attr.Value {
+) resource_core_virtual_machine.KeypairValue {
 	model, diagnostic := resource_core_virtual_machine.NewKeypairValue(
 		resource_core_virtual_machine.KeypairValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
@@ -413,10 +529,7 @@ func (r *ResourceCoreVirtualMachine) MapKeypair(
 	)
 	diags.Append(diagnostic...)
 
-	result, diagnostic := model.ToObjectValue(ctx)
-	diags.Append(diagnostic...)
-
-	return result
+	return model
 }
 
 func (r *ResourceCoreVirtualMachine) MapVolumeAttachments(

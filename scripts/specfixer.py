@@ -10,11 +10,42 @@ def process_components_schemas(json_data):
 
   for resource in resources:
     if resource["name"] == "core_virtual_machine":
-      for attr in resource["schema"]["attributes"]:
-        taint_all(attr)
-      resource["schema"]["attributes"] = [x for x in resource["schema"]["attributes"] if x["name"] != "count"]
+      resource["schema"]["blocks"] = []
 
-def taint_all(attr):
+      for attr in resource["schema"]["attributes"]:
+        match attr["name"]:
+          case "profile":
+            del attr["single_nested"]["computed_optional_required"]
+            resource["schema"]["blocks"].append(attr)
+            for row in attr["single_nested"]["attributes"]:
+              if row["name"] == "name":
+                # TODO: fix this
+                # https://github.com/hashicorp/terraform-plugin-framework/issues/740
+                # https://discuss.hashicorp.com/t/optional-block-with-required-attribute-in-framework/54371
+                row["string"]["computed_optional_required"] = "optional"
+            # https://github.com/hashicorp/terraform-plugin-framework/issues/603
+            attr["list_nested"] = attr["single_nested"]
+            del attr["single_nested"]
+            attr["list_nested"]["nested_object"] = {
+              "attributes": attr["list_nested"]["attributes"]
+            }
+            del attr["list_nested"]["attributes"]
+          case "assign_floating_ip":
+            attr["bool"]["default"] = {
+              "static": False,
+            }
+          case "create_bootable_volume":
+            attr["bool"]["default"] = {
+              "static": False,
+            }
+
+        if attr["name"] not in ["flavor", "environment", "image", "keypair", "created_at", "floating_ip_status", "id", "status"]:
+          taint_all(attr)
+
+      resource["schema"]["attributes"] = [x for x in resource["schema"]["attributes"] if x["name"] not in ["count", "profile"]]
+
+
+def taint_all(attr, toskip=[]):
   modifier_str = [
     {
       "custom": {
@@ -74,6 +105,7 @@ def taint_all(attr):
     attr["single_nested"]["plan_modifiers"] = modifier_object
     for nested in attr["single_nested"]["attributes"]:
       taint_all(nested)
+
 
 def main(file_path):
   with open(file_path, 'r') as file:
