@@ -5,33 +5,34 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/nexgen/hyperstack-sdk-go/lib/keypair"
 	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/datasource_keypairs"
+	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/datasource_core_keypairs"
 	"io/ioutil"
 )
 
-var _ datasource.DataSource = &DataSourceKeypairs{}
+var _ datasource.DataSource = &DataSourceCoreKeypairs{}
 
-func NewDataSourceKeypairs() datasource.DataSource {
-	return &DataSourceKeypairs{}
+func NewDataSourceCoreKeypairs() datasource.DataSource {
+	return &DataSourceCoreKeypairs{}
 }
 
-func (d *DataSourceKeypairs) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_keypairs"
+func (d *DataSourceCoreKeypairs) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_core_keypairs"
 }
 
-func (d *DataSourceKeypairs) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = datasource_keypairs.KeypairsDataSourceSchema(ctx)
+func (d *DataSourceCoreKeypairs) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = datasource_core_keypairs.CoreKeypairsDataSourceSchema(ctx)
 }
 
-type DataSourceKeypairs struct {
+type DataSourceCoreKeypairs struct {
 	hyperstack *client.HyperstackClient
 	client     *keypair.ClientWithResponses
 }
 
-func (d *DataSourceKeypairs) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *DataSourceCoreKeypairs) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -53,8 +54,8 @@ func (d *DataSourceKeypairs) Configure(ctx context.Context, req datasource.Confi
 	}
 }
 
-func (d *DataSourceKeypairs) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data datasource_keypairs.KeypairsModel
+func (d *DataSourceCoreKeypairs) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var data datasource_core_keypairs.CoreKeypairsModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
@@ -89,43 +90,54 @@ func (d *DataSourceKeypairs) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	data.Keypairs = d.MapKeypairs(ctx, resp, *callResult)
-
+	data = d.ApiToModel(ctx, &resp.Diagnostics, callResult)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (d *DataSourceKeypairs) MapKeypairs(
+func (d *DataSourceCoreKeypairs) ApiToModel(
 	ctx context.Context,
-	resp *datasource.ReadResponse,
+	diags *diag.Diagnostics,
+	response *[]keypair.KeypairFields,
+) datasource_core_keypairs.CoreKeypairsModel {
+	return datasource_core_keypairs.CoreKeypairsModel{
+		CoreKeypairs: func() types.Set {
+			return d.MapKeypairs(ctx, diags, *response)
+		}(),
+	}
+}
+
+func (d *DataSourceCoreKeypairs) MapKeypairs(
+	ctx context.Context,
+	diags *diag.Diagnostics,
 	data []keypair.KeypairFields,
-) types.List {
-	model, diagnostic := types.ListValue(
-		datasource_keypairs.KeypairsValue{}.Type(ctx),
+) types.Set {
+	model, diagnostic := types.SetValue(
+		datasource_core_keypairs.CoreKeypairsValue{}.Type(ctx),
 		func() []attr.Value {
 			keypairs := make([]attr.Value, 0)
 			for _, row := range data {
-				createdAt := types.StringNull()
-				if row.CreatedAt != nil {
-					createdAt = types.StringValue(row.CreatedAt.String())
-				}
-
-				model, diagnostic := datasource_keypairs.NewKeypairsValue(
-					datasource_keypairs.KeypairsValue{}.AttributeTypes(ctx),
+				model, diagnostic := datasource_core_keypairs.NewCoreKeypairsValue(
+					datasource_core_keypairs.CoreKeypairsValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
 						"id":          types.Int64Value(int64(*row.Id)),
 						"name":        types.StringValue(*row.Name),
 						"public_key":  types.StringValue(*row.PublicKey),
 						"fingerprint": types.StringValue(*row.Fingerprint),
 						"environment": types.StringValue(*row.Environment),
-						"created_at":  createdAt,
+						"created_at": func() attr.Value {
+							if row.CreatedAt == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(row.CreatedAt.String())
+						}(),
 					},
 				)
-				resp.Diagnostics.Append(diagnostic...)
+				diags.Append(diagnostic...)
 				keypairs = append(keypairs, model)
 			}
 			return keypairs
 		}(),
 	)
-	resp.Diagnostics.Append(diagnostic...)
+	diags.Append(diagnostic...)
 	return model
 }

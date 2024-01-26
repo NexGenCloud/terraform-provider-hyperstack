@@ -13,25 +13,45 @@ import (
 	"github.com/nexgen/hyperstack-sdk-go/lib/keypair"
 	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
 	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/datasource_keypairs"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/resource_keypair"
+	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/resource_core_keypair"
 	"io/ioutil"
 	"strings"
 )
 
-var _ resource.Resource = &ResourceKeypair{}
-var _ resource.ResourceWithImportState = &ResourceKeypair{}
+var _ resource.Resource = &ResourceCoreKeypair{}
+var _ resource.ResourceWithImportState = &ResourceCoreKeypair{}
 
-func NewResourceKeypair() resource.Resource {
-	return &ResourceKeypair{}
+func NewResourceCoreKeypair() resource.Resource {
+	return &ResourceCoreKeypair{}
 }
 
-type ResourceKeypair struct {
+type ResourceCoreKeypair struct {
 	hyperstack *client.HyperstackClient
 	client     *keypair.ClientWithResponses
 }
 
-func (r *ResourceKeypair) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data resource_keypair.KeypairModel
+func (r *ResourceCoreKeypair) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_core_keypair"
+}
+
+func (r *ResourceCoreKeypair) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = resource_core_keypair.CoreKeypairResourceSchema(ctx)
+	resp.Schema.Attributes["public_key"] = schema.StringAttribute{
+		Required: true,
+		PlanModifiers: []planmodifier.String{
+			stringplanmodifier.RequiresReplace(),
+		},
+	}
+	resp.Schema.Attributes["environment_name"] = schema.StringAttribute{
+		Required: true,
+		PlanModifiers: []planmodifier.String{
+			stringplanmodifier.RequiresReplace(),
+		},
+	}
+}
+
+func (r *ResourceCoreKeypair) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var data resource_core_keypair.CoreKeypairModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -110,27 +130,7 @@ func (r *ResourceKeypair) Update(ctx context.Context, req resource.UpdateRequest
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *ResourceKeypair) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_keypairs"
-}
-
-func (r *ResourceKeypair) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = resource_keypair.KeypairResourceSchema(ctx)
-	resp.Schema.Attributes["public_key"] = schema.StringAttribute{
-		Required: true,
-		PlanModifiers: []planmodifier.String{
-			stringplanmodifier.RequiresReplace(),
-		},
-	}
-	resp.Schema.Attributes["environment_name"] = schema.StringAttribute{
-		Required: true,
-		PlanModifiers: []planmodifier.String{
-			stringplanmodifier.RequiresReplace(),
-		},
-	}
-}
-
-func (r *ResourceKeypair) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *ResourceCoreKeypair) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -152,12 +152,12 @@ func (r *ResourceKeypair) Configure(ctx context.Context, req resource.ConfigureR
 	}
 }
 
-func (r *ResourceKeypair) Create(
+func (r *ResourceCoreKeypair) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var data resource_keypair.KeypairModel
+	var data resource_core_keypair.CoreKeypairModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
@@ -204,12 +204,12 @@ func (r *ResourceKeypair) Create(
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *ResourceKeypair) Read(
+func (r *ResourceCoreKeypair) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var data resource_keypair.KeypairModel
+	var data resource_core_keypair.CoreKeypairModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -255,7 +255,7 @@ func (r *ResourceKeypair) Read(
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *ResourceKeypair) MapKeypairs(
+func (r *ResourceCoreKeypair) MapKeypairs(
 	ctx context.Context,
 	resp *resource.ReadResponse,
 	data []keypair.KeypairFields,
@@ -291,8 +291,8 @@ func (r *ResourceKeypair) MapKeypairs(
 	return model
 }
 
-func (r *ResourceKeypair) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data resource_keypair.KeypairModel
+func (r *ResourceCoreKeypair) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data resource_core_keypair.CoreKeypairModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -356,12 +356,12 @@ func (r *ResourceKeypair) Delete(ctx context.Context, req resource.DeleteRequest
 	resp.State.RemoveResource(ctx)
 }
 
-func (r *ResourceKeypair) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *ResourceCoreKeypair) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func MapKeypairFieldsToKeypairValue(kf *keypair.KeypairFields) resource_keypair.KeypairValue {
-	kv := resource_keypair.KeypairValue{
+func MapKeypairFieldsToKeypairValue(kf *keypair.KeypairFields) resource_core_keypair.KeypairValue {
+	kv := resource_core_keypair.KeypairValue{
 		CreatedAt:   types.StringValue(kf.CreatedAt.String()),
 		Environment: types.StringValue(*kf.Environment),
 		Fingerprint: types.StringValue(*kf.Fingerprint),
@@ -373,8 +373,8 @@ func MapKeypairFieldsToKeypairValue(kf *keypair.KeypairFields) resource_keypair.
 	return kv
 }
 
-func MapDataSourceKeypairFieldsToKeypairValue(kf keypair.KeypairFields) resource_keypair.KeypairValue {
-	kv := resource_keypair.KeypairValue{
+func MapDataSourceKeypairFieldsToKeypairValue(kf keypair.KeypairFields) resource_core_keypair.KeypairValue {
+	kv := resource_core_keypair.KeypairValue{
 		CreatedAt:   types.StringValue(kf.CreatedAt.String()),
 		Environment: types.StringValue(*kf.Environment),
 		Fingerprint: types.StringValue(*kf.Fingerprint),

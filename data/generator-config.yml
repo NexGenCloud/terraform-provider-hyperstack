@@ -2,44 +2,8 @@ provider:
   name: hyperstack
   #schema_ref: '#/components/schemas/hyperstack_provider_schema'
 
-resources:
-  environments:
-    read:
-      path: /core/environments/{id}
-      method: GET
-    schema:
-      ignores:
-        - message
-        - status
-    create:
-      path: /core/environments
-      method: POST
-
-  auth_role:
-    read:
-      path: /auth/roles/{id}
-      method: GET
-    create:
-      path: /auth/roles
-      method: POST
-
-  keypair:
-    read:
-      path: /core/keypairs
-      method: GET
-    create:
-      path: /core/keypairs
-      method: POST
-    update:
-      path: /core/keypair/{id}
-      method: PUT
-    schema:
-      ignores:
-        - message
-        - status
-
 data_sources:
-  environments:
+  core_environments:
     read:
       path: /core/environments
       method: GET
@@ -64,16 +28,45 @@ data_sources:
       path: /auth/roles/{id}
       method: GET
 
-  keypairs:
+  core_keypairs:
     read:
       path: /core/keypairs
       method: GET
 
-  virtual_machine:
+  core_virtual_machine:
     read:
       path: /core/virtual-machines/{id}
+      method: GET
 
   core_virtual_machines:
     read:
       path: /core/virtual-machines
       method: GET
+
+resources:
+  core_environment:
+    read:
+      path: /core/environments/{id}
+      method: GET
+    create:
+      path: /core/environments
+      method: POST
+
+  auth_role:
+    read:
+      path: /auth/roles/{id}
+      method: GET
+    create:
+      path: /auth/roles
+      method: POST
+
+  core_keypair:
+    read:
+      path: /core/keypairs
+      method: GET
+    create:
+      path: /core/keypairs
+      method: POST
+    update:
+      path: /core/keypair/{id}
+      method: PUT

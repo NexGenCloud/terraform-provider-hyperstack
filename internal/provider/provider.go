@@ -92,8 +92,8 @@ func (p *hyperstackProvider) Configure(ctx context.Context, req provider.Configu
 func (p *hyperstackProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewResourceAuthRole,
-		NewResourceKeypair,
-		NewResourceEnvironment,
+		NewResourceCoreKeypair,
+		NewResourceCoreEnvironment,
 	}
 }
 
@@ -101,10 +101,10 @@ func (p *hyperstackProvider) DataSources(ctx context.Context) []func() datasourc
 	return []func() datasource.DataSource{
 		NewDataSourceAuthMe,
 		NewDataSourceAuthOrganizations,
-		NewDataSourceAuthRoles,
 		NewDataSourceAuthRole,
-		NewDataSourceKeypairs,
-		NewDataSourceEnvironments,
+		NewDataSourceAuthRoles,
+		NewDataSourceCoreEnvironments,
+		NewDataSourceCoreKeypairs,
 		NewDataSourceCoreVirtualMachines,
 	}
 }

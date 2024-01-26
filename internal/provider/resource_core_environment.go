@@ -11,33 +11,33 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/nexgen/hyperstack-sdk-go/lib/environment"
 	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/resource_environments"
+	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/resource_core_environment"
 )
 
-var _ resource.Resource = &ResourceEnvironment{}
-var _ resource.ResourceWithImportState = &ResourceEnvironment{}
+var _ resource.Resource = &ResourceCoreEnvironment{}
+var _ resource.ResourceWithImportState = &ResourceCoreEnvironment{}
 
-func NewResourceEnvironment() resource.Resource {
-	return &ResourceEnvironment{}
+func NewResourceCoreEnvironment() resource.Resource {
+	return &ResourceCoreEnvironment{}
 }
 
-type ResourceEnvironment struct {
+type ResourceCoreEnvironment struct {
 	hyperstack *client.HyperstackClient
 	client     *environment.ClientWithResponses
 }
 
-func (r *ResourceEnvironment) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *ResourceCoreEnvironment) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_environment"
 }
 
-func (r *ResourceEnvironment) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = resource_environments.EnvironmentsResourceSchema(ctx)
+func (r *ResourceCoreEnvironment) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = resource_core_environment.CoreEnvironmentResourceSchema(ctx)
 	//resp.Schema.Attributes["id"] = schema.Int64Attribute{
 	//	Computed: true,
 	//}
 }
 
-func (r *ResourceEnvironment) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *ResourceCoreEnvironment) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -59,12 +59,12 @@ func (r *ResourceEnvironment) Configure(ctx context.Context, req resource.Config
 	}
 }
 
-func (r *ResourceEnvironment) Create(
+func (r *ResourceCoreEnvironment) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var data resource_environments.EnvironmentsModel
+	var data resource_core_environment.CoreEnvironmentModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
@@ -110,12 +110,12 @@ func (r *ResourceEnvironment) Create(
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *ResourceEnvironment) Read(
+func (r *ResourceCoreEnvironment) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var data resource_environments.EnvironmentsModel
+	var data resource_core_environment.CoreEnvironmentModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -158,8 +158,8 @@ func (r *ResourceEnvironment) Read(
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *ResourceEnvironment) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var dataOld resource_environments.EnvironmentsModel
+func (r *ResourceCoreEnvironment) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var dataOld resource_core_environment.CoreEnvironmentModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &dataOld)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -167,7 +167,7 @@ func (r *ResourceEnvironment) Update(ctx context.Context, req resource.UpdateReq
 
 	id := int(dataOld.Id.ValueInt64())
 
-	var data resource_environments.EnvironmentsModel
+	var data resource_core_environment.CoreEnvironmentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -209,8 +209,8 @@ func (r *ResourceEnvironment) Update(ctx context.Context, req resource.UpdateReq
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *ResourceEnvironment) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data resource_environments.EnvironmentsModel
+func (r *ResourceCoreEnvironment) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data resource_core_environment.CoreEnvironmentModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -238,23 +238,23 @@ func (r *ResourceEnvironment) Delete(ctx context.Context, req resource.DeleteReq
 	resp.State.RemoveResource(ctx)
 }
 
-func (r *ResourceEnvironment) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *ResourceCoreEnvironment) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *ResourceEnvironment) MapEnvironment(
+func (r *ResourceCoreEnvironment) MapEnvironment(
 	ctx context.Context,
 	state tfsdk.State,
 	diags diag.Diagnostics,
 	data environment.Environment,
-) resource_environments.EnvironmentValue {
+) resource_core_environment.EnvironmentValue {
 	createdAt := types.StringNull()
 	if data.Environment.CreatedAt != nil {
 		createdAt = types.StringValue(data.Environment.CreatedAt.String())
 	}
 
-	model, diagnostic := resource_environments.NewEnvironmentValue(
-		resource_environments.EnvironmentValue{}.AttributeTypes(ctx),
+	model, diagnostic := resource_core_environment.NewEnvironmentValue(
+		resource_core_environment.EnvironmentValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
 			"id":         types.Int64Value(int64(*data.Environment.Id)),
 			"name":       types.StringValue(*data.Environment.Name),
@@ -266,7 +266,7 @@ func (r *ResourceEnvironment) MapEnvironment(
 	return model
 }
 
-func (r *ResourceEnvironment) MapEnvironmentFieldsToEnvironment(ctx context.Context, state tfsdk.State, diags diag.Diagnostics, data environment.EnvironmentFields) environment.Environment {
+func (r *ResourceCoreEnvironment) MapEnvironmentFieldsToEnvironment(ctx context.Context, state tfsdk.State, diags diag.Diagnostics, data environment.EnvironmentFields) environment.Environment {
 	env := environment.Environment{
 		Environment: &environment.EnvironmentFields{
 			Id:        data.Id,

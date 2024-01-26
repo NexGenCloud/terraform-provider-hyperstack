@@ -116,11 +116,6 @@ func (d *DataSourceAuthRoles) MapRoles(
 		func() []attr.Value {
 			roles := make([]attr.Value, 0)
 			for _, row := range data {
-				createdAt := types.StringNull()
-				if row.CreatedAt != nil {
-					createdAt = types.StringValue(row.CreatedAt.String())
-				}
-
 				model, diagnostic := datasource_auth_roles.NewAuthRolesValue(
 					datasource_auth_roles.AuthRolesValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
@@ -129,7 +124,12 @@ func (d *DataSourceAuthRoles) MapRoles(
 						"description": types.StringValue(*row.Description),
 						"policies":    d.MapRolesPolicies(ctx, diags, *row.Policies),
 						"permissions": d.MapRolesPermissions(ctx, diags, *row.Permissions),
-						"created_at":  createdAt,
+						"created_at": func() attr.Value {
+							if row.CreatedAt == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(row.CreatedAt.String())
+						}(),
 					},
 				)
 				diags.Append(diagnostic...)
