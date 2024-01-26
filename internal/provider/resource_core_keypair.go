@@ -41,7 +41,7 @@ func (r *ResourceCoreKeypair) Schema(ctx context.Context, req resource.SchemaReq
 			stringplanmodifier.RequiresReplace(),
 		},
 	}
-	resp.Schema.Attributes["environment_name"] = schema.StringAttribute{
+	resp.Schema.Attributes["environment"] = schema.StringAttribute{
 		Required: true,
 		PlanModifiers: []planmodifier.String{
 			stringplanmodifier.RequiresReplace(),
@@ -166,7 +166,7 @@ func (r *ResourceCoreKeypair) Create(
 	}
 	result, err := r.client.ImportKeypairWithResponse(ctx, func() keypair.ImportKeypairJSONRequestBody {
 		return keypair.ImportKeypairJSONRequestBody{
-			EnvironmentName: data.EnvironmentName.ValueString(),
+			EnvironmentName: data.Environment.ValueString(),
 			PublicKey:       data.PublicKey.ValueString(),
 			Name:            data.Name.ValueString(),
 		}

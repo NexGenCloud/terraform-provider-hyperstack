@@ -49,6 +49,8 @@ def process_components_schemas(json_data):
       # print(schemas[new_key]["properties"])
 
   schemas["InstanceFlavorFields"]["properties"]["ram"]["type"] = "number"
+  schemas["ImportKeypairPayload"]["properties"]["environment"] = schemas["ImportKeypairPayload"]["properties"]["environment_name"]
+  del schemas["ImportKeypairPayload"]["properties"]["environment_name"]
 
 
 def main(file_path):

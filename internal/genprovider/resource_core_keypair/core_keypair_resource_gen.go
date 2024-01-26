@@ -16,10 +16,8 @@ func CoreKeypairResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"environment": schema.StringAttribute{
+				Optional: true,
 				Computed: true,
-			},
-			"environment_name": schema.StringAttribute{
-				Required: true,
 			},
 			"fingerprint": schema.StringAttribute{
 				Computed: true,
@@ -38,11 +36,10 @@ func CoreKeypairResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type CoreKeypairModel struct {
-	CreatedAt       types.String `tfsdk:"created_at"`
-	Environment     types.String `tfsdk:"environment"`
-	EnvironmentName types.String `tfsdk:"environment_name"`
-	Fingerprint     types.String `tfsdk:"fingerprint"`
-	Id              types.Int64  `tfsdk:"id"`
-	Name            types.String `tfsdk:"name"`
-	PublicKey       types.String `tfsdk:"public_key"`
+	CreatedAt   types.String `tfsdk:"created_at"`
+	Environment types.String `tfsdk:"environment"`
+	Fingerprint types.String `tfsdk:"fingerprint"`
+	Id          types.Int64  `tfsdk:"id"`
+	Name        types.String `tfsdk:"name"`
+	PublicKey   types.String `tfsdk:"public_key"`
 }
