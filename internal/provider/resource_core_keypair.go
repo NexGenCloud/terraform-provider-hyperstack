@@ -107,7 +107,7 @@ func (r *ResourceCoreKeypair) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	// Find the keypair with the matching name and get its ID
-	var id int64
+	var id int64 = -1
 	for _, row := range *searchCallResult {
 		if strings.Contains(*row.Name, strings.TrimSpace(data.Name.ValueString())) {
 			id = int64(*row.Id)
@@ -115,8 +115,12 @@ func (r *ResourceCoreKeypair) Update(ctx context.Context, req resource.UpdateReq
 		}
 	}
 
-	// Perform the update operation
-	// TODO: check empty ID?
+	// Check if id was found
+	if id == -1 {
+		resp.Diagnostics.AddError("No keypair found with the name for update: %s", data.Name.ValueString())
+		return
+	}
+
 	result, err := r.client.UpdateKeypairNameWithResponse(ctx, int(id), func() keypair.UpdateKeypairNameJSONRequestBody {
 		return keypair.UpdateKeypairNameJSONRequestBody{
 			Name: data.Name.ValueString(),
