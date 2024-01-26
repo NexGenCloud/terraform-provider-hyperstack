@@ -6,3 +6,7 @@ data "hyperstack_auth_role" "this" {
 
   id = each.value
 }
+
+data "hyperstack_keypairs" "this" {
+
+}

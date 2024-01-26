@@ -14,6 +14,20 @@ resources:
       ignores:
         - message
         - status
+  keypair:
+    read:
+      path: /core/keypairs
+      method: GET
+    create:
+      path: /core/keypairs
+      method: POST
+    update:
+      path: /core/keypair/{id}
+      method: PUT
+    schema:
+      ignores:
+        - message
+        - status
 
 data_sources:
   auth_me:
@@ -43,6 +57,22 @@ data_sources:
   auth_role:
     read:
       path: /auth/roles/{id}
+      method: GET
+    schema:
+      ignores:
+        - message
+        - status
+  keypairs:
+    read:
+      path: /core/keypairs
+      method: GET
+    schema:
+      ignores:
+        - message
+        - status
+  virtual_machine:
+    read:
+      path: /core/virtual-machines/{id}
       method: GET
     schema:
       ignores:
