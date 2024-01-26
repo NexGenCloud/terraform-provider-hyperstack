@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/nexgen/hyperstack-sdk-go/lib/keypair"
 	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/datasource_keypairs"
 	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/resource_core_keypair"
 	"io/ioutil"
 	"strings"
@@ -47,6 +46,28 @@ func (r *ResourceCoreKeypair) Schema(ctx context.Context, req resource.SchemaReq
 		PlanModifiers: []planmodifier.String{
 			stringplanmodifier.RequiresReplace(),
 		},
+	}
+}
+
+func (r *ResourceCoreKeypair) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	r.hyperstack, _ = req.ProviderData.(*client.HyperstackClient)
+
+	var err error
+	r.client, err = keypair.NewClientWithResponses(
+		r.hyperstack.ApiServer,
+		keypair.WithRequestEditorFn(r.hyperstack.GetAddHeadersFn()),
+	)
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unexpected error",
+			fmt.Sprintf("%s", err),
+		)
+		return
 	}
 }
 
@@ -95,6 +116,7 @@ func (r *ResourceCoreKeypair) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	// Perform the update operation
+	// TODO: check empty ID?
 	result, err := r.client.UpdateKeypairNameWithResponse(ctx, int(id), func() keypair.UpdateKeypairNameJSONRequestBody {
 		return keypair.UpdateKeypairNameJSONRequestBody{
 			Name: data.Name.ValueString(),
@@ -126,30 +148,8 @@ func (r *ResourceCoreKeypair) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	data.Keypair = MapKeypairFieldsToKeypairValue(callResult.Keypair)
+	data = r.ApiToModel(ctx, &resp.Diagnostics, callResult.Keypair)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-}
-
-func (r *ResourceCoreKeypair) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
-		return
-	}
-
-	r.hyperstack, _ = req.ProviderData.(*client.HyperstackClient)
-
-	var err error
-	r.client, err = keypair.NewClientWithResponses(
-		r.hyperstack.ApiServer,
-		keypair.WithRequestEditorFn(r.hyperstack.GetAddHeadersFn()),
-	)
-
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unexpected error",
-			fmt.Sprintf("%s", err),
-		)
-		return
-	}
 }
 
 func (r *ResourceCoreKeypair) Create(
@@ -195,12 +195,8 @@ func (r *ResourceCoreKeypair) Create(
 		)
 		return
 	}
-	data.Keypair = MapKeypairFieldsToKeypairValue(callResult.Keypair)
 
-	//Set data.Keypairs to new empty list if it's not yet set
-	data.Keypairs, _ = types.ListValue(datasource_keypairs.KeypairsValue{}.Type(ctx), func() []attr.Value {
-		return make([]attr.Value, 0)
-	}())
+	data = r.ApiToModel(ctx, &resp.Diagnostics, callResult.Keypair)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -216,7 +212,8 @@ func (r *ResourceCoreKeypair) Read(
 		return
 	}
 
-	result, err := r.client.RetrieveUserKeypairsWithResponse(ctx)
+	// Perform a Read operation to get all keypairs
+	searchResult, err := r.client.RetrieveUserKeypairsWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -225,8 +222,8 @@ func (r *ResourceCoreKeypair) Read(
 		return
 	}
 
-	bodyBytes, _ := ioutil.ReadAll(result.HTTPResponse.Body)
-	if result.JSON200 == nil {
+	bodyBytes, _ := ioutil.ReadAll(searchResult.HTTPResponse.Body)
+	if searchResult.JSON200 == nil {
 		resp.Diagnostics.AddError(
 			"Wrong API json response",
 			fmt.Sprintf("%s", string(bodyBytes)),
@@ -234,8 +231,8 @@ func (r *ResourceCoreKeypair) Read(
 		return
 	}
 
-	callResult := result.JSON200.Keypairs
-	if callResult == nil {
+	searchCallResult := searchResult.JSON200.Keypairs
+	if searchCallResult == nil {
 		resp.Diagnostics.AddWarning(
 			"No data in API result",
 			fmt.Sprintf("%s", string(bodyBytes)),
@@ -243,52 +240,23 @@ func (r *ResourceCoreKeypair) Read(
 		return
 	}
 
-	data.Keypairs = r.MapKeypairs(ctx, resp, *callResult)
-	//set data.Keypair to ( find in data.Keypairs where name == data.Name )
-	for _, row := range *callResult {
+	// Find the keypair with the matching name and get its ID
+	var keypairResult *keypair.KeypairFields
+	for _, row := range *searchCallResult {
 		if strings.Contains(*row.Name, strings.TrimSpace(data.Name.ValueString())) {
-			data.Keypair = MapDataSourceKeypairFieldsToKeypairValue(row)
-
+			keypairResult = &row
 			break
 		}
 	}
+
+	// Nothing found
+	if keypairResult == nil {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	data = r.ApiToModel(ctx, &resp.Diagnostics, keypairResult)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-}
-
-func (r *ResourceCoreKeypair) MapKeypairs(
-	ctx context.Context,
-	resp *resource.ReadResponse,
-	data []keypair.KeypairFields,
-) types.List {
-	model, diagnostic := types.ListValue(
-		datasource_keypairs.KeypairsValue{}.Type(ctx),
-		func() []attr.Value {
-			keypairs := make([]attr.Value, 0)
-			for _, row := range data {
-				createdAt := types.StringNull()
-				if row.CreatedAt != nil {
-					createdAt = types.StringValue(row.CreatedAt.String())
-				}
-
-				model, diagnostic := datasource_keypairs.NewKeypairsValue(
-					datasource_keypairs.KeypairsValue{}.AttributeTypes(ctx),
-					map[string]attr.Value{
-						"id":          types.Int64Value(int64(*row.Id)),
-						"name":        types.StringValue(*row.Name),
-						"public_key":  types.StringValue(*row.PublicKey),
-						"fingerprint": types.StringValue(*row.Fingerprint),
-						"environment": types.StringValue(*row.Environment),
-						"created_at":  createdAt,
-					},
-				)
-				resp.Diagnostics.Append(diagnostic...)
-				keypairs = append(keypairs, model)
-			}
-			return keypairs
-		}(),
-	)
-	resp.Diagnostics.Append(diagnostic...)
-	return model
 }
 
 func (r *ResourceCoreKeypair) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -360,28 +328,47 @@ func (r *ResourceCoreKeypair) ImportState(ctx context.Context, req resource.Impo
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func MapKeypairFieldsToKeypairValue(kf *keypair.KeypairFields) resource_core_keypair.KeypairValue {
-	kv := resource_core_keypair.KeypairValue{
-		CreatedAt:   types.StringValue(kf.CreatedAt.String()),
-		Environment: types.StringValue(*kf.Environment),
-		Fingerprint: types.StringValue(*kf.Fingerprint),
-		Id:          types.Int64Value(int64(*kf.Id)),
-		Name:        types.StringValue(*kf.Name),
-		PublicKey:   types.StringValue(*kf.PublicKey),
+func (r *ResourceCoreKeypair) ApiToModel(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	response *keypair.KeypairFields,
+) resource_core_keypair.CoreKeypairModel {
+	return resource_core_keypair.CoreKeypairModel{
+		Id: func() types.Int64 {
+			if response.Id == nil {
+				return types.Int64Null()
+			}
+			return types.Int64Value(int64(*response.Id))
+		}(),
+		Name: func() types.String {
+			if response.Name == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(*response.Name)
+		}(),
+		PublicKey: func() types.String {
+			if response.PublicKey == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(*response.PublicKey)
+		}(),
+		Environment: func() types.String {
+			if response.Environment == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(*response.Environment)
+		}(),
+		Fingerprint: func() types.String {
+			if response.Fingerprint == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(*response.Fingerprint)
+		}(),
+		CreatedAt: func() types.String {
+			if response.CreatedAt == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(response.CreatedAt.String())
+		}(),
 	}
-
-	return kv
-}
-
-func MapDataSourceKeypairFieldsToKeypairValue(kf keypair.KeypairFields) resource_core_keypair.KeypairValue {
-	kv := resource_core_keypair.KeypairValue{
-		CreatedAt:   types.StringValue(kf.CreatedAt.String()),
-		Environment: types.StringValue(*kf.Environment),
-		Fingerprint: types.StringValue(*kf.Fingerprint),
-		Id:          types.Int64Value(int64(*kf.Id)),
-		Name:        types.StringValue(*kf.Name),
-		PublicKey:   types.StringValue(*kf.PublicKey),
-	}
-
-	return kv
 }

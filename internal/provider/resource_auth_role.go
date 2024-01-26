@@ -171,6 +171,7 @@ func (r *ResourceAuthRole) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	// TODO: might not need anymore
 	id := int(dataOld.Id.ValueInt64())
 
 	var data resource_auth_role.AuthRoleModel

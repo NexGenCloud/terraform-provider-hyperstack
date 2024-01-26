@@ -3,11 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/nexgen/hyperstack-sdk-go/lib/environment"
 	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
@@ -27,7 +25,7 @@ type ResourceCoreEnvironment struct {
 }
 
 func (r *ResourceCoreEnvironment) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_environment"
+	resp.TypeName = req.ProviderTypeName + "_core_environment"
 }
 
 func (r *ResourceCoreEnvironment) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -103,10 +101,7 @@ func (r *ResourceCoreEnvironment) Create(
 		return
 	}
 
-	callResultMapEnv := r.MapEnvironmentFieldsToEnvironment(ctx, resp.State, resp.Diagnostics, *result.JSON200.Environment)
-	data.Environment = r.MapEnvironment(ctx, resp.State, resp.Diagnostics, callResultMapEnv)
-	data.Id = types.Int64Value(data.Environment.Id.ValueInt64())
-
+	data = r.ApiToModel(ctx, &resp.Diagnostics, callResult)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -152,9 +147,7 @@ func (r *ResourceCoreEnvironment) Read(
 		return
 	}
 
-	callResultMapEnv := r.MapEnvironmentFieldsToEnvironment(ctx, resp.State, resp.Diagnostics, *result.JSON200.Environment)
-	data.Environment = r.MapEnvironment(ctx, resp.State, resp.Diagnostics, callResultMapEnv)
-
+	data = r.ApiToModel(ctx, &resp.Diagnostics, callResult)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -165,6 +158,7 @@ func (r *ResourceCoreEnvironment) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
+	// TODO: might not need anymore
 	id := int(dataOld.Id.ValueInt64())
 
 	var data resource_core_environment.CoreEnvironmentModel
@@ -202,10 +196,8 @@ func (r *ResourceCoreEnvironment) Update(ctx context.Context, req resource.Updat
 		)
 		return
 	}
-	callResultMapEnv := r.MapEnvironmentFieldsToEnvironment(ctx, resp.State, resp.Diagnostics, *result.JSON200.Environment)
-	data.Environment = r.MapEnvironment(ctx, resp.State, resp.Diagnostics, callResultMapEnv)
-	data.Id = data.Environment.Id
 
+	data = r.ApiToModel(ctx, &resp.Diagnostics, callResult)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -242,38 +234,35 @@ func (r *ResourceCoreEnvironment) ImportState(ctx context.Context, req resource.
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *ResourceCoreEnvironment) MapEnvironment(
+func (r *ResourceCoreEnvironment) ApiToModel(
 	ctx context.Context,
-	state tfsdk.State,
-	diags diag.Diagnostics,
-	data environment.Environment,
-) resource_core_environment.EnvironmentValue {
-	createdAt := types.StringNull()
-	if data.Environment.CreatedAt != nil {
-		createdAt = types.StringValue(data.Environment.CreatedAt.String())
+	diags *diag.Diagnostics,
+	response *environment.EnvironmentFields,
+) resource_core_environment.CoreEnvironmentModel {
+	return resource_core_environment.CoreEnvironmentModel{
+		Id: func() types.Int64 {
+			if response.Id == nil {
+				return types.Int64Null()
+			}
+			return types.Int64Value(int64(*response.Id))
+		}(),
+		Name: func() types.String {
+			if response.Name == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(*response.Name)
+		}(),
+		Region: func() types.String {
+			if response.Region == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(*response.Region)
+		}(),
+		CreatedAt: func() types.String {
+			if response.CreatedAt == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(response.CreatedAt.String())
+		}(),
 	}
-
-	model, diagnostic := resource_core_environment.NewEnvironmentValue(
-		resource_core_environment.EnvironmentValue{}.AttributeTypes(ctx),
-		map[string]attr.Value{
-			"id":         types.Int64Value(int64(*data.Environment.Id)),
-			"name":       types.StringValue(*data.Environment.Name),
-			"region":     types.StringValue(*data.Environment.Region),
-			"created_at": createdAt,
-		},
-	)
-	diags.Append(diagnostic...)
-	return model
-}
-
-func (r *ResourceCoreEnvironment) MapEnvironmentFieldsToEnvironment(ctx context.Context, state tfsdk.State, diags diag.Diagnostics, data environment.EnvironmentFields) environment.Environment {
-	env := environment.Environment{
-		Environment: &environment.EnvironmentFields{
-			Id:        data.Id,
-			Name:      data.Name,
-			Region:    data.Region,
-			CreatedAt: data.CreatedAt,
-		},
-	}
-	return env
 }

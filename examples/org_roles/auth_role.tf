@@ -1,9 +1,3 @@
-resource "random_string" "this_name" {
-  length  = 10
-  special = false
-  upper   = false
-}
-
 resource "hyperstack_auth_role" "this" {
   name        = "testrole-${random_string.this_name.result}"
   description = "Test admin role"
