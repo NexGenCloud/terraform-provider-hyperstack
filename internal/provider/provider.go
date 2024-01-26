@@ -93,6 +93,7 @@ func (p *hyperstackProvider) Resources(ctx context.Context) []func() resource.Re
 	return []func() resource.Resource{
 		NewResourceAuthRole,
 		NewResourceKeypair,
+		NewResourceEnvironment,
 	}
 }
 
@@ -103,6 +104,7 @@ func (p *hyperstackProvider) DataSources(ctx context.Context) []func() datasourc
 		NewDataSourceAuthRoles,
 		NewDataSourceAuthRole,
 		NewDataSourceKeypairs,
+		NewDataSourceEnvironments,
 	}
 }
 
