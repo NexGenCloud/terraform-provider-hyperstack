@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/nexgen/hyperstack-sdk-go/lib/organization"
 	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
@@ -89,46 +90,80 @@ func (d *DataSourceAuthOrganizations) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	users := make([]attr.Value, 0)
-
-	for _, userModel := range *callResult.Users {
-		user, diag := datasource_auth_organizations.NewUsersValue(
-			datasource_auth_organizations.UsersValue{}.AttributeTypes(ctx),
-			map[string]attr.Value{
-				"id":       types.Int64Value(int64(*userModel.Id)),
-				"sub":      types.StringValue(*userModel.Sub),
-				"email":    types.StringValue(*userModel.Email),
-				"username": types.StringValue(*userModel.Username),
-				"name":     types.StringValue(*userModel.Name),
-				"role":     types.StringValue(*userModel.Role),
-
-				// TODO: implement
-				"rbac_roles": types.ListNull(datasource_auth_organizations.RbacRolesValue{}.Type(ctx)),
-				"joined_at":  types.StringNull(),
-			},
-		)
-		resp.Diagnostics.Append(diag...)
-
-		users = append(users, user)
-	}
-
-	usersValue, diag := types.ListValue(
-		datasource_auth_organizations.UsersValue{}.Type(ctx),
-		users,
-	)
-	resp.Diagnostics.Append(diag...)
-
-	org, diag := datasource_auth_organizations.NewOrganizationValue(
-		datasource_auth_organizations.OrganizationValue{}.AttributeTypes(ctx),
-		map[string]attr.Value{
-			"id":         types.Int64Value(int64(callResult.Id)),
-			"name":       types.StringValue(callResult.Name),
-			"users":      usersValue,
-			"created_at": types.StringValue(callResult.CreatedAt.String()),
-		},
-	)
-	resp.Diagnostics.Append(diag...)
-	data.Organization = org
-
+	data = d.ApiToModel(ctx, &resp.Diagnostics, callResult)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (d *DataSourceAuthOrganizations) ApiToModel(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	response *organization.OrganizationInfoModel,
+) datasource_auth_organizations.AuthOrganizationsModel {
+	return datasource_auth_organizations.AuthOrganizationsModel{
+		Id: func() types.Int64 {
+			return types.Int64Value(int64(response.Id))
+		}(),
+		Name: func() types.String {
+			return types.StringValue(response.Name)
+		}(),
+		Users: func() types.List {
+			return d.MapUsers(ctx, diags, response.Users)
+		}(),
+		CreatedAt: func() types.String {
+			if response.CreatedAt == nil {
+				return types.StringNull()
+			}
+			return types.StringValue(response.CreatedAt.String())
+		}(),
+	}
+}
+
+func (d *DataSourceAuthOrganizations) MapUsers(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data *[]organization.OrganizationUserModel,
+) types.List {
+	model, diagnostic := types.ListValue(
+		datasource_auth_organizations.UsersValue{}.Type(ctx),
+		func() []attr.Value {
+			roles := make([]attr.Value, 0)
+			for _, row := range *data {
+				model, diagnostic := datasource_auth_organizations.NewUsersValue(
+					datasource_auth_organizations.UsersValue{}.AttributeTypes(ctx),
+					map[string]attr.Value{
+						"id": func() types.Int64 {
+							return types.Int64Value(int64(*row.Id))
+						}(),
+						"sub": func() types.String {
+							return types.StringValue(*row.Sub)
+						}(),
+						"email": func() types.String {
+							return types.StringValue(*row.Email)
+						}(),
+						"username": func() types.String {
+							return types.StringValue(*row.Username)
+						}(),
+						"name": func() types.String {
+							return types.StringValue(*row.Name)
+						}(),
+						"role": types.StringValue(*row.Role),
+						"joined_at": func() types.String {
+							if row.JoinedAt == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(row.JoinedAt.String())
+						}(),
+
+						// TODO: implement
+						"rbac_roles": types.ListNull(datasource_auth_organizations.RbacRolesValue{}.Type(ctx)),
+					},
+				)
+				diags.Append(diagnostic...)
+				roles = append(roles, model)
+			}
+			return roles
+		}(),
+	)
+	diags.Append(diagnostic...)
+	return model
 }

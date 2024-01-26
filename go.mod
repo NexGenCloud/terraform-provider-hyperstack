@@ -3,7 +3,7 @@ module github.com/nexgen/hyperstack-terraform-provider
 go 1.21
 
 // TODO: recheck
-replace github.com/nexgen/hyperstack-sdk-go => ../go-sdk
+replace github.com/nexgen/hyperstack-sdk-go => ../sdk-go
 
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.4.2

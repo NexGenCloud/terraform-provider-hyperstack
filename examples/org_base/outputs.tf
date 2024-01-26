@@ -1,7 +1,7 @@
 output "user" {
-  value = data.hyperstack_auth_me.this.user
+  value = data.hyperstack_auth_me.this
 }
 
 output "organization" {
-  value = data.hyperstack_auth_organizations.this.organization
+  value = data.hyperstack_auth_organizations.this
 }

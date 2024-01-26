@@ -2,15 +2,52 @@ provider:
   name: hyperstack
   #schema_ref: '#/components/schemas/hyperstack_provider_schema'
 
+data_sources:
+  core_environments:
+    read:
+      path: /core/environments
+      method: GET
+
+  auth_me:
+    read:
+      path: /auth/me
+      method: GET
+
+  auth_organizations:
+    read:
+      path: /auth/organizations
+      method: GET
+
+  auth_roles:
+    read:
+      path: /auth/roles
+      method: GET
+
+  auth_role:
+    read:
+      path: /auth/roles/{id}
+      method: GET
+
+  core_keypairs:
+    read:
+      path: /core/keypairs
+      method: GET
+
+  core_virtual_machine:
+    read:
+      path: /core/virtual-machines/{id}
+      method: GET
+
+  core_virtual_machines:
+    read:
+      path: /core/virtual-machines
+      method: GET
+
 resources:
-  environments:
+  core_environment:
     read:
       path: /core/environments/{id}
       method: GET
-    schema:
-      ignores:
-        - message
-        - status
     create:
       path: /core/environments
       method: POST
@@ -22,11 +59,8 @@ resources:
     create:
       path: /auth/roles
       method: POST
-    schema:
-      ignores:
-        - message
-        - status
-  keypair:
+
+  core_keypair:
     read:
       path: /core/keypairs
       method: GET
@@ -36,65 +70,3 @@ resources:
     update:
       path: /core/keypair/{id}
       method: PUT
-    schema:
-      ignores:
-        - message
-        - status
-
-data_sources:
-  environments:
-    read:
-      path: /core/environments
-      method: GET
-    schema:
-      ignores:
-        - message
-        - status
-  auth_me:
-    read:
-      path: /auth/me
-      method: GET
-    schema:
-      ignores:
-        - message
-        - status
-  auth_organizations:
-    read:
-      path: /auth/organizations
-      method: GET
-    schema:
-      ignores:
-        - message
-        - status
-  auth_roles:
-    read:
-      path: /auth/roles
-      method: GET
-    schema:
-      ignores:
-        - message
-        - status
-  auth_role:
-    read:
-      path: /auth/roles/{id}
-      method: GET
-    schema:
-      ignores:
-        - message
-        - status
-  keypairs:
-    read:
-      path: /core/keypairs
-      method: GET
-    schema:
-      ignores:
-        - message
-        - status
-  virtual_machine:
-    read:
-      path: /core/virtual-machines/{id}
-      method: GET
-    schema:
-      ignores:
-        - message
-        - status
