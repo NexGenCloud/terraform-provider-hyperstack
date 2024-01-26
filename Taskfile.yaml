@@ -131,6 +131,7 @@ tasks:
           --config "{{.DIR_DATA}}/generator-config.yml" \
           --output "{{.PROVIDER_SPEC_PATH}}" \
           "{{.API_JSON_PATH}}"
+        python3 scripts/specfixer.py "{{.PROVIDER_SPEC_PATH}}"
       # language=bash
       - |
         rm -Rf "{{.DIR_GENPROVIDER}}"

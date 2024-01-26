@@ -33,11 +33,6 @@ data_sources:
       path: /core/keypairs
       method: GET
 
-  core_virtual_machine:
-    read:
-      path: /core/virtual-machines/{id}
-      method: GET
-
   core_virtual_machines:
     read:
       path: /core/virtual-machines
@@ -70,3 +65,11 @@ resources:
     update:
       path: /core/keypair/{id}
       method: PUT
+
+  core_virtual_machine:
+    read:
+      path: /core/virtual-machines/{id}
+      method: GET
+    create:
+      path: /core/virtual-machines
+      method: POST

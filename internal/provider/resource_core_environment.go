@@ -30,9 +30,6 @@ func (r *ResourceCoreEnvironment) Metadata(ctx context.Context, req resource.Met
 
 func (r *ResourceCoreEnvironment) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_core_environment.CoreEnvironmentResourceSchema(ctx)
-	//resp.Schema.Attributes["id"] = schema.Int64Attribute{
-	//	Computed: true,
-	//}
 }
 
 func (r *ResourceCoreEnvironment) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
