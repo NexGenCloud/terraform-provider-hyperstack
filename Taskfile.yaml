@@ -72,11 +72,12 @@ tasks:
     dotenv: ['.env']
     vars:
       TF_EXAMPLES: |-
+        org_base
+        org_roles
         core_environments
         core_keypairs
         core_vms
-        org_base
-        org_roles
+        core_vm
     cmds:
       - task: build
       # language=bash
@@ -100,7 +101,6 @@ tasks:
         curl -X GET "https://infrahub-api-stg.ngbackend.cloud/v1/auth/me" \
           -H "accept: application/json" \
           -H "api_key: ${HYPERSTACK_API_KEY}"
-        done
 
   pull-api:
     desc: |
@@ -131,6 +131,7 @@ tasks:
           --config "{{.DIR_DATA}}/generator-config.yml" \
           --output "{{.PROVIDER_SPEC_PATH}}" \
           "{{.API_JSON_PATH}}"
+        python3 scripts/specfixer.py "{{.PROVIDER_SPEC_PATH}}"
       # language=bash
       - |
         rm -Rf "{{.DIR_GENPROVIDER}}"
