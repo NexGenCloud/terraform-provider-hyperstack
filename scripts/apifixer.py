@@ -3,6 +3,18 @@ import argparse
 import json
 import re
 
+def process_emptry_attr_types(json_data):
+    paths = json_data.get("paths", {})
+    for path in paths:
+      methods = paths[path]
+      for method in methods:
+        if "parameters" in methods[method]:
+          for param in methods[method]["parameters"]:
+            if "schema" in param:
+              #if there is a key [type] and it is empty, set it to string
+                if "type" not in param["schema"] or param["schema"]["type"] == "":
+                    param["schema"]["type"] = "string"
+                    print("Fixing empty attribute type in %s" % path)
 
 def process_ref_strings(json_data):
   """ Recursively process $ref strings in the JSON data. """
@@ -49,6 +61,7 @@ def process_components_schemas(json_data):
       # print(schemas[new_key]["properties"])
 
   schemas["InstanceFlavorFields"]["properties"]["ram"]["type"] = "number"
+  schemas["FlavorFields"]["properties"]["ram"]["type"] = "number"
 
   schemas["ImportKeypairPayload"]["properties"]["environment"] = schemas["ImportKeypairPayload"]["properties"]["environment_name"]
   del schemas["ImportKeypairPayload"]["properties"]["environment_name"]
@@ -63,6 +76,8 @@ def main(file_path):
 
   # Process components.schemas to replace keys with spaces
   process_components_schemas(data)
+
+  process_emptry_attr_types(data)
 
   # Write the modified data back to the file
   with open(file_path, 'w') as file:

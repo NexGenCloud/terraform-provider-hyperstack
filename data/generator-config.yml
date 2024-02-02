@@ -3,6 +3,27 @@ provider:
   #schema_ref: '#/components/schemas/hyperstack_provider_schema'
 
 data_sources:
+
+  core_flavors:
+    read:
+      path: /core/flavors
+      method: GET
+
+  core_images:
+    read:
+      path: /core/images
+      method: GET
+
+  core_regions:
+    read:
+      path: /core/regions
+      method: GET
+
+  core_gpus:
+    read:
+      path: /core/gpus
+      method: GET
+
   core_environments:
     read:
       path: /core/environments

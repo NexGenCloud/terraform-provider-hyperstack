@@ -72,12 +72,9 @@ tasks:
     dotenv: ['.env']
     vars:
       TF_EXAMPLES: |-
-        org_base
-        org_roles
-        core_environments
+
         core_keypairs
-        core_vms
-        core_vm
+
     cmds:
       - task: build
       # language=bash

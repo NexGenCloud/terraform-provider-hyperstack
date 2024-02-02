@@ -107,6 +107,10 @@ func (p *hyperstackProvider) DataSources(ctx context.Context) []func() datasourc
 		NewDataSourceCoreEnvironments,
 		NewDataSourceCoreKeypairs,
 		NewDataSourceCoreVirtualMachines,
+		NewDataSourceCoreRegions,
+		NewDataSourceCoreGpus,
+		NewDataSourceCoreFlavors,
+		NewDataSourceCoreImages,
 	}
 }
 
