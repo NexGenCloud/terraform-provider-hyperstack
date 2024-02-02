@@ -69,7 +69,7 @@ func (d *DataSourceCoreImages) Read(ctx context.Context, req datasource.ReadRequ
 
 	// If data.Region is not nil or empty, construct the parameters
 	if !data.Region.IsNull() && data.Region.String() != "" {
-		stringRegion := data.Region.String()
+		stringRegion := string(data.Region.ValueString())
 
 		params = &image.RetrieveImagesParams{
 			Region: &stringRegion,
@@ -78,7 +78,7 @@ func (d *DataSourceCoreImages) Read(ctx context.Context, req datasource.ReadRequ
 	} else {
 		result, err = d.client.RetrieveImagesWithResponse(ctx, nil)
 	}
-
+	resp.Diagnostics.AddWarning("DIAG", fmt.Sprintf("%s", *params.Region))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
