@@ -78,7 +78,6 @@ func (d *DataSourceCoreImages) Read(ctx context.Context, req datasource.ReadRequ
 	} else {
 		result, err = d.client.RetrieveImagesWithResponse(ctx, nil)
 	}
-	resp.Diagnostics.AddWarning("DIAG", fmt.Sprintf("%s", *params.Region))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
