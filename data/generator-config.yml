@@ -60,6 +60,17 @@ data_sources:
       method: GET
 
 resources:
+  core_sg_rules:
+    read:
+      path: /core/virtual-machines/{id}/sg-rules
+      method: GET
+    create:
+      path: /core/virtual-machines/{id}/sg-rules
+      method: POST
+    delete:
+      path: /core/virtual-machines/{virtual_machine_id}/sg-rules/{sg_rule_id}
+      method: DELETE
+
   core_environment:
     read:
       path: /core/environments/{id}

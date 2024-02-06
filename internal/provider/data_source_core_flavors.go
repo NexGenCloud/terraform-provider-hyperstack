@@ -70,7 +70,6 @@ func (d *DataSourceCoreFlavors) Read(ctx context.Context, req datasource.ReadReq
 
 	// If data.Region is not nil or empty, construct the parameters
 	if !data.Region.IsNull() && data.Region.String() != "" {
-		resp.Diagnostics.AddWarning("DIAG", fmt.Sprintf("%s", data.Region.String()))
 		stringRegion := data.Region.String()
 
 		params = &flavor.RetrieveFlavorsParams{
