@@ -71,10 +71,10 @@ func (r *ResourceCoreVirtualMachineSgRule) Create(
 
 	result, err := r.client.AddSecurityRuleWithResponse(ctx, vmId, func() virtual_machine.AddSecurityRuleJSONRequestBody {
 		return virtual_machine.AddSecurityRuleJSONRequestBody{
-			Direction:      data.Direction.String(),
-			Ethertype:      data.Ethertype.String(),
-			Protocol:       data.Protocol.String(),
-			RemoteIpPrefix: data.RemoteIpPrefix.String(),
+			Direction:      data.Direction.ValueString(),
+			Ethertype:      data.Ethertype.ValueString(),
+			Protocol:       data.Protocol.ValueString(),
+			RemoteIpPrefix: data.RemoteIpPrefix.ValueString(),
 			PortRangeMin: func() *int {
 				if data.PortRangeMin.IsNull() {
 					return nil
