@@ -9,6 +9,10 @@ def process_components_schemas(json_data):
   resources = json_data.get("resources", [])
 
   for resource in resources:
+    if resource["name"] == "core_virtual_machine_sg_rule":
+      for attr in resource["schema"]["attributes"]:
+        taint_all(attr)
+
     if resource["name"] == "core_virtual_machine":
       resource["schema"]["blocks"] = []
 

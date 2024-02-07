@@ -1,0 +1,9 @@
+{
+  "data": {
+    "type": "gpg-keys",
+    "attributes": {
+      "namespace": "nexgen",
+      "ascii-armor": "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nREPLACE_WITH_KEY\n-----END PGP PUBLIC KEY BLOCK-----\n"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "data": {
+    "type": "registry-providers",
+    "attributes": {
+      "name": "hyperstack",
+      "namespace": "nexgen",
+      "registry-name": "private"
+    }
+  }
+}
