@@ -118,14 +118,54 @@ func (d *DataSourceCoreVirtualMachines) MapInstances(
 				model, diagnostic := datasource_core_virtual_machines.NewCoreVirtualMachinesValue(
 					datasource_core_virtual_machines.CoreVirtualMachinesValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
-						"id":                 types.Int64Value(int64(*row.Id)),
-						"name":               types.StringValue(*row.Name),
-						"status":             types.StringValue(*row.Status),
-						"power_state":        types.StringValue(*row.PowerState),
-						"vm_state":           types.StringValue(*row.VmState),
-						"fixed_ip":           types.StringValue(*row.FixedIp),
-						"floating_ip":        types.StringValue(*row.FloatingIp),
-						"floating_ip_status": types.StringValue(*row.FloatingIpStatus),
+						"id": func() attr.Value {
+							if row.Id == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.Id))
+						}(),
+						"name": func() attr.Value {
+							if row.Name == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.Name)
+						}(),
+						"status": func() attr.Value {
+							if row.Status == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.Status)
+						}(),
+						"power_state": func() attr.Value {
+							if row.PowerState == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.PowerState)
+						}(),
+						"vm_state": func() attr.Value {
+							if row.VmState == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.VmState)
+						}(),
+						"fixed_ip": func() attr.Value {
+							if row.FixedIp == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.FixedIp)
+						}(),
+						"floating_ip": func() attr.Value {
+							if row.FloatingIp == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.FloatingIp)
+						}(),
+						"floating_ip_status": func() attr.Value {
+							if row.FloatingIpStatus == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.FloatingIpStatus)
+						}(),
 						"openstack_id": func() attr.Value {
 							if row.OpenstackId == nil {
 								return types.StringNull()

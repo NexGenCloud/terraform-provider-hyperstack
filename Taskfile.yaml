@@ -18,14 +18,16 @@ vars:
     sh: echo "$(go env GOOS)_$(go env GOARCH)"
 
   TF_PROVIDER_VERSION: "0.0.1"
+  TF_PROVIDER_NAME: "hyperstack"
   TF_PROVIDER_PATH: |-
-    registry.terraform.io/nexgen/hyperstack/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}/
+    registry.terraform.io/nexgen/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}/
 
 env:
   TF_CLI_CONFIG_FILE: "{{.DIR_EXAMPLES}}/dev.tfrc"
   HYPERSTACK_STAGING: "true"
   HYPERSTACK_API_KEY: ~
   TF_CLOUD_TOKEN: ~
+  TF_CLOUD_KEY_ID: ~
   TF_CLOUD_ORG: nexgen
 
 
@@ -55,38 +57,13 @@ tasks:
     cmds:
       # language=bash
       - |
+        if [[ "$(go env GOOS)" != "darwin" ]]; then
+          # https://github.com/aws/aws-lambda-go/issues/340#issue-748665352
+          # https://github.com/hashicorp/terraform/blob/main/BUILDING.md#cgo_enabled
+          export CGO_ENABLED=0
+        fi
         mkdir -p "{{.DIR_BINPROVIDER}}"
         go build -o "{{.DIR_BINPROVIDER}}/{{.NAME}}"
-
-  provider-prepare:
-    desc: |
-      Prepares provider for publishing
-    dotenv: ['../../.env']
-    dir: "{{.DIR_BINPROVIDER}}"
-    vars:
-      BIN_NAME: "{{.NAME}}_v{{.TF_PROVIDER_VERSION}}"
-      ZIP_NAME: "{{.BIN_NAME}}_{{.ARCH}}.zip"
-      SHA_NAME: "{{.BIN_NAME}}_SHA256SUMS"
-    cmds:
-      # https://developer.hashicorp.com/terraform/registry/providers/publishing#manually-preparing-a-release
-      # language=bash
-      - |
-        cp "{{.NAME}}" "{{.BIN_NAME}}"
-        zip "{{.ZIP_NAME}}" "{{.BIN_NAME}}"
-        shasum -a 256 "{{.ZIP_NAME}}" > "{{.SHA_NAME}}"
-        gpg --batch --yes --detach-sign "{{.SHA_NAME}}"
-      # language=bash
-      - |
-        exit 0 # TODO: automatic upload
-        curl -T "{{.SHA_NAME}}" ADDR
-        curl -T "{{.SHA_NAME}}.sig" ADDR
-        curl \
-          --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
-          --header "Content-Type: application/vnd.api+json" \
-          --request POST \
-          --data @platform.json \
-          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/hyperstack/versions/{{.TF_PROVIDER_VERSION}}/platforms
-        curl -T "{{.ZIP_NAME}}" ADDR
   gen:
     desc: |
       Generates schemas
@@ -124,13 +101,128 @@ tasks:
           --request POST \
           --data @key.json \
           https://app.terraform.io/api/registry/private/v2/gpg-keys
-        curl \
+
+  provider-publish:
+    desc: |
+      Publishes new provider version
+    dotenv: ['../../.env']
+    dir: "{{.DIR_BINPROVIDER}}"
+    vars:
+      BIN_NAME: "{{.NAME}}_v{{.TF_PROVIDER_VERSION}}"
+      ZIP_NAME: "{{.BIN_NAME}}_{{.ARCH}}.zip"
+      SHA_NAME: "{{.BIN_NAME}}_SHA256SUMS"
+      PLATFORM_JSON: "{{.DIR_BINPROVIDER}}/platform.json"
+      VERSION_JSON: "{{.DIR_BINPROVIDER}}/version.json"
+    cmds:
+      - task: build
+      # https://developer.hashicorp.com/terraform/registry/providers/publishing#manually-preparing-a-release
+      # language=bash
+      - echo "Uploading provider {{.NAME}} version v{{.TF_PROVIDER_VERSION}}:"
+      # language=bash
+      - |
+        echo -n "- deleting existing release... "
+        rm -f \
+          "{{.BIN_NAME}}" \
+          "{{.SHA_NAME}}" \
+          "{{.SHA_NAME}}.sig"
+        curl -s \
+          --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
+          --header "Content-Type: application/vnd.api+json" \
+          --request DELETE \
+          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/{{.TF_PROVIDER_NAME}}/versions/{{.TF_PROVIDER_VERSION}} \
+            > /dev/null
+        echo "done"
+      # language=bash
+      - |
+        echo -n "- creating and signing archive... "
+        cp "{{.NAME}}" "{{.BIN_NAME}}"
+        zip -q "{{.ZIP_NAME}}" "{{.BIN_NAME}}"
+        shasum -a 256 "{{.ZIP_NAME}}" > "{{.SHA_NAME}}"
+        gpg \
+          --output "{{.SHA_NAME}}.sig" \
+          --detach-sign "{{.SHA_NAME}}"
+        echo "done"
+      # language=bash
+      - |
+        echo -n "- creating a new cloud release... "
+        cat <<EOF > "{{.VERSION_JSON}}"
+        {
+          "data": {
+            "type": "registry-provider-versions",
+            "attributes": {
+              "version": "{{.TF_PROVIDER_VERSION}}",
+              "key-id": "${TF_CLOUD_KEY_ID}",
+              "protocols": ["5.0"]
+            }
+          }
+        }
+        EOF
+        curl -s \
           --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
           --header "Content-Type: application/vnd.api+json" \
           --request POST \
-          --data @version.json \
-          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/hyperstack/versions
-  
+          --data "@{{.VERSION_JSON}}" \
+          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/{{.TF_PROVIDER_NAME}}/versions \
+            > "{{.DIR_BINPROVIDER}}/create_result.json"
+        echo "done"
+      # language=bash
+      - |
+        echo -n "- uploading SHA256SUMS... "
+        curl -s \
+          -T \
+          "{{.SHA_NAME}}" \
+          "$(cat "{{.DIR_BINPROVIDER}}/create_result.json" | jq -r '.data.links."shasums-upload"')"
+        echo "done"
+      # language=bash
+      - |
+        echo -n "- uploading SHA256SUMS.sig... "
+        curl -s \
+          -T \
+          "{{.SHA_NAME}}.sig" \
+          "$(cat "{{.DIR_BINPROVIDER}}/create_result.json" | jq -r '.data.links."shasums-sig-upload"')"
+        echo "done"
+      # language=bash
+      - |
+        echo -n "- uploading release... "
+        cat <<EOF > "{{.PLATFORM_JSON}}"
+        {
+          "data": {
+            "type": "registry-provider-version-platforms",
+            "attributes": {
+              "os": "$(go env GOOS)",
+              "arch": "$(go env GOARCH)",
+              "shasum": "$(shasum -a 256 "{{.ZIP_NAME}}" | cut -d' ' -f1)",
+              "filename": "{{.ZIP_NAME}}"
+            }
+          }
+        }
+        EOF
+        curl -s \
+          --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
+          --header "Content-Type: application/vnd.api+json" \
+          --request POST \
+          --data "@{{.PLATFORM_JSON}}" \
+          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/{{.TF_PROVIDER_NAME}}/versions/{{.TF_PROVIDER_VERSION}}/platforms \
+            > "{{.DIR_BINPROVIDER}}/publish_result.json"
+        curl -s \
+          -T \
+          "{{.ZIP_NAME}}" \
+          "$(cat "{{.DIR_BINPROVIDER}}/publish_result.json" | jq -r '.data.links."provider-binary-upload"')"
+        echo "done"
+      # language=bash
+      - |
+        cat <<EOF
+        Release is ready v{{.TF_PROVIDER_VERSION}}:
+
+        terraform {
+          required_providers {
+            hyperstack = {
+              source = "app.terraform.io/${TF_CLOUD_ORG}/{{.TF_PROVIDER_NAME}}"
+              version = "{{.TF_PROVIDER_VERSION}}"
+            }
+          }
+        }
+        EOF
 
   test-examples:
     desc: |
