@@ -95,6 +95,7 @@ func (p *hyperstackProvider) Resources(ctx context.Context) []func() resource.Re
 		NewResourceCoreEnvironment,
 		NewResourceCoreKeypair,
 		NewResourceCoreVirtualMachine,
+		NewResourceCoreVirtualMachineSgRule,
 	}
 }
 

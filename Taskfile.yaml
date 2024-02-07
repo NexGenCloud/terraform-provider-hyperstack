@@ -56,6 +56,13 @@ tasks:
         mkdir -p "{{.DIR_BINPROVIDER}}"
         go build -o "{{.DIR_BINPROVIDER}}/{{.NAME}}"
 
+  gen:
+    desc: |
+      Generates schemas
+    cmds:
+      - task: pull-api
+      - task: gen-openapi
+
   test:
     desc: |
       Tests the provider

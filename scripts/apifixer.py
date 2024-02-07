@@ -32,6 +32,7 @@ def process_ref_strings(json_data):
 
 def process_components_schemas(json_data):
   """ Process the components.schemas part of the JSON to replace keys with spaces. """
+  paths = json_data.get("paths", {})
   components = json_data.get("components", {})
   schemas = components.get("schemas", {})
 
@@ -65,6 +66,26 @@ def process_components_schemas(json_data):
 
   schemas["ImportKeypairPayload"]["properties"]["environment"] = schemas["ImportKeypairPayload"]["properties"]["environment_name"]
   del schemas["ImportKeypairPayload"]["properties"]["environment_name"]
+
+  schemas["CreateSecurityRulePayload"]["required"].append("virtual_machine_id")
+  schemas["CreateSecurityRulePayload"]["properties"]["virtual_machine_id"] = {
+    "type": "integer",
+  }
+  schemas["CreateSecurityRulePayload"]["properties"]["port_range_min"] = {
+    "type": "integer",
+  }
+  schemas["CreateSecurityRulePayload"]["properties"]["port_range_max"] = {
+    "type": "integer",
+  }
+
+  paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"] = paths["/core/virtual-machines/{id}/sg-rules"]
+  del paths["/core/virtual-machines/{id}/sg-rules"]
+  paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"]["post"]["parameters"][0]["name"] = "virtual_machine_id"
+
+  paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"] = paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{sg_rule_id}"]
+  del paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{sg_rule_id}"]
+  paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"]["delete"]["parameters"][0]["name"] = "virtual_machine_id"
+  paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"]["delete"]["parameters"][1]["name"] = "id"
 
 
 def main(file_path):

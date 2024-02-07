@@ -127,8 +127,6 @@ func (d *DataSourceCoreImages) MapImages(
 		func() []attr.Value {
 			coreImages := make([]attr.Value, 0)
 			for _, row := range data {
-				diags.AddWarning("DIAG", fmt.Sprintf("%s", row.Type))
-				// Map each field from the ImageGetResponse object to a corresponding field in the CoreImagesValue object
 				logo := ""
 				if row.Logo != nil {
 					logo = *row.Logo

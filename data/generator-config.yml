@@ -3,7 +3,6 @@ provider:
   #schema_ref: '#/components/schemas/hyperstack_provider_schema'
 
 data_sources:
-
   core_flavors:
     read:
       path: /core/flavors
@@ -60,6 +59,17 @@ data_sources:
       method: GET
 
 resources:
+  core_virtual_machine_sg_rule:
+    read:
+      path: /core/virtual-machines/{virtual_machine_id}/sg-rules
+      method: GET
+    create:
+      path: /core/virtual-machines/{virtual_machine_id}/sg-rules
+      method: POST
+    delete:
+      path: /core/virtual-machines/{virtual_machine_id}/sg-rules/{id}
+      method: DELETE
+
   core_environment:
     read:
       path: /core/environments/{id}
