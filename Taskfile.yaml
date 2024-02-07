@@ -25,6 +25,8 @@ env:
   TF_CLI_CONFIG_FILE: "{{.DIR_EXAMPLES}}/dev.tfrc"
   HYPERSTACK_STAGING: "true"
   HYPERSTACK_API_KEY: ~
+  TF_CLOUD_TOKEN: ~
+  TF_CLOUD_ORG: nexgen
 
 
 tasks:
@@ -56,6 +58,35 @@ tasks:
         mkdir -p "{{.DIR_BINPROVIDER}}"
         go build -o "{{.DIR_BINPROVIDER}}/{{.NAME}}"
 
+  provider-prepare:
+    desc: |
+      Prepares provider for publishing
+    dotenv: ['../../.env']
+    dir: "{{.DIR_BINPROVIDER}}"
+    vars:
+      BIN_NAME: "{{.NAME}}_v{{.TF_PROVIDER_VERSION}}"
+      ZIP_NAME: "{{.BIN_NAME}}_{{.ARCH}}.zip"
+      SHA_NAME: "{{.BIN_NAME}}_SHA256SUMS"
+    cmds:
+      # https://developer.hashicorp.com/terraform/registry/providers/publishing#manually-preparing-a-release
+      # language=bash
+      - |
+        cp "{{.NAME}}" "{{.BIN_NAME}}"
+        zip "{{.ZIP_NAME}}" "{{.BIN_NAME}}"
+        shasum -a 256 "{{.ZIP_NAME}}" > "{{.SHA_NAME}}"
+        gpg --batch --yes --detach-sign "{{.SHA_NAME}}"
+      # language=bash
+      - |
+        exit 0 # TODO: automatic upload
+        curl -T "{{.SHA_NAME}}" ADDR
+        curl -T "{{.SHA_NAME}}.sig" ADDR
+        curl \
+          --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
+          --header "Content-Type: application/vnd.api+json" \
+          --request POST \
+          --data @platform.json \
+          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/hyperstack/versions/{{.TF_PROVIDER_VERSION}}/platforms
+        curl -T "{{.ZIP_NAME}}" ADDR
   gen:
     desc: |
       Generates schemas
@@ -72,6 +103,34 @@ tasks:
       # language=bash
       - |
         TF_ACC=1 go test ./... -v -timeout 120m
+
+  provider-create:
+    desc: |
+      Creates provider in terraform cloud
+    dotenv: ['.env']
+    cmds:
+      # https://developer.hashicorp.com/terraform/cloud-docs/registry/publish-providers
+      # language=bash
+      - |
+        curl \
+          --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
+          --header "Content-Type: application/vnd.api+json" \
+          --request POST \
+          --data @provider.json \
+          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers
+        curl \
+          --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
+          --header "Content-Type: application/vnd.api+json" \
+          --request POST \
+          --data @key.json \
+          https://app.terraform.io/api/registry/private/v2/gpg-keys
+        curl \
+          --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
+          --header "Content-Type: application/vnd.api+json" \
+          --request POST \
+          --data @version.json \
+          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/hyperstack/versions
+  
 
   test-examples:
     desc: |
