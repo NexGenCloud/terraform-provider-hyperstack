@@ -5,7 +5,7 @@ To test the project locally, configure the `dev_overrides` in your `.terraformrc
 provider_installation {
 
   dev_overrides {
-      "registry.terraform.io/nexgen/hyperstack" = $PATH
+      "registry.terraform.io/nexgen/hyperstack" = $HOME/go/bin
   }
 
   # For all other providers, install them directly from their origin provider

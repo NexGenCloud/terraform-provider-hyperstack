@@ -1,0 +1,1901 @@
+{
+    "datasources": [
+        {
+            "name": "auth_me",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "created_at",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "email",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "username",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "auth_organizations",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "created_at",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "int64": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "users",
+                        "list_nested": {
+                            "computed_optional_required": "computed",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "email",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "id",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "joined_at",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "name",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "rbac_roles",
+                                        "list_nested": {
+                                            "computed_optional_required": "computed",
+                                            "nested_object": {
+                                                "attributes": [
+                                                    {
+                                                        "name": "name",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "role",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "sub",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "username",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "auth_role",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "id",
+                        "int64": {
+                            "computed_optional_required": "required"
+                        }
+                    },
+                    {
+                        "name": "created_at",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "description",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "permissions",
+                        "list_nested": {
+                            "computed_optional_required": "computed",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "id",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "permission",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "resource",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "name": "policies",
+                        "list_nested": {
+                            "computed_optional_required": "computed",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "description",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "id",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "name",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "auth_roles",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "auth_roles",
+                        "set_nested": {
+                            "computed_optional_required": "computed",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "created_at",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "description",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "id",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "name",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "permissions",
+                                        "list_nested": {
+                                            "computed_optional_required": "computed",
+                                            "nested_object": {
+                                                "attributes": [
+                                                    {
+                                                        "name": "id",
+                                                        "int64": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "permission",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "resource",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "policies",
+                                        "list_nested": {
+                                            "computed_optional_required": "computed",
+                                            "nested_object": {
+                                                "attributes": [
+                                                    {
+                                                        "name": "description",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "id",
+                                                        "int64": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "name",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "core_environments",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "core_environments",
+                        "set_nested": {
+                            "computed_optional_required": "computed",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "created_at",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "id",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "name",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "region",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "core_flavors",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "region",
+                        "string": {
+                            "computed_optional_required": "computed_optional",
+                            "description": "Region Name"
+                        }
+                    },
+                    {
+                        "name": "core_flavors",
+                        "set_nested": {
+                            "computed_optional_required": "computed",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "flavors",
+                                        "list_nested": {
+                                            "computed_optional_required": "computed",
+                                            "nested_object": {
+                                                "attributes": [
+                                                    {
+                                                        "name": "cpu",
+                                                        "int64": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "created_at",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "disk",
+                                                        "int64": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "gpu",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "gpu_count",
+                                                        "int64": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "id",
+                                                        "int64": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "name",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "ram",
+                                                        "number": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "region_name",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "stock_available",
+                                                        "bool": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "gpu",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "region_name",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "core_gpus",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "core_gpus",
+                        "set_nested": {
+                            "computed_optional_required": "computed",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "created_at",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "example_metadata",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "id",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "name",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "regions",
+                                        "list_nested": {
+                                            "computed_optional_required": "computed",
+                                            "nested_object": {
+                                                "attributes": [
+                                                    {
+                                                        "name": "id",
+                                                        "int64": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "name",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "updated_at",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "core_images",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "region",
+                        "string": {
+                            "computed_optional_required": "computed_optional",
+                            "description": "Region Name"
+                        }
+                    },
+                    {
+                        "name": "core_images",
+                        "set_nested": {
+                            "computed_optional_required": "computed",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "images",
+                                        "list_nested": {
+                                            "computed_optional_required": "computed",
+                                            "nested_object": {
+                                                "attributes": [
+                                                    {
+                                                        "name": "display_size",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "id",
+                                                        "int64": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "name",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "region_name",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "size",
+                                                        "int64": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "type",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "version",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "logo",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "region_name",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "type",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "core_keypairs",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "core_keypairs",
+                        "set_nested": {
+                            "computed_optional_required": "computed",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "created_at",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "environment",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "fingerprint",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "id",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "name",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "public_key",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "core_regions",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "core_regions",
+                        "set_nested": {
+                            "computed_optional_required": "computed",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "description",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "id",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "name",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "core_virtual_machines",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "core_virtual_machines",
+                        "set_nested": {
+                            "computed_optional_required": "computed",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "created_at",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "environment",
+                                        "single_nested": {
+                                            "computed_optional_required": "computed",
+                                            "attributes": [
+                                                {
+                                                    "name": "name",
+                                                    "string": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
+                                                {
+                                                    "name": "org_id",
+                                                    "int64": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
+                                                {
+                                                    "name": "region",
+                                                    "string": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "fixed_ip",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "flavor",
+                                        "single_nested": {
+                                            "computed_optional_required": "computed",
+                                            "attributes": [
+                                                {
+                                                    "name": "cpu",
+                                                    "int64": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
+                                                {
+                                                    "name": "disk",
+                                                    "int64": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
+                                                {
+                                                    "name": "gpu",
+                                                    "string": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
+                                                {
+                                                    "name": "gpu_count",
+                                                    "int64": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
+                                                {
+                                                    "name": "id",
+                                                    "int64": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
+                                                {
+                                                    "name": "name",
+                                                    "string": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
+                                                {
+                                                    "name": "ram",
+                                                    "number": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "floating_ip",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "floating_ip_status",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "id",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "image",
+                                        "single_nested": {
+                                            "computed_optional_required": "computed",
+                                            "attributes": [
+                                                {
+                                                    "name": "name",
+                                                    "string": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "keypair",
+                                        "single_nested": {
+                                            "computed_optional_required": "computed",
+                                            "attributes": [
+                                                {
+                                                    "name": "name",
+                                                    "string": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "name",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "openstack_id",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "power_state",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "security_rules",
+                                        "list_nested": {
+                                            "computed_optional_required": "computed",
+                                            "nested_object": {
+                                                "attributes": [
+                                                    {
+                                                        "name": "created_at",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "direction",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "ethertype",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "id",
+                                                        "int64": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "port_range_max",
+                                                        "int64": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "port_range_min",
+                                                        "int64": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "protocol",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "remote_ip_prefix",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "status",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "status",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "vm_state",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "volume_attachments",
+                                        "list_nested": {
+                                            "computed_optional_required": "computed",
+                                            "nested_object": {
+                                                "attributes": [
+                                                    {
+                                                        "name": "created_at",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "device",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "status",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "volume",
+                                                        "single_nested": {
+                                                            "computed_optional_required": "computed",
+                                                            "attributes": [
+                                                                {
+                                                                    "name": "description",
+                                                                    "string": {
+                                                                        "computed_optional_required": "computed"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "name": "id",
+                                                                    "int64": {
+                                                                        "computed_optional_required": "computed"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "name": "name",
+                                                                    "string": {
+                                                                        "computed_optional_required": "computed"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "name": "size",
+                                                                    "int64": {
+                                                                        "computed_optional_required": "computed"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "name": "volume_type",
+                                                                    "string": {
+                                                                        "computed_optional_required": "computed"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "provider": {
+        "name": "hyperstack"
+    },
+    "resources": [
+        {
+            "name": "auth_role",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "description",
+                        "string": {
+                            "computed_optional_required": "required"
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "string": {
+                            "computed_optional_required": "required"
+                        }
+                    },
+                    {
+                        "name": "permissions",
+                        "list": {
+                            "computed_optional_required": "computed_optional",
+                            "element_type": {
+                                "int64": {}
+                            }
+                        }
+                    },
+                    {
+                        "name": "policies",
+                        "list": {
+                            "computed_optional_required": "computed_optional",
+                            "element_type": {
+                                "int64": {}
+                            }
+                        }
+                    },
+                    {
+                        "name": "created_at",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "int64": {
+                            "computed_optional_required": "computed"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "core_environment",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "name",
+                        "string": {
+                            "computed_optional_required": "required"
+                        }
+                    },
+                    {
+                        "name": "region",
+                        "string": {
+                            "computed_optional_required": "required"
+                        }
+                    },
+                    {
+                        "name": "created_at",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "int64": {
+                            "computed_optional_required": "computed"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "core_keypair",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "environment",
+                        "string": {
+                            "computed_optional_required": "computed_optional"
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "string": {
+                            "computed_optional_required": "required"
+                        }
+                    },
+                    {
+                        "name": "public_key",
+                        "string": {
+                            "computed_optional_required": "required"
+                        }
+                    },
+                    {
+                        "name": "created_at",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "fingerprint",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "int64": {
+                            "computed_optional_required": "computed"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "core_virtual_machine",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "assign_floating_ip",
+                        "bool": {
+                            "computed_optional_required": "computed_optional",
+                            "default": {
+                                "static": false
+                            },
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "boolplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "callback_url",
+                        "string": {
+                            "computed_optional_required": "computed_optional",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "create_bootable_volume",
+                        "bool": {
+                            "computed_optional_required": "computed_optional",
+                            "default": {
+                                "static": false
+                            },
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "boolplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "environment_name",
+                        "string": {
+                            "computed_optional_required": "required",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "flavor",
+                        "single_nested": {
+                            "computed_optional_required": "computed_optional",
+                            "attributes": [
+                                {
+                                    "name": "cpu",
+                                    "int64": {
+                                        "computed_optional_required": "computed_optional"
+                                    }
+                                },
+                                {
+                                    "name": "disk",
+                                    "int64": {
+                                        "computed_optional_required": "computed_optional"
+                                    }
+                                },
+                                {
+                                    "name": "gpu",
+                                    "string": {
+                                        "computed_optional_required": "computed_optional"
+                                    }
+                                },
+                                {
+                                    "name": "gpu_count",
+                                    "int64": {
+                                        "computed_optional_required": "computed_optional"
+                                    }
+                                },
+                                {
+                                    "name": "ram",
+                                    "number": {
+                                        "computed_optional_required": "computed_optional"
+                                    }
+                                },
+                                {
+                                    "name": "id",
+                                    "int64": {
+                                        "computed_optional_required": "computed"
+                                    }
+                                },
+                                {
+                                    "name": "name",
+                                    "string": {
+                                        "computed_optional_required": "computed"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "flavor_name",
+                        "string": {
+                            "computed_optional_required": "computed_optional",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "image_name",
+                        "string": {
+                            "computed_optional_required": "computed_optional",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "key_name",
+                        "string": {
+                            "computed_optional_required": "required",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "string": {
+                            "computed_optional_required": "required",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "user_data",
+                        "string": {
+                            "computed_optional_required": "computed_optional",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "volume_name",
+                        "string": {
+                            "computed_optional_required": "computed_optional",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "created_at",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "single_nested": {
+                            "computed_optional_required": "computed",
+                            "attributes": [
+                                {
+                                    "name": "name",
+                                    "string": {
+                                        "computed_optional_required": "computed"
+                                    }
+                                },
+                                {
+                                    "name": "org_id",
+                                    "int64": {
+                                        "computed_optional_required": "computed"
+                                    }
+                                },
+                                {
+                                    "name": "region",
+                                    "string": {
+                                        "computed_optional_required": "computed"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "fixed_ip",
+                        "string": {
+                            "computed_optional_required": "computed",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "floating_ip",
+                        "string": {
+                            "computed_optional_required": "computed",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "floating_ip_status",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "int64": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "image",
+                        "single_nested": {
+                            "computed_optional_required": "computed",
+                            "attributes": [
+                                {
+                                    "name": "name",
+                                    "string": {
+                                        "computed_optional_required": "computed"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "keypair",
+                        "single_nested": {
+                            "computed_optional_required": "computed",
+                            "attributes": [
+                                {
+                                    "name": "name",
+                                    "string": {
+                                        "computed_optional_required": "computed"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "openstack_id",
+                        "string": {
+                            "computed_optional_required": "computed",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "power_state",
+                        "string": {
+                            "computed_optional_required": "computed",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "security_rules",
+                        "list_nested": {
+                            "computed_optional_required": "computed",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "created_at",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "direction",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "ethertype",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "id",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "port_range_max",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "port_range_min",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "protocol",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "remote_ip_prefix",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "status",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "vm_state",
+                        "string": {
+                            "computed_optional_required": "computed",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "volume_attachments",
+                        "list_nested": {
+                            "computed_optional_required": "computed",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "created_at",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "device",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "status",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "volume",
+                                        "single_nested": {
+                                            "computed_optional_required": "computed",
+                                            "attributes": [
+                                                {
+                                                    "name": "description",
+                                                    "string": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
+                                                {
+                                                    "name": "id",
+                                                    "int64": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
+                                                {
+                                                    "name": "name",
+                                                    "string": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
+                                                {
+                                                    "name": "size",
+                                                    "int64": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
+                                                {
+                                                    "name": "volume_type",
+                                                    "string": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "blocks": [
+                    {
+                        "name": "profile",
+                        "list_nested": {
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "description",
+                                        "string": {
+                                            "computed_optional_required": "computed_optional"
+                                        }
+                                    },
+                                    {
+                                        "name": "name",
+                                        "string": {
+                                            "computed_optional_required": "optional"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "core_virtual_machine_sg_rule",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "direction",
+                        "string": {
+                            "computed_optional_required": "required",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "ethertype",
+                        "string": {
+                            "computed_optional_required": "required",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "port_range_max",
+                        "int64": {
+                            "computed_optional_required": "computed_optional",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "int64planmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "port_range_min",
+                        "int64": {
+                            "computed_optional_required": "computed_optional",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "int64planmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "protocol",
+                        "string": {
+                            "computed_optional_required": "required",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "remote_ip_prefix",
+                        "string": {
+                            "computed_optional_required": "required",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "virtual_machine_id",
+                        "int64": {
+                            "computed_optional_required": "required",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "int64planmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "created_at",
+                        "string": {
+                            "computed_optional_required": "computed",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "int64": {
+                            "computed_optional_required": "computed",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "int64planmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "string": {
+                            "computed_optional_required": "computed",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "version": "0.1"
+}
