@@ -1,0 +1,3 @@
+[submodule "hyperstack-sdk-go"]
+	path = hyperstack-sdk-go
+	url = git@github.com:NexGenCloud/hyperstack-sdk-go.git
