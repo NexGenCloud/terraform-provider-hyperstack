@@ -64,6 +64,7 @@ tasks:
         fi
         mkdir -p "{{.DIR_BINPROVIDER}}"
         go build -o "{{.DIR_BINPROVIDER}}/{{.NAME}}"
+        go install "{{.DIR_BINPROVIDER}}"
   gen:
     desc: |
       Generates schemas
