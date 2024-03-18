@@ -9,9 +9,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"github.com/nexgen/hyperstack-sdk-go/lib/rbac_role"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/resource_auth_role"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/rbac_role"
+	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/client"
+	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/genprovider/resource_auth_role"
 )
 
 var _ resource.Resource = &ResourceAuthRole{}

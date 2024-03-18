@@ -6,9 +6,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/nexgen/hyperstack-sdk-go/lib/auth"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/datasource_auth_me"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/auth"
+	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/client"
+	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/genprovider/datasource_auth_me"
 	"io/ioutil"
 )
 

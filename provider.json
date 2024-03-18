@@ -3,7 +3,7 @@
     "type": "registry-providers",
     "attributes": {
       "name": "hyperstack",
-      "namespace": "nexgen",
+      "namespace": "nexgencloud",
       "registry-name": "private"
     }
   }
