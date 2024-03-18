@@ -64,7 +64,8 @@ tasks:
         fi
         mkdir -p "{{.DIR_BINPROVIDER}}"
         go build -o "{{.DIR_BINPROVIDER}}/{{.NAME}}"
-
+        mkdir -p "$HOME/.config/terraform/registry.terraform.io/nexgencloud/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}"
+        cp "{{.DIR_BINPROVIDER}}/{{.NAME}}" "$HOME/.config/terraform/registry.terraform.io/nexgencloud/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}/"
   gen:
     desc: |
       Generates schemas

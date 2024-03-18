@@ -1,16 +1,14 @@
-To test the project locally, configure the `dev_overrides` in your `.terraformrc`:
+To test the project locally, configure the `filesystem_mirror` in your `.terraformrc`:
 
 ```shell
 # ~/.terraformrc
 provider_installation {
-
-  dev_overrides {
-      "registry.terraform.io/nexgen/hyperstack" = $HOME/go/bin
+  filesystem_mirror {
+    path    = "/home/nqngo/.config/terraform/"
+    include = ["registry.terraform.io/nexgencloud/*"]
   }
-
-  # For all other providers, install them directly from their origin provider
-  # registries as normal. If you omit this, Terraform will _only_ use
-  # the dev_overrides block, and so no other providers will be available.
-  direct {}
+  direct {
+    exclude = ["registry.terraform.io/nexgencloud/*"]
+  }
 }
 ```
