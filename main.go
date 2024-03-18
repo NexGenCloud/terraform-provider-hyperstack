@@ -6,11 +6,11 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/provider"
+	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/provider"
 )
 
 var (
-	version string = "dev"
+	version string = "0.1.0"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/nexgen/hyperstack",
+		Address: "registry.terraform.io/nexgencloud/hyperstack",
 		Debug:   debug,
 	}
 

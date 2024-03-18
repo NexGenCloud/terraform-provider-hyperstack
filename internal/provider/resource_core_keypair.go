@@ -10,9 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/nexgen/hyperstack-sdk-go/lib/keypair"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/resource_core_keypair"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/keypair"
+	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/client"
+	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/genprovider/resource_core_keypair"
 	"io/ioutil"
 	"strings"
 )

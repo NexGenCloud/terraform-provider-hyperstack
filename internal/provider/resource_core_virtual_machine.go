@@ -8,9 +8,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/nexgen/hyperstack-sdk-go/lib/virtual_machine"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/genprovider/resource_core_virtual_machine"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/virtual_machine"
+	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/client"
+	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/genprovider/resource_core_virtual_machine"
 	"math/big"
 	"time"
 )

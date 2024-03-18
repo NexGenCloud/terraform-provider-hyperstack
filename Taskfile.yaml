@@ -17,10 +17,10 @@ vars:
     # language=bash
     sh: echo "$(go env GOOS)_$(go env GOARCH)"
 
-  TF_PROVIDER_VERSION: "0.0.1"
+  TF_PROVIDER_VERSION: "0.1.0"
   TF_PROVIDER_NAME: "hyperstack"
   TF_PROVIDER_PATH: |-
-    registry.terraform.io/nexgen/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}/
+    registry.terraform.io/nexgencloud/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}/
 
 env:
   TF_CLI_CONFIG_FILE: "{{.DIR_EXAMPLES}}/dev.tfrc"
@@ -28,7 +28,7 @@ env:
   HYPERSTACK_API_KEY: ~
   TF_CLOUD_TOKEN: ~
   TF_CLOUD_KEY_ID: ~
-  TF_CLOUD_ORG: nexgen
+  TF_CLOUD_ORG: nexgencloud
 
 
 tasks:
@@ -64,7 +64,7 @@ tasks:
         fi
         mkdir -p "{{.DIR_BINPROVIDER}}"
         go build -o "{{.DIR_BINPROVIDER}}/{{.NAME}}"
-        go install "{{.DIR_BINPROVIDER}}"
+
   gen:
     desc: |
       Generates schemas

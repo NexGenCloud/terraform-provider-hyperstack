@@ -2,7 +2,7 @@ package provider
 
 import (
 	"context"
-	"github.com/nexgen/hyperstack-terraform-provider/internal/client"
+	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/client"
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
