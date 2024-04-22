@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/NexGenCloud/hyperstack-sdk-go v0.1.1
-	github.com/NexGenCloud/terraform-provider-hyperstack v0.0.0-20240328062320-aebbbf1d3fd2
+
 	github.com/hashicorp/terraform-plugin-framework v1.4.2
 	github.com/hashicorp/terraform-plugin-go v0.20.0
 	github.com/hashicorp/terraform-plugin-testing v1.6.0
