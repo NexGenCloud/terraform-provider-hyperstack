@@ -8,8 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/rbac_role"
-	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/client"
-	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/genprovider/datasource_auth_roles"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_auth_roles"
 	"io/ioutil"
 )
 
