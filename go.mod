@@ -1,4 +1,4 @@
-module github.com/NexGenCloud/hyperstack-terraform-provider
+module github.com/NexGenCloud/terraform-provider-openstack
 
 go 1.21
 
