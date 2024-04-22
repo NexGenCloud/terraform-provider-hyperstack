@@ -8,8 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/flavor"
-	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/client"
-	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/genprovider/datasource_core_flavors"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_flavors"
 	"io/ioutil"
 	"math/big"
 )

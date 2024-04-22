@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/provider"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/provider"
 )
 
 var (
