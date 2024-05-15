@@ -3,6 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/gpu"
+	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/client"
+	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/genprovider/datasource_core_gpus"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -64,7 +67,7 @@ func (d *DataSourceCoreGpus) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	result, err := d.client.GetGPUListWithResponse(ctx)
+	result, err := d.client.ListGPUsWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -135,7 +138,7 @@ func (d *DataSourceCoreGpus) MapRegions(
 		func() []attr.Value {
 			regions := make([]attr.Value, 0)
 			for _, row := range data {
-				model, diagnostic := datasource_core_regions.NewCoreRegionsValue(
+				model, diagnostic := datasource_core_gpus.NewRegionsValue(
 					datasource_core_gpus.RegionsValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
 						"id":   types.Int64Value(int64(*row.Id)),

@@ -47,7 +47,8 @@ def process_components_schemas(json_data):
       del props["status"]
       del props["message"]
 
-      if new_key == "Instances":
+      # TODO: recheck
+      if new_key == "Instances" and "instance_count" in props:
         del props["instance_count"]
 
       if len(props.keys()) > 1:

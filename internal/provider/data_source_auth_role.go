@@ -97,7 +97,7 @@ func (d *DataSourceAuthRole) Read(ctx context.Context, req datasource.ReadReques
 func (d *DataSourceAuthRole) ApiToModel(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	response *rbac_role.RBACRoleFields,
+	response *rbac_role.RbacRoleFields,
 ) datasource_auth_role.AuthRoleModel {
 	return datasource_auth_role.AuthRoleModel{
 		Id: func() types.Int64 {

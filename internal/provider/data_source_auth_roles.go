@@ -97,7 +97,7 @@ func (d *DataSourceAuthRoles) Read(ctx context.Context, req datasource.ReadReque
 func (d *DataSourceAuthRoles) ApiToModel(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	response *[]rbac_role.RBACRoleFields,
+	response *[]rbac_role.RbacRoleFields,
 ) datasource_auth_roles.AuthRolesModel {
 	return datasource_auth_roles.AuthRolesModel{
 		AuthRoles: func() types.Set {
@@ -109,7 +109,7 @@ func (d *DataSourceAuthRoles) ApiToModel(
 func (d *DataSourceAuthRoles) MapRoles(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data []rbac_role.RBACRoleFields,
+	data []rbac_role.RbacRoleFields,
 ) types.Set {
 	model, diagnostic := types.SetValue(
 		datasource_auth_roles.AuthRolesValue{}.Type(ctx),

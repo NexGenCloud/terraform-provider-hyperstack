@@ -113,7 +113,7 @@ func (r *ResourceCoreEnvironment) Read(
 		return
 	}
 
-	result, err := r.client.GetAnEnvironmentDetailsWithResponse(ctx, int(data.Id.ValueInt64()))
+	result, err := r.client.RetrieveEnvironmentWithResponse(ctx, int(data.Id.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -164,8 +164,8 @@ func (r *ResourceCoreEnvironment) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	result, err := r.client.UpdateAnEnvironmentWithResponse(ctx, id, func() environment.UpdateAnEnvironmentJSONRequestBody {
-		return environment.UpdateAnEnvironmentJSONRequestBody{
+	result, err := r.client.UpdateEnvironmentWithResponse(ctx, id, func() environment.UpdateEnvironmentJSONRequestBody {
+		return environment.UpdateEnvironmentJSONRequestBody{
 			Name: data.Name.ValueString(),
 		}
 	}())
@@ -207,7 +207,7 @@ func (r *ResourceCoreEnvironment) Delete(ctx context.Context, req resource.Delet
 
 	id := int(data.Id.ValueInt64())
 
-	result, err := r.client.DeleteAnEnvironmentWithResponse(ctx, id)
+	result, err := r.client.DeleteEnvironmentWithResponse(ctx, id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

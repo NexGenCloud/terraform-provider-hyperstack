@@ -97,7 +97,7 @@ func (d *DataSourceAuthOrganizations) Read(ctx context.Context, req datasource.R
 func (d *DataSourceAuthOrganizations) ApiToModel(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	response *organization.OrganizationInfoModel,
+	response *organization.OrganizationFields,
 ) datasource_auth_organizations.AuthOrganizationsModel {
 	return datasource_auth_organizations.AuthOrganizationsModel{
 		Id: func() types.Int64 {
@@ -121,7 +121,7 @@ func (d *DataSourceAuthOrganizations) ApiToModel(
 func (d *DataSourceAuthOrganizations) MapUsers(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data *[]organization.OrganizationUserModel,
+	data *[]organization.OrganizationUserResponseModel,
 ) types.List {
 	model, diagnostic := types.ListValue(
 		datasource_auth_organizations.UsersValue{}.Type(ctx),
@@ -142,6 +142,12 @@ func (d *DataSourceAuthOrganizations) MapUsers(
 						}(),
 						"username": func() types.String {
 							return types.StringValue(*row.Username)
+						}(),
+						"last_login": func() types.String {
+							if row.LastLogin == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(row.LastLogin.String())
 						}(),
 						"name": func() types.String {
 							return types.StringValue(*row.Name)

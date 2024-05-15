@@ -96,7 +96,7 @@ func (d *DataSourceAuthMe) Read(ctx context.Context, req datasource.ReadRequest,
 func (d *DataSourceAuthMe) ApiToModel(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	response *auth.UserFields,
+	response *auth.AuthUserFields,
 ) datasource_auth_me.AuthMeModel {
 	return datasource_auth_me.AuthMeModel{
 		CreatedAt: func() types.String {

@@ -63,7 +63,7 @@ func (d *DataSourceCoreVirtualMachines) Read(ctx context.Context, req datasource
 		return
 	}
 
-	result, err := d.client.ListInstancesWithResponse(ctx)
+	result, err := d.client.ListVirtualMachinesWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -96,7 +96,7 @@ func (d *DataSourceCoreVirtualMachines) Read(ctx context.Context, req datasource
 func (d *DataSourceCoreVirtualMachines) ApiToModel(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	response *[]virtual_machine.InstanceAdminFields,
+	response *[]virtual_machine.InstanceFields,
 ) datasource_core_virtual_machines.CoreVirtualMachinesModel {
 	return datasource_core_virtual_machines.CoreVirtualMachinesModel{
 		CoreVirtualMachines: func() types.Set {
@@ -108,7 +108,7 @@ func (d *DataSourceCoreVirtualMachines) ApiToModel(
 func (d *DataSourceCoreVirtualMachines) MapInstances(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data []virtual_machine.InstanceAdminFields,
+	data []virtual_machine.InstanceFields,
 ) types.Set {
 	model, diagnostic := types.SetValue(
 		datasource_core_virtual_machines.CoreVirtualMachinesValue{}.Type(ctx),
@@ -123,6 +123,12 @@ func (d *DataSourceCoreVirtualMachines) MapInstances(
 								return types.Int64Null()
 							}
 							return types.Int64Value(int64(*row.Id))
+						}(),
+						"contract_id": func() attr.Value {
+							if row.ContractId == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.ContractId))
 						}(),
 						"name": func() attr.Value {
 							if row.Name == nil {
@@ -148,6 +154,12 @@ func (d *DataSourceCoreVirtualMachines) MapInstances(
 							}
 							return types.StringValue(*row.VmState)
 						}(),
+						"locked": func() attr.Value {
+							if row.Locked == nil {
+								return types.BoolNull()
+							}
+							return types.BoolValue(*row.Locked)
+						}(),
 						"fixed_ip": func() attr.Value {
 							if row.FixedIp == nil {
 								return types.StringNull()
@@ -166,19 +178,20 @@ func (d *DataSourceCoreVirtualMachines) MapInstances(
 							}
 							return types.StringValue(*row.FloatingIpStatus)
 						}(),
-						"openstack_id": func() attr.Value {
-							if row.OpenstackId == nil {
-								return types.StringNull()
-							}
-							return types.StringValue(*row.OpenstackId)
-						}(),
 						"created_at": func() attr.Value {
 							if row.CreatedAt == nil {
 								return types.StringNull()
 							}
 							return types.StringValue(row.CreatedAt.String())
 						}(),
+						"os": func() attr.Value {
+							if row.Os == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.Os)
+						}(),
 						"environment":        d.MapEnvironment(ctx, diags, *row.Environment),
+						"labels":             d.MapLabels(ctx, diags, *row.Labels),
 						"image":              d.MapImage(ctx, diags, *row.Image),
 						"flavor":             d.MapFlavor(ctx, diags, *row.Flavor),
 						"keypair":            d.MapKeypair(ctx, diags, *row.Keypair),
@@ -204,6 +217,7 @@ func (d *DataSourceCoreVirtualMachines) MapEnvironment(
 	model, diagnostic := datasource_core_virtual_machines.NewEnvironmentValue(
 		datasource_core_virtual_machines.EnvironmentValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
+			"id":     types.Int64Value(int64(*data.Id)),
 			"name":   types.StringValue(*data.Name),
 			"org_id": types.Int64Value(int64(*data.OrgId)),
 			"region": types.StringValue(*data.Region),
@@ -245,6 +259,7 @@ func (d *DataSourceCoreVirtualMachines) MapFlavor(
 		datasource_core_virtual_machines.FlavorValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
 			"id":        types.Int64Value(int64(*data.Id)),
+			"ephemeral": types.Int64Value(int64(*data.Ephemeral)),
 			"name":      types.StringValue(*data.Name),
 			"cpu":       types.Int64Value(int64(*data.Cpu)),
 			"ram":       types.NumberValue(big.NewFloat(float64(*data.Ram))),
@@ -380,6 +395,26 @@ func (d *DataSourceCoreVirtualMachines) MapSecurityRules(
 				roles = append(roles, model)
 			}
 			return roles
+		}(),
+	)
+	diags.Append(diagnostic...)
+	return model
+}
+
+func (d *DataSourceCoreVirtualMachines) MapLabels(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data []string,
+) types.List {
+	model, diagnostic := types.ListValue(
+		types.StringType,
+		func() []attr.Value {
+			labels := make([]attr.Value, 0)
+			for _, row := range data {
+				model := types.StringValue(row)
+				labels = append(labels, model)
+			}
+			return labels
 		}(),
 	)
 	diags.Append(diagnostic...)

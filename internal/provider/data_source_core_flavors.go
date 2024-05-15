@@ -64,20 +64,20 @@ func (d *DataSourceCoreFlavors) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 	// Initialize the parameters as nil
-	params := (*flavor.RetrieveFlavorsParams)(nil)
-	result := (*flavor.RetrieveFlavorsResponse)(nil)
+	params := (*flavor.ListFlavorsParams)(nil)
+	result := (*flavor.ListFlavorsResponse)(nil)
 	err := error(nil)
 
 	// If data.Region is not nil or empty, construct the parameters
 	if !data.Region.IsNull() && data.Region.String() != "" {
 		stringRegion := data.Region.String()
 
-		params = &flavor.RetrieveFlavorsParams{
+		params = &flavor.ListFlavorsParams{
 			Region: &stringRegion,
 		}
-		result, err = d.client.RetrieveFlavorsWithResponse(ctx, params)
+		result, err = d.client.ListFlavorsWithResponse(ctx, params)
 	} else {
-		result, err = d.client.RetrieveFlavorsWithResponse(ctx, nil)
+		result, err = d.client.ListFlavorsWithResponse(ctx, nil)
 	}
 
 	if err != nil {
@@ -154,6 +154,10 @@ func (d *DataSourceCoreFlavors) MapFlavors(
 							if flavorItem.CreatedAt != nil {
 								createdAt = flavorItem.CreatedAt.String()
 							}
+							ephemeral := int64(0)
+							if flavorItem.Ephemeral != nil {
+								ephemeral = int64(*flavorItem.Ephemeral)
+							}
 							disk := int64(0)
 							if flavorItem.Disk != nil {
 								disk = int64(*flavorItem.Disk)
@@ -185,6 +189,7 @@ func (d *DataSourceCoreFlavors) MapFlavors(
 									"cpu":             types.Int64Value(cpu),
 									"created_at":      types.StringValue(createdAt),
 									"disk":            types.Int64Value(disk),
+									"ephemeral":       types.Int64Value(ephemeral),
 									"gpu":             types.StringValue(gpu),
 									"gpu_count":       types.Int64Value(gpuCount),
 									"id":              types.Int64Value(id),

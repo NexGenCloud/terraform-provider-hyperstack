@@ -63,7 +63,7 @@ func (d *DataSourceCoreKeypairs) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	result, err := d.client.RetrieveUserKeypairsWithResponse(ctx)
+	result, err := d.client.ListKeyPairsWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
