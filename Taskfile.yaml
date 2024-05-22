@@ -234,7 +234,7 @@ tasks:
       TF_EXAMPLES: |-
         auth_me
         auth_organization
-        org_roles
+        auth_roles
         core_environments
         core_images
         core_regions

@@ -103,6 +103,10 @@ func (p *hyperstackProvider) DataSources(ctx context.Context) []func() datasourc
 	return []func() datasource.DataSource{
 		NewDataSourceAuthMe,
 		NewDataSourceAuthOrganization,
+		NewDataSourceAuthPermissions,
+		NewDataSourceAuthUserPermissions,
+		NewDataSourceAuthUserMePermissions,
+		NewDataSourceAuthPolicies,
 		NewDataSourceAuthRole,
 		NewDataSourceAuthRoles,
 		NewDataSourceCoreEnvironment,
