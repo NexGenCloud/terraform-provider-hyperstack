@@ -553,15 +553,25 @@ func (v CoreImagesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVal
 		)
 	}
 
-	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"images": basetypes.ListType{
-				ElemType: ImagesValue{}.Type(ctx),
-			},
-			"logo":        basetypes.StringType{},
-			"region_name": basetypes.StringType{},
-			"type":        basetypes.StringType{},
+	attributeTypes := map[string]attr.Type{
+		"images": basetypes.ListType{
+			ElemType: ImagesValue{}.Type(ctx),
 		},
+		"logo":        basetypes.StringType{},
+		"region_name": basetypes.StringType{},
+		"type":        basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
 		map[string]attr.Value{
 			"images":      images,
 			"logo":        v.Logo,
@@ -1355,21 +1365,31 @@ func (v ImagesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, 
 		)
 	}
 
-	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"description":  basetypes.StringType{},
-			"display_size": basetypes.StringType{},
-			"id":           basetypes.Int64Type{},
-			"is_public":    basetypes.BoolType{},
-			"labels": basetypes.ListType{
-				ElemType: LabelsValue{}.Type(ctx),
-			},
-			"name":        basetypes.StringType{},
-			"region_name": basetypes.StringType{},
-			"size":        basetypes.Int64Type{},
-			"type":        basetypes.StringType{},
-			"version":     basetypes.StringType{},
+	attributeTypes := map[string]attr.Type{
+		"description":  basetypes.StringType{},
+		"display_size": basetypes.StringType{},
+		"id":           basetypes.Int64Type{},
+		"is_public":    basetypes.BoolType{},
+		"labels": basetypes.ListType{
+			ElemType: LabelsValue{}.Type(ctx),
 		},
+		"name":        basetypes.StringType{},
+		"region_name": basetypes.StringType{},
+		"size":        basetypes.Int64Type{},
+		"type":        basetypes.StringType{},
+		"version":     basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
 		map[string]attr.Value{
 			"description":  v.Description,
 			"display_size": v.DisplaySize,
@@ -1784,11 +1804,21 @@ func (v LabelsValue) String() string {
 func (v LabelsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"id":    basetypes.Int64Type{},
+		"label": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"id":    basetypes.Int64Type{},
-			"label": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"id":    v.Id,
 			"label": v.Label,

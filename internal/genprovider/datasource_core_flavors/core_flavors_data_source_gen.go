@@ -490,14 +490,24 @@ func (v CoreFlavorsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVa
 		)
 	}
 
-	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"flavors": basetypes.ListType{
-				ElemType: FlavorsValue{}.Type(ctx),
-			},
-			"gpu":         basetypes.StringType{},
-			"region_name": basetypes.StringType{},
+	attributeTypes := map[string]attr.Type{
+		"flavors": basetypes.ListType{
+			ElemType: FlavorsValue{}.Type(ctx),
 		},
+		"gpu":         basetypes.StringType{},
+		"region_name": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
 		map[string]attr.Value{
 			"flavors":     flavors,
 			"gpu":         v.Gpu,
@@ -1302,20 +1312,30 @@ func (v FlavorsValue) String() string {
 func (v FlavorsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"cpu":             basetypes.Int64Type{},
+		"created_at":      basetypes.StringType{},
+		"disk":            basetypes.Int64Type{},
+		"ephemeral":       basetypes.Int64Type{},
+		"gpu":             basetypes.StringType{},
+		"gpu_count":       basetypes.Int64Type{},
+		"id":              basetypes.Int64Type{},
+		"name":            basetypes.StringType{},
+		"ram":             basetypes.NumberType{},
+		"region_name":     basetypes.StringType{},
+		"stock_available": basetypes.BoolType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"cpu":             basetypes.Int64Type{},
-			"created_at":      basetypes.StringType{},
-			"disk":            basetypes.Int64Type{},
-			"ephemeral":       basetypes.Int64Type{},
-			"gpu":             basetypes.StringType{},
-			"gpu_count":       basetypes.Int64Type{},
-			"id":              basetypes.Int64Type{},
-			"name":            basetypes.StringType{},
-			"ram":             basetypes.NumberType{},
-			"region_name":     basetypes.StringType{},
-			"stock_available": basetypes.BoolType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"cpu":             v.Cpu,
 			"created_at":      v.CreatedAt,

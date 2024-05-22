@@ -33,7 +33,7 @@ data_sources:
       path: /auth/me
       method: GET
 
-  auth_organizations:
+  auth_organization:
     read:
       path: /auth/organizations
       method: GET

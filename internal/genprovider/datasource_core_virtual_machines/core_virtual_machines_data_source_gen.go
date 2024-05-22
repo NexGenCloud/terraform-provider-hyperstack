@@ -1574,42 +1574,52 @@ func (v CoreVirtualMachinesValue) ToObjectValue(ctx context.Context) (basetypes.
 		}), diags
 	}
 
-	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"contract_id": basetypes.Int64Type{},
-			"created_at":  basetypes.StringType{},
-			"environment": basetypes.ObjectType{
-				AttrTypes: EnvironmentValue{}.AttributeTypes(ctx),
-			},
-			"fixed_ip": basetypes.StringType{},
-			"flavor": basetypes.ObjectType{
-				AttrTypes: FlavorValue{}.AttributeTypes(ctx),
-			},
-			"floating_ip":        basetypes.StringType{},
-			"floating_ip_status": basetypes.StringType{},
-			"id":                 basetypes.Int64Type{},
-			"image": basetypes.ObjectType{
-				AttrTypes: ImageValue{}.AttributeTypes(ctx),
-			},
-			"keypair": basetypes.ObjectType{
-				AttrTypes: KeypairValue{}.AttributeTypes(ctx),
-			},
-			"labels": basetypes.ListType{
-				ElemType: types.StringType,
-			},
-			"locked":      basetypes.BoolType{},
-			"name":        basetypes.StringType{},
-			"os":          basetypes.StringType{},
-			"power_state": basetypes.StringType{},
-			"security_rules": basetypes.ListType{
-				ElemType: SecurityRulesValue{}.Type(ctx),
-			},
-			"status":   basetypes.StringType{},
-			"vm_state": basetypes.StringType{},
-			"volume_attachments": basetypes.ListType{
-				ElemType: VolumeAttachmentsValue{}.Type(ctx),
-			},
+	attributeTypes := map[string]attr.Type{
+		"contract_id": basetypes.Int64Type{},
+		"created_at":  basetypes.StringType{},
+		"environment": basetypes.ObjectType{
+			AttrTypes: EnvironmentValue{}.AttributeTypes(ctx),
 		},
+		"fixed_ip": basetypes.StringType{},
+		"flavor": basetypes.ObjectType{
+			AttrTypes: FlavorValue{}.AttributeTypes(ctx),
+		},
+		"floating_ip":        basetypes.StringType{},
+		"floating_ip_status": basetypes.StringType{},
+		"id":                 basetypes.Int64Type{},
+		"image": basetypes.ObjectType{
+			AttrTypes: ImageValue{}.AttributeTypes(ctx),
+		},
+		"keypair": basetypes.ObjectType{
+			AttrTypes: KeypairValue{}.AttributeTypes(ctx),
+		},
+		"labels": basetypes.ListType{
+			ElemType: types.StringType,
+		},
+		"locked":      basetypes.BoolType{},
+		"name":        basetypes.StringType{},
+		"os":          basetypes.StringType{},
+		"power_state": basetypes.StringType{},
+		"security_rules": basetypes.ListType{
+			ElemType: SecurityRulesValue{}.Type(ctx),
+		},
+		"status":   basetypes.StringType{},
+		"vm_state": basetypes.StringType{},
+		"volume_attachments": basetypes.ListType{
+			ElemType: VolumeAttachmentsValue{}.Type(ctx),
+		},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
 		map[string]attr.Value{
 			"contract_id":        v.ContractId,
 			"created_at":         v.CreatedAt,
@@ -2186,13 +2196,23 @@ func (v EnvironmentValue) String() string {
 func (v EnvironmentValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"id":     basetypes.Int64Type{},
+		"name":   basetypes.StringType{},
+		"org_id": basetypes.Int64Type{},
+		"region": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"id":     basetypes.Int64Type{},
-			"name":   basetypes.StringType{},
-			"org_id": basetypes.Int64Type{},
-			"region": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"id":     v.Id,
 			"name":   v.Name,
@@ -2857,17 +2877,27 @@ func (v FlavorValue) String() string {
 func (v FlavorValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"cpu":       basetypes.Int64Type{},
+		"disk":      basetypes.Int64Type{},
+		"ephemeral": basetypes.Int64Type{},
+		"gpu":       basetypes.StringType{},
+		"gpu_count": basetypes.Int64Type{},
+		"id":        basetypes.Int64Type{},
+		"name":      basetypes.StringType{},
+		"ram":       basetypes.NumberType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"cpu":       basetypes.Int64Type{},
-			"disk":      basetypes.Int64Type{},
-			"ephemeral": basetypes.Int64Type{},
-			"gpu":       basetypes.StringType{},
-			"gpu_count": basetypes.Int64Type{},
-			"id":        basetypes.Int64Type{},
-			"name":      basetypes.StringType{},
-			"ram":       basetypes.NumberType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"cpu":       v.Cpu,
 			"disk":      v.Disk,
@@ -3220,10 +3250,20 @@ func (v ImageValue) String() string {
 func (v ImageValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"name": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"name": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"name": v.Name,
 		})
@@ -3534,10 +3574,20 @@ func (v KeypairValue) String() string {
 func (v KeypairValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"name": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"name": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"name": v.Name,
 		})
@@ -4232,18 +4282,28 @@ func (v SecurityRulesValue) String() string {
 func (v SecurityRulesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"created_at":       basetypes.StringType{},
+		"direction":        basetypes.StringType{},
+		"ethertype":        basetypes.StringType{},
+		"id":               basetypes.Int64Type{},
+		"port_range_max":   basetypes.Int64Type{},
+		"port_range_min":   basetypes.Int64Type{},
+		"protocol":         basetypes.StringType{},
+		"remote_ip_prefix": basetypes.StringType{},
+		"status":           basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"created_at":       basetypes.StringType{},
-			"direction":        basetypes.StringType{},
-			"ethertype":        basetypes.StringType{},
-			"id":               basetypes.Int64Type{},
-			"port_range_max":   basetypes.Int64Type{},
-			"port_range_min":   basetypes.Int64Type{},
-			"protocol":         basetypes.StringType{},
-			"remote_ip_prefix": basetypes.StringType{},
-			"status":           basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"created_at":       v.CreatedAt,
 			"direction":        v.Direction,
@@ -4769,15 +4829,25 @@ func (v VolumeAttachmentsValue) ToObjectValue(ctx context.Context) (basetypes.Ob
 		)
 	}
 
-	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"created_at": basetypes.StringType{},
-			"device":     basetypes.StringType{},
-			"status":     basetypes.StringType{},
-			"volume": basetypes.ObjectType{
-				AttrTypes: VolumeValue{}.AttributeTypes(ctx),
-			},
+	attributeTypes := map[string]attr.Type{
+		"created_at": basetypes.StringType{},
+		"device":     basetypes.StringType{},
+		"status":     basetypes.StringType{},
+		"volume": basetypes.ObjectType{
+			AttrTypes: VolumeValue{}.AttributeTypes(ctx),
 		},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
 		map[string]attr.Value{
 			"created_at": v.CreatedAt,
 			"device":     v.Device,
@@ -5300,14 +5370,24 @@ func (v VolumeValue) String() string {
 func (v VolumeValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"description": basetypes.StringType{},
+		"id":          basetypes.Int64Type{},
+		"name":        basetypes.StringType{},
+		"size":        basetypes.Int64Type{},
+		"volume_type": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"description": basetypes.StringType{},
-			"id":          basetypes.Int64Type{},
-			"name":        basetypes.StringType{},
-			"size":        basetypes.Int64Type{},
-			"volume_type": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"description": v.Description,
 			"id":          v.Id,

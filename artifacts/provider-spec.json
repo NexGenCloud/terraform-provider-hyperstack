@@ -32,12 +32,18 @@
             }
         },
         {
-            "name": "auth_organizations",
+            "name": "auth_organization",
             "schema": {
                 "attributes": [
                     {
                         "name": "created_at",
                         "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "credit",
+                        "int64": {
                             "computed_optional_required": "computed"
                         }
                     },
@@ -50,6 +56,36 @@
                     {
                         "name": "name",
                         "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "threshold",
+                        "int64": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "total_clusters",
+                        "int64": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "total_containers",
+                        "int64": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "total_instances",
+                        "int64": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "total_volumes",
+                        "int64": {
                             "computed_optional_required": "computed"
                         }
                     },
@@ -73,6 +109,12 @@
                                     },
                                     {
                                         "name": "joined_at",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "last_login",
                                         "string": {
                                             "computed_optional_required": "computed"
                                         }
@@ -391,6 +433,12 @@
                                                         }
                                                     },
                                                     {
+                                                        "name": "ephemeral",
+                                                        "int64": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
                                                         "name": "gpu",
                                                         "string": {
                                                             "computed_optional_required": "computed"
@@ -548,6 +596,12 @@
                                             "nested_object": {
                                                 "attributes": [
                                                     {
+                                                        "name": "description",
+                                                        "string": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
                                                         "name": "display_size",
                                                         "string": {
                                                             "computed_optional_required": "computed"
@@ -557,6 +611,34 @@
                                                         "name": "id",
                                                         "int64": {
                                                             "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "is_public",
+                                                        "bool": {
+                                                            "computed_optional_required": "computed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "name": "labels",
+                                                        "list_nested": {
+                                                            "computed_optional_required": "computed",
+                                                            "nested_object": {
+                                                                "attributes": [
+                                                                    {
+                                                                        "name": "id",
+                                                                        "int64": {
+                                                                            "computed_optional_required": "computed"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "label",
+                                                                        "string": {
+                                                                            "computed_optional_required": "computed"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
                                                         }
                                                     },
                                                     {
@@ -717,6 +799,12 @@
                             "nested_object": {
                                 "attributes": [
                                     {
+                                        "name": "contract_id",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
                                         "name": "created_at",
                                         "string": {
                                             "computed_optional_required": "computed"
@@ -727,6 +815,12 @@
                                         "single_nested": {
                                             "computed_optional_required": "computed",
                                             "attributes": [
+                                                {
+                                                    "name": "id",
+                                                    "int64": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
                                                 {
                                                     "name": "name",
                                                     "string": {
@@ -767,6 +861,12 @@
                                                 },
                                                 {
                                                     "name": "disk",
+                                                    "int64": {
+                                                        "computed_optional_required": "computed"
+                                                    }
+                                                },
+                                                {
+                                                    "name": "ephemeral",
                                                     "int64": {
                                                         "computed_optional_required": "computed"
                                                     }
@@ -851,13 +951,28 @@
                                         }
                                     },
                                     {
+                                        "name": "labels",
+                                        "list": {
+                                            "computed_optional_required": "computed",
+                                            "element_type": {
+                                                "string": {}
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "locked",
+                                        "bool": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
                                         "name": "name",
                                         "string": {
                                             "computed_optional_required": "computed"
                                         }
                                     },
                                     {
-                                        "name": "openstack_id",
+                                        "name": "os",
                                         "string": {
                                             "computed_optional_required": "computed"
                                         }
@@ -1078,13 +1193,27 @@
                     {
                         "name": "name",
                         "string": {
-                            "computed_optional_required": "required"
+                            "computed_optional_required": "required",
+                            "description": "The name of the environment being created.",
+                            "validators": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+                                            }
+                                        ],
+                                        "schema_definition": "stringvalidator.LengthAtMost(50)"
+                                    }
+                                }
+                            ]
                         }
                     },
                     {
                         "name": "region",
                         "string": {
-                            "computed_optional_required": "required"
+                            "computed_optional_required": "required",
+                            "description": "The geographic location of the data center where the environment is being created. To learn more about regions, [**click here**](https://infrahub-doc.nexgencloud.com/docs/features/regions)."
                         }
                     },
                     {
@@ -1109,19 +1238,34 @@
                     {
                         "name": "environment",
                         "string": {
-                            "computed_optional_required": "computed_optional"
+                            "computed_optional_required": "computed_optional",
+                            "description": "The name of the environment where the key pair is being created."
                         }
                     },
                     {
                         "name": "name",
                         "string": {
-                            "computed_optional_required": "required"
+                            "computed_optional_required": "required",
+                            "description": "The name of the key pair that is being created.",
+                            "validators": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+                                            }
+                                        ],
+                                        "schema_definition": "stringvalidator.LengthAtMost(50)"
+                                    }
+                                }
+                            ]
                         }
                     },
                     {
                         "name": "public_key",
                         "string": {
-                            "computed_optional_required": "required"
+                            "computed_optional_required": "required",
+                            "description": "The public key that is being used to import an SSH key pair."
                         }
                     },
                     {
@@ -1153,6 +1297,7 @@
                         "name": "assign_floating_ip",
                         "bool": {
                             "computed_optional_required": "computed_optional",
+                            "description": "When this field is set to `true`, it attaches a [public IP address](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/public-ip) to the virtual machine, enabling internet accessibility.",
                             "default": {
                                 "static": false
                             },
@@ -1174,6 +1319,19 @@
                         "name": "callback_url",
                         "string": {
                             "computed_optional_required": "computed_optional",
+                            "description": "An optional URL where actions performed on the virtual machine will be sent. For additional information on event callbacks, [**click here**](https://infrahub-doc.nexgencloud.com/docs/features/webhooks-callbacks).",
+                            "validators": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+                                            }
+                                        ],
+                                        "schema_definition": "stringvalidator.LengthAtMost(250)"
+                                    }
+                                }
+                            ],
                             "plan_modifiers": [
                                 {
                                     "custom": {
@@ -1192,6 +1350,7 @@
                         "name": "create_bootable_volume",
                         "bool": {
                             "computed_optional_required": "computed_optional",
+                            "description": "Indicates whether to create a bootable volume for the virtual machine. When set to `true`, a bootable volume will be created; the default value is `false`.",
                             "default": {
                                 "static": false
                             },
@@ -1213,6 +1372,7 @@
                         "name": "environment_name",
                         "string": {
                             "computed_optional_required": "required",
+                            "description": "The name of the [environment](https://infrahub-doc.nexgencloud.com/docs/features/environments-available-features) in which the virtual machine is to be created.",
                             "plan_modifiers": [
                                 {
                                     "custom": {
@@ -1263,6 +1423,12 @@
                                     }
                                 },
                                 {
+                                    "name": "ephemeral",
+                                    "int64": {
+                                        "computed_optional_required": "computed"
+                                    }
+                                },
+                                {
                                     "name": "id",
                                     "int64": {
                                         "computed_optional_required": "computed"
@@ -1280,7 +1446,8 @@
                     {
                         "name": "flavor_name",
                         "string": {
-                            "computed_optional_required": "computed_optional",
+                            "computed_optional_required": "required",
+                            "description": "The name of the GPU hardware configuration ([flavor](https://infrahub-doc.nexgencloud.com/docs/hardware/flavors)) for the virtual machines being created.",
                             "plan_modifiers": [
                                 {
                                     "custom": {
@@ -1299,6 +1466,7 @@
                         "name": "image_name",
                         "string": {
                             "computed_optional_required": "computed_optional",
+                            "description": "The [operating system (OS) image](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/images) name designated for installation on the virtual machine.",
                             "plan_modifiers": [
                                 {
                                     "custom": {
@@ -1317,6 +1485,7 @@
                         "name": "key_name",
                         "string": {
                             "computed_optional_required": "required",
+                            "description": "The name of the existing SSH key pair to be used for secure access to the virtual machine. For additional information on SSH key pairs, [**click here**](https://infrahub-doc.nexgencloud.com/docs/getting-started/create-keypair).",
                             "plan_modifiers": [
                                 {
                                     "custom": {
@@ -1329,12 +1498,34 @@
                                     }
                                 }
                             ]
+                        }
+                    },
+                    {
+                        "name": "labels",
+                        "list": {
+                            "computed_optional_required": "computed_optional",
+                            "element_type": {
+                                "string": {}
+                            }
                         }
                     },
                     {
                         "name": "name",
                         "string": {
                             "computed_optional_required": "required",
+                            "description": "The name of the virtual machine being created.",
+                            "validators": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+                                            }
+                                        ],
+                                        "schema_definition": "stringvalidator.LengthAtMost(50)"
+                                    }
+                                }
+                            ],
                             "plan_modifiers": [
                                 {
                                     "custom": {
@@ -1350,9 +1541,96 @@
                         }
                     },
                     {
+                        "name": "security_rules",
+                        "list_nested": {
+                            "computed_optional_required": "computed_optional",
+                            "nested_object": {
+                                "attributes": [
+                                    {
+                                        "name": "direction",
+                                        "string": {
+                                            "computed_optional_required": "required",
+                                            "description": "The direction of traffic that the firewall rule applies to."
+                                        }
+                                    },
+                                    {
+                                        "name": "ethertype",
+                                        "string": {
+                                            "computed_optional_required": "required",
+                                            "description": "The Ethernet type associated with the rule."
+                                        }
+                                    },
+                                    {
+                                        "name": "port_range_max",
+                                        "int64": {
+                                            "computed_optional_required": "computed_optional"
+                                        }
+                                    },
+                                    {
+                                        "name": "port_range_min",
+                                        "int64": {
+                                            "computed_optional_required": "computed_optional"
+                                        }
+                                    },
+                                    {
+                                        "name": "protocol",
+                                        "string": {
+                                            "computed_optional_required": "required",
+                                            "description": "The network protocol associated with the rule. Call the [`GET /core/sg-rules-protocols`](https://infrahub-api-doc.nexgencloud.com/#get-/core/sg-rules-protocols) endpoint to retrieve a list of permitted network protocols.",
+                                            "validators": [
+                                                {
+                                                    "custom": {
+                                                        "imports": [
+                                                            {
+                                                                "path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+                                                            }
+                                                        ],
+                                                        "schema_definition": "stringvalidator.OneOf(\n\"any\",\n\"ah\",\n\"dccp\",\n\"egp\",\n\"esp\",\n\"gre\",\n\"hopopt\",\n\"icmp\",\n\"igmp\",\n\"ip\",\n\"ipip\",\n\"ipv6-encap\",\n\"ipv6-frag\",\n\"ipv6-icmp\",\n\"icmpv6\",\n\"ipv6-nonxt\",\n\"ipv6-opts\",\n\"ipv6-route\",\n\"ospf\",\n\"pgm\",\n\"rsvp\",\n\"sctp\",\n\"tcp\",\n\"udp\",\n\"udplite\",\n\"vrrp\",\n)"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "remote_ip_prefix",
+                                        "string": {
+                                            "computed_optional_required": "required",
+                                            "description": "The IP address range that is allowed to access the specified port. Use \"0.0.0.0/0\" to allow any IP address."
+                                        }
+                                    },
+                                    {
+                                        "name": "virtual_machine_id",
+                                        "int64": {
+                                            "computed_optional_required": "required"
+                                        }
+                                    },
+                                    {
+                                        "name": "created_at",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "id",
+                                        "int64": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    },
+                                    {
+                                        "name": "status",
+                                        "string": {
+                                            "computed_optional_required": "computed"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
                         "name": "user_data",
                         "string": {
                             "computed_optional_required": "computed_optional",
+                            "description": "Optional initialization configuration commands to manage the configuration of a virtual machine at launch using cloud-init scripts. For more information about custom VM configuration using cloud-init, [**click here**](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/initialization-configuration).",
                             "plan_modifiers": [
                                 {
                                     "custom": {
@@ -1371,6 +1649,7 @@
                         "name": "volume_name",
                         "string": {
                             "computed_optional_required": "computed_optional",
+                            "description": "The names of the volume(s) to be attached to the virtual machine being created.",
                             "plan_modifiers": [
                                 {
                                     "custom": {
@@ -1380,6 +1659,24 @@
                                             }
                                         ],
                                         "schema_definition": "stringplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "contract_id",
+                        "int64": {
+                            "computed_optional_required": "computed",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "int64planmodifier.RequiresReplace()"
                                     }
                                 }
                             ]
@@ -1396,6 +1693,12 @@
                         "single_nested": {
                             "computed_optional_required": "computed",
                             "attributes": [
+                                {
+                                    "name": "id",
+                                    "int64": {
+                                        "computed_optional_required": "computed"
+                                    }
+                                },
                                 {
                                     "name": "name",
                                     "string": {
@@ -1494,7 +1797,25 @@
                         }
                     },
                     {
-                        "name": "openstack_id",
+                        "name": "locked",
+                        "bool": {
+                            "computed_optional_required": "computed",
+                            "plan_modifiers": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+                                            }
+                                        ],
+                                        "schema_definition": "boolplanmodifier.RequiresReplace()"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "os",
                         "string": {
                             "computed_optional_required": "computed",
                             "plan_modifiers": [
@@ -1527,70 +1848,6 @@
                                     }
                                 }
                             ]
-                        }
-                    },
-                    {
-                        "name": "security_rules",
-                        "list_nested": {
-                            "computed_optional_required": "computed",
-                            "nested_object": {
-                                "attributes": [
-                                    {
-                                        "name": "created_at",
-                                        "string": {
-                                            "computed_optional_required": "computed"
-                                        }
-                                    },
-                                    {
-                                        "name": "direction",
-                                        "string": {
-                                            "computed_optional_required": "computed"
-                                        }
-                                    },
-                                    {
-                                        "name": "ethertype",
-                                        "string": {
-                                            "computed_optional_required": "computed"
-                                        }
-                                    },
-                                    {
-                                        "name": "id",
-                                        "int64": {
-                                            "computed_optional_required": "computed"
-                                        }
-                                    },
-                                    {
-                                        "name": "port_range_max",
-                                        "int64": {
-                                            "computed_optional_required": "computed"
-                                        }
-                                    },
-                                    {
-                                        "name": "port_range_min",
-                                        "int64": {
-                                            "computed_optional_required": "computed"
-                                        }
-                                    },
-                                    {
-                                        "name": "protocol",
-                                        "string": {
-                                            "computed_optional_required": "computed"
-                                        }
-                                    },
-                                    {
-                                        "name": "remote_ip_prefix",
-                                        "string": {
-                                            "computed_optional_required": "computed"
-                                        }
-                                    },
-                                    {
-                                        "name": "status",
-                                        "string": {
-                                            "computed_optional_required": "computed"
-                                        }
-                                    }
-                                ]
-                            }
                         }
                     },
                     {
@@ -1717,6 +1974,7 @@
                         "name": "direction",
                         "string": {
                             "computed_optional_required": "required",
+                            "description": "The direction of traffic that the firewall rule applies to.",
                             "plan_modifiers": [
                                 {
                                     "custom": {
@@ -1735,6 +1993,7 @@
                         "name": "ethertype",
                         "string": {
                             "computed_optional_required": "required",
+                            "description": "The Ethernet type associated with the rule.",
                             "plan_modifiers": [
                                 {
                                     "custom": {
@@ -1789,6 +2048,19 @@
                         "name": "protocol",
                         "string": {
                             "computed_optional_required": "required",
+                            "description": "The network protocol associated with the rule. Call the [`GET /core/sg-rules-protocols`](https://infrahub-api-doc.nexgencloud.com/#get-/core/sg-rules-protocols) endpoint to retrieve a list of permitted network protocols.",
+                            "validators": [
+                                {
+                                    "custom": {
+                                        "imports": [
+                                            {
+                                                "path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+                                            }
+                                        ],
+                                        "schema_definition": "stringvalidator.OneOf(\n\"any\",\n\"ah\",\n\"dccp\",\n\"egp\",\n\"esp\",\n\"gre\",\n\"hopopt\",\n\"icmp\",\n\"igmp\",\n\"ip\",\n\"ipip\",\n\"ipv6-encap\",\n\"ipv6-frag\",\n\"ipv6-icmp\",\n\"icmpv6\",\n\"ipv6-nonxt\",\n\"ipv6-opts\",\n\"ipv6-route\",\n\"ospf\",\n\"pgm\",\n\"rsvp\",\n\"sctp\",\n\"tcp\",\n\"udp\",\n\"udplite\",\n\"vrrp\",\n)"
+                                    }
+                                }
+                            ],
                             "plan_modifiers": [
                                 {
                                     "custom": {
@@ -1807,6 +2079,7 @@
                         "name": "remote_ip_prefix",
                         "string": {
                             "computed_optional_required": "required",
+                            "description": "The IP address range that is allowed to access the specified port. Use \"0.0.0.0/0\" to allow any IP address.",
                             "plan_modifiers": [
                                 {
                                     "custom": {
