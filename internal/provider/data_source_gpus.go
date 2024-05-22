@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/gpu"
-	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/client"
-	"github.com/NexGenCloud/hyperstack-terraform-provider/internal/genprovider/datasource_core_gpus"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_gpus"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/NexGenCloud/hyperstack-sdk-go/lib/gpu"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_gpus"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_regions"
 	"io/ioutil"
 )
 
