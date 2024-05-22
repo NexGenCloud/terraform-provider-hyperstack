@@ -230,22 +230,19 @@ tasks:
     desc: |
       Tests the provider
     dotenv: ['.env']
-#    vars:
-#      TF_EXAMPLES: |-
-#        auth_me
-#        auth_organization
-#        org_roles
-#        core_environments
-#        core_images
-#        core_regions
-#        core_gpus
-#        core_flavors
-#        core_keypairs
-#        core_vms
-#        core_vm
     vars:
       TF_EXAMPLES: |-
+        auth_me
+        auth_organization
+        org_roles
         core_environments
+        core_images
+        core_regions
+        core_gpus
+        core_flavors
+        core_keypairs
+        core_vms
+        core_vm
     cmds:
       - task: build
       # language=bash
