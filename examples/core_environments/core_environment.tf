@@ -1,4 +1,4 @@
-resource "hyperstack_core_environment" "test-env" {
-  name="test-tf-env-${random_string.this_name.result}"
-  region="staging-CA-1"
+resource "hyperstack_core_environment" "test_environment" {
+  name   = local.name
+  region = var.region
 }

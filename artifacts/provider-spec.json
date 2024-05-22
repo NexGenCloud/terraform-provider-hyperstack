@@ -351,6 +351,37 @@
             }
         },
         {
+            "name": "core_environment",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "id",
+                        "int64": {
+                            "computed_optional_required": "required"
+                        }
+                    },
+                    {
+                        "name": "created_at",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "region",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "name": "core_environments",
             "schema": {
                 "attributes": [

@@ -23,6 +23,11 @@ data_sources:
       path: /core/gpus
       method: GET
 
+  core_environment:
+    read:
+      path: /core/environments/{id}
+      method: GET
+
   core_environments:
     read:
       path: /core/environments

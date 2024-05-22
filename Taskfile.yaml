@@ -245,7 +245,7 @@ tasks:
 #        core_vm
     vars:
       TF_EXAMPLES: |-
-        core_keypairs
+        core_environments
     cmds:
       - task: build
       # language=bash
