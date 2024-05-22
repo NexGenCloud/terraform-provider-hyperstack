@@ -232,7 +232,8 @@ tasks:
     dotenv: ['.env']
 #    vars:
 #      TF_EXAMPLES: |-
-#        org_base
+#        auth_me
+#        auth_organization
 #        org_roles
 #        core_environments
 #        core_images
@@ -244,8 +245,7 @@ tasks:
 #        core_vm
     vars:
       TF_EXAMPLES: |-
-        auth_me
-        auth_organization
+        core_keypairs
     cmds:
       - task: build
       # language=bash

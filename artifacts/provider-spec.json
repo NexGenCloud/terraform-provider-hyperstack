@@ -701,6 +701,49 @@
             }
         },
         {
+            "name": "core_keypair",
+            "schema": {
+                "attributes": [
+                    {
+                        "name": "created_at",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "fingerprint",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "int64": {
+                            "computed_optional_required": "required"
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    },
+                    {
+                        "name": "public_key",
+                        "string": {
+                            "computed_optional_required": "computed"
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "name": "core_keypairs",
             "schema": {
                 "attributes": [

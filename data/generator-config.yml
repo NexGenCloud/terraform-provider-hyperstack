@@ -48,6 +48,11 @@ data_sources:
       path: /auth/roles/{id}
       method: GET
 
+  core_keypair:
+    read:
+      path: /core/keypairs
+      method: GET
+
   core_keypairs:
     read:
       path: /core/keypairs
