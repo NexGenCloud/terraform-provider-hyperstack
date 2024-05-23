@@ -563,15 +563,25 @@ func (v CoreKeypairsValue) String() string {
 func (v CoreKeypairsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"created_at":  basetypes.StringType{},
+		"environment": basetypes.StringType{},
+		"fingerprint": basetypes.StringType{},
+		"id":          basetypes.Int64Type{},
+		"name":        basetypes.StringType{},
+		"public_key":  basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"created_at":  basetypes.StringType{},
-			"environment": basetypes.StringType{},
-			"fingerprint": basetypes.StringType{},
-			"id":          basetypes.Int64Type{},
-			"name":        basetypes.StringType{},
-			"public_key":  basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"created_at":  v.CreatedAt,
 			"environment": v.Environment,

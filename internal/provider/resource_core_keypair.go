@@ -79,7 +79,7 @@ func (r *ResourceCoreKeypair) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	// Perform a Read operation to get all keypairs
-	searchResult, err := r.client.RetrieveUserKeypairsWithResponse(ctx)
+	searchResult, err := r.client.ListKeyPairsWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -121,8 +121,8 @@ func (r *ResourceCoreKeypair) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	result, err := r.client.UpdateKeypairNameWithResponse(ctx, int(id), func() keypair.UpdateKeypairNameJSONRequestBody {
-		return keypair.UpdateKeypairNameJSONRequestBody{
+	result, err := r.client.UpdateKeyPairNameWithResponse(ctx, int(id), func() keypair.UpdateKeyPairNameJSONRequestBody {
+		return keypair.UpdateKeyPairNameJSONRequestBody{
 			Name: data.Name.ValueString(),
 		}
 	}())
@@ -168,8 +168,8 @@ func (r *ResourceCoreKeypair) Create(
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	result, err := r.client.ImportKeypairWithResponse(ctx, func() keypair.ImportKeypairJSONRequestBody {
-		return keypair.ImportKeypairJSONRequestBody{
+	result, err := r.client.ImportKeyPairWithResponse(ctx, func() keypair.ImportKeyPairJSONRequestBody {
+		return keypair.ImportKeyPairJSONRequestBody{
 			EnvironmentName: data.Environment.ValueString(),
 			PublicKey:       data.PublicKey.ValueString(),
 			Name:            data.Name.ValueString(),
@@ -217,7 +217,7 @@ func (r *ResourceCoreKeypair) Read(
 	}
 
 	// Perform a Read operation to get all keypairs
-	searchResult, err := r.client.RetrieveUserKeypairsWithResponse(ctx)
+	searchResult, err := r.client.ListKeyPairsWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -271,7 +271,7 @@ func (r *ResourceCoreKeypair) Delete(ctx context.Context, req resource.DeleteReq
 	}
 
 	// Perform a Read operation to get all keypairs
-	result, err := r.client.RetrieveUserKeypairsWithResponse(ctx)
+	result, err := r.client.ListKeyPairsWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -308,7 +308,7 @@ func (r *ResourceCoreKeypair) Delete(ctx context.Context, req resource.DeleteReq
 	}
 
 	// Now proceed with the Delete operation using the ID
-	resultDelete, err := r.client.DeleteKeypairWithResponse(ctx, int(id))
+	resultDelete, err := r.client.DeleteKeyPairWithResponse(ctx, int(id))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

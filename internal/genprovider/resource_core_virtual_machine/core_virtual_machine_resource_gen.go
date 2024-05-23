@@ -5,12 +5,15 @@ package resource_core_virtual_machine
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -23,23 +26,38 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"assign_floating_ip": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "When this field is set to `true`, it attaches a [public IP address](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/public-ip) to the virtual machine, enabling internet accessibility.",
+				MarkdownDescription: "When this field is set to `true`, it attaches a [public IP address](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/public-ip) to the virtual machine, enabling internet accessibility.",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
 				},
 				Default: booldefault.StaticBool(false),
 			},
 			"callback_url": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "An optional URL where actions performed on the virtual machine will be sent. For additional information on event callbacks, [**click here**](https://infrahub-doc.nexgencloud.com/docs/features/webhooks-callbacks).",
+				MarkdownDescription: "An optional URL where actions performed on the virtual machine will be sent. For additional information on event callbacks, [**click here**](https://infrahub-doc.nexgencloud.com/docs/features/webhooks-callbacks).",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.String{
+					stringvalidator.LengthAtMost(250),
+				},
+			},
+			"contract_id": schema.Int64Attribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"create_bootable_volume": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "Indicates whether to create a bootable volume for the virtual machine. When set to `true`, a bootable volume will be created; the default value is `false`.",
+				MarkdownDescription: "Indicates whether to create a bootable volume for the virtual machine. When set to `true`, a bootable volume will be created; the default value is `false`.",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
 				},
@@ -50,6 +68,9 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"environment": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
+					"id": schema.Int64Attribute{
+						Computed: true,
+					},
 					"name": schema.StringAttribute{
 						Computed: true,
 					},
@@ -68,7 +89,9 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"environment_name": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "The name of the [environment](https://infrahub-doc.nexgencloud.com/docs/features/environments-available-features) in which the virtual machine is to be created.",
+				MarkdownDescription: "The name of the [environment](https://infrahub-doc.nexgencloud.com/docs/features/environments-available-features) in which the virtual machine is to be created.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -87,6 +110,9 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 					},
 					"disk": schema.Int64Attribute{
 						Optional: true,
+						Computed: true,
+					},
+					"ephemeral": schema.Int64Attribute{
 						Computed: true,
 					},
 					"gpu": schema.StringAttribute{
@@ -117,8 +143,9 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"flavor_name": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Required:            true,
+				Description:         "The name of the GPU hardware configuration ([flavor](https://infrahub-doc.nexgencloud.com/docs/hardware/flavors)) for the virtual machines being created.",
+				MarkdownDescription: "The name of the GPU hardware configuration ([flavor](https://infrahub-doc.nexgencloud.com/docs/hardware/flavors)) for the virtual machines being created.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -149,14 +176,18 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"image_name": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "The [operating system (OS) image](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/images) name designated for installation on the virtual machine.",
+				MarkdownDescription: "The [operating system (OS) image](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/images) name designated for installation on the virtual machine.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"key_name": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "The name of the existing SSH key pair to be used for secure access to the virtual machine. For additional information on SSH key pairs, [**click here**](https://infrahub-doc.nexgencloud.com/docs/getting-started/create-keypair).",
+				MarkdownDescription: "The name of the existing SSH key pair to be used for secure access to the virtual machine. For additional information on SSH key pairs, [**click here**](https://infrahub-doc.nexgencloud.com/docs/getting-started/create-keypair).",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -174,13 +205,29 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				},
 				Computed: true,
 			},
+			"labels": schema.ListAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
+			},
+			"locked": schema.BoolAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
+			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "The name of the virtual machine being created.",
+				MarkdownDescription: "The name of the virtual machine being created.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.String{
+					stringvalidator.LengthAtMost(50),
+				},
 			},
-			"openstack_id": schema.StringAttribute{
+			"os": schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -199,28 +246,71 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 							Computed: true,
 						},
 						"direction": schema.StringAttribute{
-							Computed: true,
+							Required:            true,
+							Description:         "The direction of traffic that the firewall rule applies to.",
+							MarkdownDescription: "The direction of traffic that the firewall rule applies to.",
 						},
 						"ethertype": schema.StringAttribute{
-							Computed: true,
+							Required:            true,
+							Description:         "The Ethernet type associated with the rule.",
+							MarkdownDescription: "The Ethernet type associated with the rule.",
 						},
 						"id": schema.Int64Attribute{
 							Computed: true,
 						},
 						"port_range_max": schema.Int64Attribute{
+							Optional: true,
 							Computed: true,
 						},
 						"port_range_min": schema.Int64Attribute{
+							Optional: true,
 							Computed: true,
 						},
 						"protocol": schema.StringAttribute{
-							Computed: true,
+							Required:            true,
+							Description:         "The network protocol associated with the rule. Call the [`GET /core/sg-rules-protocols`](https://infrahub-api-doc.nexgencloud.com/#get-/core/sg-rules-protocols) endpoint to retrieve a list of permitted network protocols.",
+							MarkdownDescription: "The network protocol associated with the rule. Call the [`GET /core/sg-rules-protocols`](https://infrahub-api-doc.nexgencloud.com/#get-/core/sg-rules-protocols) endpoint to retrieve a list of permitted network protocols.",
+							Validators: []validator.String{
+								stringvalidator.OneOf(
+									"any",
+									"ah",
+									"dccp",
+									"egp",
+									"esp",
+									"gre",
+									"hopopt",
+									"icmp",
+									"igmp",
+									"ip",
+									"ipip",
+									"ipv6-encap",
+									"ipv6-frag",
+									"ipv6-icmp",
+									"icmpv6",
+									"ipv6-nonxt",
+									"ipv6-opts",
+									"ipv6-route",
+									"ospf",
+									"pgm",
+									"rsvp",
+									"sctp",
+									"tcp",
+									"udp",
+									"udplite",
+									"vrrp",
+								),
+							},
 						},
 						"remote_ip_prefix": schema.StringAttribute{
-							Computed: true,
+							Required:            true,
+							Description:         "The IP address range that is allowed to access the specified port. Use \"0.0.0.0/0\" to allow any IP address.",
+							MarkdownDescription: "The IP address range that is allowed to access the specified port. Use \"0.0.0.0/0\" to allow any IP address.",
 						},
 						"status": schema.StringAttribute{
 							Computed: true,
+						},
+						"virtual_machine_id": schema.Int64Attribute{
+							Required: true,
 						},
 					},
 					CustomType: SecurityRulesType{
@@ -229,14 +319,17 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 						},
 					},
 				},
+				Optional: true,
 				Computed: true,
 			},
 			"status": schema.StringAttribute{
 				Computed: true,
 			},
 			"user_data": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "Optional initialization configuration commands to manage the configuration of a virtual machine at launch using cloud-init scripts. For more information about custom VM configuration using cloud-init, [**click here**](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/initialization-configuration).",
+				MarkdownDescription: "Optional initialization configuration commands to manage the configuration of a virtual machine at launch using cloud-init scripts. For more information about custom VM configuration using cloud-init, [**click here**](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/initialization-configuration).",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -294,8 +387,10 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"volume_name": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "The names of the volume(s) to be attached to the virtual machine being created.",
+				MarkdownDescription: "The names of the volume(s) to be attached to the virtual machine being created.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -327,6 +422,7 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 type CoreVirtualMachineModel struct {
 	AssignFloatingIp     types.Bool       `tfsdk:"assign_floating_ip"`
 	CallbackUrl          types.String     `tfsdk:"callback_url"`
+	ContractId           types.Int64      `tfsdk:"contract_id"`
 	CreateBootableVolume types.Bool       `tfsdk:"create_bootable_volume"`
 	CreatedAt            types.String     `tfsdk:"created_at"`
 	Environment          EnvironmentValue `tfsdk:"environment"`
@@ -341,8 +437,10 @@ type CoreVirtualMachineModel struct {
 	ImageName            types.String     `tfsdk:"image_name"`
 	KeyName              types.String     `tfsdk:"key_name"`
 	Keypair              KeypairValue     `tfsdk:"keypair"`
+	Labels               types.List       `tfsdk:"labels"`
+	Locked               types.Bool       `tfsdk:"locked"`
 	Name                 types.String     `tfsdk:"name"`
-	OpenstackId          types.String     `tfsdk:"openstack_id"`
+	Os                   types.String     `tfsdk:"os"`
 	PowerState           types.String     `tfsdk:"power_state"`
 	SecurityRules        types.List       `tfsdk:"security_rules"`
 	Status               types.String     `tfsdk:"status"`
@@ -377,6 +475,24 @@ func (t EnvironmentType) ValueFromObject(ctx context.Context, in basetypes.Objec
 	var diags diag.Diagnostics
 
 	attributes := in.Attributes()
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return nil, diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
 
 	nameAttribute, ok := attributes["name"]
 
@@ -437,6 +553,7 @@ func (t EnvironmentType) ValueFromObject(ctx context.Context, in basetypes.Objec
 	}
 
 	return EnvironmentValue{
+		Id:     idVal,
 		Name:   nameVal,
 		OrgId:  orgIdVal,
 		Region: regionVal,
@@ -507,6 +624,24 @@ func NewEnvironmentValue(attributeTypes map[string]attr.Type, attributes map[str
 		return NewEnvironmentValueUnknown(), diags
 	}
 
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return NewEnvironmentValueUnknown(), diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
 	nameAttribute, ok := attributes["name"]
 
 	if !ok {
@@ -566,6 +701,7 @@ func NewEnvironmentValue(attributeTypes map[string]attr.Type, attributes map[str
 	}
 
 	return EnvironmentValue{
+		Id:     idVal,
 		Name:   nameVal,
 		OrgId:  orgIdVal,
 		Region: regionVal,
@@ -641,6 +777,7 @@ func (t EnvironmentType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = EnvironmentValue{}
 
 type EnvironmentValue struct {
+	Id     basetypes.Int64Value  `tfsdk:"id"`
 	Name   basetypes.StringValue `tfsdk:"name"`
 	OrgId  basetypes.Int64Value  `tfsdk:"org_id"`
 	Region basetypes.StringValue `tfsdk:"region"`
@@ -648,11 +785,12 @@ type EnvironmentValue struct {
 }
 
 func (v EnvironmentValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 3)
+	attrTypes := make(map[string]tftypes.Type, 4)
 
 	var val tftypes.Value
 	var err error
 
+	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["org_id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["region"] = basetypes.StringType{}.TerraformType(ctx)
@@ -661,7 +799,15 @@ func (v EnvironmentValue) ToTerraformValue(ctx context.Context) (tftypes.Value, 
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 3)
+		vals := make(map[string]tftypes.Value, 4)
+
+		val, err = v.Id.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["id"] = val
 
 		val, err = v.Name.ToTerraformValue(ctx)
 
@@ -716,13 +862,25 @@ func (v EnvironmentValue) String() string {
 func (v EnvironmentValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"id":     basetypes.Int64Type{},
+		"name":   basetypes.StringType{},
+		"org_id": basetypes.Int64Type{},
+		"region": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"name":   basetypes.StringType{},
-			"org_id": basetypes.Int64Type{},
-			"region": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
+			"id":     v.Id,
 			"name":   v.Name,
 			"org_id": v.OrgId,
 			"region": v.Region,
@@ -744,6 +902,10 @@ func (v EnvironmentValue) Equal(o attr.Value) bool {
 
 	if v.state != attr.ValueStateKnown {
 		return true
+	}
+
+	if !v.Id.Equal(other.Id) {
+		return false
 	}
 
 	if !v.Name.Equal(other.Name) {
@@ -771,6 +933,7 @@ func (v EnvironmentValue) Type(ctx context.Context) attr.Type {
 
 func (v EnvironmentValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
+		"id":     basetypes.Int64Type{},
 		"name":   basetypes.StringType{},
 		"org_id": basetypes.Int64Type{},
 		"region": basetypes.StringType{},
@@ -836,6 +999,24 @@ func (t FlavorType) ValueFromObject(ctx context.Context, in basetypes.ObjectValu
 		diags.AddError(
 			"Attribute Wrong Type",
 			fmt.Sprintf(`disk expected to be basetypes.Int64Value, was: %T`, diskAttribute))
+	}
+
+	ephemeralAttribute, ok := attributes["ephemeral"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`ephemeral is missing from object`)
+
+		return nil, diags
+	}
+
+	ephemeralVal, ok := ephemeralAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`ephemeral expected to be basetypes.Int64Value, was: %T`, ephemeralAttribute))
 	}
 
 	gpuAttribute, ok := attributes["gpu"]
@@ -933,14 +1114,15 @@ func (t FlavorType) ValueFromObject(ctx context.Context, in basetypes.ObjectValu
 	}
 
 	return FlavorValue{
-		Cpu:      cpuVal,
-		Disk:     diskVal,
-		Gpu:      gpuVal,
-		GpuCount: gpuCountVal,
-		Id:       idVal,
-		Name:     nameVal,
-		Ram:      ramVal,
-		state:    attr.ValueStateKnown,
+		Cpu:       cpuVal,
+		Disk:      diskVal,
+		Ephemeral: ephemeralVal,
+		Gpu:       gpuVal,
+		GpuCount:  gpuCountVal,
+		Id:        idVal,
+		Name:      nameVal,
+		Ram:       ramVal,
+		state:     attr.ValueStateKnown,
 	}, diags
 }
 
@@ -1043,6 +1225,24 @@ func NewFlavorValue(attributeTypes map[string]attr.Type, attributes map[string]a
 			fmt.Sprintf(`disk expected to be basetypes.Int64Value, was: %T`, diskAttribute))
 	}
 
+	ephemeralAttribute, ok := attributes["ephemeral"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`ephemeral is missing from object`)
+
+		return NewFlavorValueUnknown(), diags
+	}
+
+	ephemeralVal, ok := ephemeralAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`ephemeral expected to be basetypes.Int64Value, was: %T`, ephemeralAttribute))
+	}
+
 	gpuAttribute, ok := attributes["gpu"]
 
 	if !ok {
@@ -1138,14 +1338,15 @@ func NewFlavorValue(attributeTypes map[string]attr.Type, attributes map[string]a
 	}
 
 	return FlavorValue{
-		Cpu:      cpuVal,
-		Disk:     diskVal,
-		Gpu:      gpuVal,
-		GpuCount: gpuCountVal,
-		Id:       idVal,
-		Name:     nameVal,
-		Ram:      ramVal,
-		state:    attr.ValueStateKnown,
+		Cpu:       cpuVal,
+		Disk:      diskVal,
+		Ephemeral: ephemeralVal,
+		Gpu:       gpuVal,
+		GpuCount:  gpuCountVal,
+		Id:        idVal,
+		Name:      nameVal,
+		Ram:       ramVal,
+		state:     attr.ValueStateKnown,
 	}, diags
 }
 
@@ -1217,24 +1418,26 @@ func (t FlavorType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = FlavorValue{}
 
 type FlavorValue struct {
-	Cpu      basetypes.Int64Value  `tfsdk:"cpu"`
-	Disk     basetypes.Int64Value  `tfsdk:"disk"`
-	Gpu      basetypes.StringValue `tfsdk:"gpu"`
-	GpuCount basetypes.Int64Value  `tfsdk:"gpu_count"`
-	Id       basetypes.Int64Value  `tfsdk:"id"`
-	Name     basetypes.StringValue `tfsdk:"name"`
-	Ram      basetypes.NumberValue `tfsdk:"ram"`
-	state    attr.ValueState
+	Cpu       basetypes.Int64Value  `tfsdk:"cpu"`
+	Disk      basetypes.Int64Value  `tfsdk:"disk"`
+	Ephemeral basetypes.Int64Value  `tfsdk:"ephemeral"`
+	Gpu       basetypes.StringValue `tfsdk:"gpu"`
+	GpuCount  basetypes.Int64Value  `tfsdk:"gpu_count"`
+	Id        basetypes.Int64Value  `tfsdk:"id"`
+	Name      basetypes.StringValue `tfsdk:"name"`
+	Ram       basetypes.NumberValue `tfsdk:"ram"`
+	state     attr.ValueState
 }
 
 func (v FlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 7)
+	attrTypes := make(map[string]tftypes.Type, 8)
 
 	var val tftypes.Value
 	var err error
 
 	attrTypes["cpu"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["disk"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["ephemeral"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["gpu"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["gpu_count"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
@@ -1245,7 +1448,7 @@ func (v FlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 7)
+		vals := make(map[string]tftypes.Value, 8)
 
 		val, err = v.Cpu.ToTerraformValue(ctx)
 
@@ -1262,6 +1465,14 @@ func (v FlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error
 		}
 
 		vals["disk"] = val
+
+		val, err = v.Ephemeral.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["ephemeral"] = val
 
 		val, err = v.Gpu.ToTerraformValue(ctx)
 
@@ -1332,19 +1543,31 @@ func (v FlavorValue) String() string {
 func (v FlavorValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"cpu":       basetypes.Int64Type{},
+		"disk":      basetypes.Int64Type{},
+		"ephemeral": basetypes.Int64Type{},
+		"gpu":       basetypes.StringType{},
+		"gpu_count": basetypes.Int64Type{},
+		"id":        basetypes.Int64Type{},
+		"name":      basetypes.StringType{},
+		"ram":       basetypes.NumberType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"cpu":       basetypes.Int64Type{},
-			"disk":      basetypes.Int64Type{},
-			"gpu":       basetypes.StringType{},
-			"gpu_count": basetypes.Int64Type{},
-			"id":        basetypes.Int64Type{},
-			"name":      basetypes.StringType{},
-			"ram":       basetypes.NumberType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"cpu":       v.Cpu,
 			"disk":      v.Disk,
+			"ephemeral": v.Ephemeral,
 			"gpu":       v.Gpu,
 			"gpu_count": v.GpuCount,
 			"id":        v.Id,
@@ -1375,6 +1598,10 @@ func (v FlavorValue) Equal(o attr.Value) bool {
 	}
 
 	if !v.Disk.Equal(other.Disk) {
+		return false
+	}
+
+	if !v.Ephemeral.Equal(other.Ephemeral) {
 		return false
 	}
 
@@ -1413,6 +1640,7 @@ func (v FlavorValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
 		"cpu":       basetypes.Int64Type{},
 		"disk":      basetypes.Int64Type{},
+		"ephemeral": basetypes.Int64Type{},
 		"gpu":       basetypes.StringType{},
 		"gpu_count": basetypes.Int64Type{},
 		"id":        basetypes.Int64Type{},
@@ -1688,10 +1916,20 @@ func (v ImageValue) String() string {
 func (v ImageValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"name": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"name": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"name": v.Name,
 		})
@@ -2002,10 +2240,20 @@ func (v KeypairValue) String() string {
 func (v KeypairValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"name": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"name": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"name": v.Name,
 		})
@@ -2236,21 +2484,40 @@ func (t SecurityRulesType) ValueFromObject(ctx context.Context, in basetypes.Obj
 			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
 	}
 
+	virtualMachineIdAttribute, ok := attributes["virtual_machine_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`virtual_machine_id is missing from object`)
+
+		return nil, diags
+	}
+
+	virtualMachineIdVal, ok := virtualMachineIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`virtual_machine_id expected to be basetypes.Int64Value, was: %T`, virtualMachineIdAttribute))
+	}
+
 	if diags.HasError() {
 		return nil, diags
 	}
 
 	return SecurityRulesValue{
-		CreatedAt:      createdAtVal,
-		Direction:      directionVal,
-		Ethertype:      ethertypeVal,
-		Id:             idVal,
-		PortRangeMax:   portRangeMaxVal,
-		PortRangeMin:   portRangeMinVal,
-		Protocol:       protocolVal,
-		RemoteIpPrefix: remoteIpPrefixVal,
-		Status:         statusVal,
-		state:          attr.ValueStateKnown,
+		CreatedAt:        createdAtVal,
+		Direction:        directionVal,
+		Ethertype:        ethertypeVal,
+		Id:               idVal,
+		PortRangeMax:     portRangeMaxVal,
+		PortRangeMin:     portRangeMinVal,
+		Protocol:         protocolVal,
+		RemoteIpPrefix:   remoteIpPrefixVal,
+		Status:           statusVal,
+		VirtualMachineId: virtualMachineIdVal,
+		state:            attr.ValueStateKnown,
 	}, diags
 }
 
@@ -2479,21 +2746,40 @@ func NewSecurityRulesValue(attributeTypes map[string]attr.Type, attributes map[s
 			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
 	}
 
+	virtualMachineIdAttribute, ok := attributes["virtual_machine_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`virtual_machine_id is missing from object`)
+
+		return NewSecurityRulesValueUnknown(), diags
+	}
+
+	virtualMachineIdVal, ok := virtualMachineIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`virtual_machine_id expected to be basetypes.Int64Value, was: %T`, virtualMachineIdAttribute))
+	}
+
 	if diags.HasError() {
 		return NewSecurityRulesValueUnknown(), diags
 	}
 
 	return SecurityRulesValue{
-		CreatedAt:      createdAtVal,
-		Direction:      directionVal,
-		Ethertype:      ethertypeVal,
-		Id:             idVal,
-		PortRangeMax:   portRangeMaxVal,
-		PortRangeMin:   portRangeMinVal,
-		Protocol:       protocolVal,
-		RemoteIpPrefix: remoteIpPrefixVal,
-		Status:         statusVal,
-		state:          attr.ValueStateKnown,
+		CreatedAt:        createdAtVal,
+		Direction:        directionVal,
+		Ethertype:        ethertypeVal,
+		Id:               idVal,
+		PortRangeMax:     portRangeMaxVal,
+		PortRangeMin:     portRangeMinVal,
+		Protocol:         protocolVal,
+		RemoteIpPrefix:   remoteIpPrefixVal,
+		Status:           statusVal,
+		VirtualMachineId: virtualMachineIdVal,
+		state:            attr.ValueStateKnown,
 	}, diags
 }
 
@@ -2565,20 +2851,21 @@ func (t SecurityRulesType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = SecurityRulesValue{}
 
 type SecurityRulesValue struct {
-	CreatedAt      basetypes.StringValue `tfsdk:"created_at"`
-	Direction      basetypes.StringValue `tfsdk:"direction"`
-	Ethertype      basetypes.StringValue `tfsdk:"ethertype"`
-	Id             basetypes.Int64Value  `tfsdk:"id"`
-	PortRangeMax   basetypes.Int64Value  `tfsdk:"port_range_max"`
-	PortRangeMin   basetypes.Int64Value  `tfsdk:"port_range_min"`
-	Protocol       basetypes.StringValue `tfsdk:"protocol"`
-	RemoteIpPrefix basetypes.StringValue `tfsdk:"remote_ip_prefix"`
-	Status         basetypes.StringValue `tfsdk:"status"`
-	state          attr.ValueState
+	CreatedAt        basetypes.StringValue `tfsdk:"created_at"`
+	Direction        basetypes.StringValue `tfsdk:"direction"`
+	Ethertype        basetypes.StringValue `tfsdk:"ethertype"`
+	Id               basetypes.Int64Value  `tfsdk:"id"`
+	PortRangeMax     basetypes.Int64Value  `tfsdk:"port_range_max"`
+	PortRangeMin     basetypes.Int64Value  `tfsdk:"port_range_min"`
+	Protocol         basetypes.StringValue `tfsdk:"protocol"`
+	RemoteIpPrefix   basetypes.StringValue `tfsdk:"remote_ip_prefix"`
+	Status           basetypes.StringValue `tfsdk:"status"`
+	VirtualMachineId basetypes.Int64Value  `tfsdk:"virtual_machine_id"`
+	state            attr.ValueState
 }
 
 func (v SecurityRulesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 9)
+	attrTypes := make(map[string]tftypes.Type, 10)
 
 	var val tftypes.Value
 	var err error
@@ -2592,12 +2879,13 @@ func (v SecurityRulesValue) ToTerraformValue(ctx context.Context) (tftypes.Value
 	attrTypes["protocol"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["remote_ip_prefix"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["status"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["virtual_machine_id"] = basetypes.Int64Type{}.TerraformType(ctx)
 
 	objectType := tftypes.Object{AttributeTypes: attrTypes}
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 9)
+		vals := make(map[string]tftypes.Value, 10)
 
 		val, err = v.CreatedAt.ToTerraformValue(ctx)
 
@@ -2671,6 +2959,14 @@ func (v SecurityRulesValue) ToTerraformValue(ctx context.Context) (tftypes.Value
 
 		vals["status"] = val
 
+		val, err = v.VirtualMachineId.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["virtual_machine_id"] = val
+
 		if err := tftypes.ValidateValue(objectType, vals); err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
 		}
@@ -2700,28 +2996,40 @@ func (v SecurityRulesValue) String() string {
 func (v SecurityRulesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"created_at":         basetypes.StringType{},
+		"direction":          basetypes.StringType{},
+		"ethertype":          basetypes.StringType{},
+		"id":                 basetypes.Int64Type{},
+		"port_range_max":     basetypes.Int64Type{},
+		"port_range_min":     basetypes.Int64Type{},
+		"protocol":           basetypes.StringType{},
+		"remote_ip_prefix":   basetypes.StringType{},
+		"status":             basetypes.StringType{},
+		"virtual_machine_id": basetypes.Int64Type{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"created_at":       basetypes.StringType{},
-			"direction":        basetypes.StringType{},
-			"ethertype":        basetypes.StringType{},
-			"id":               basetypes.Int64Type{},
-			"port_range_max":   basetypes.Int64Type{},
-			"port_range_min":   basetypes.Int64Type{},
-			"protocol":         basetypes.StringType{},
-			"remote_ip_prefix": basetypes.StringType{},
-			"status":           basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
-			"created_at":       v.CreatedAt,
-			"direction":        v.Direction,
-			"ethertype":        v.Ethertype,
-			"id":               v.Id,
-			"port_range_max":   v.PortRangeMax,
-			"port_range_min":   v.PortRangeMin,
-			"protocol":         v.Protocol,
-			"remote_ip_prefix": v.RemoteIpPrefix,
-			"status":           v.Status,
+			"created_at":         v.CreatedAt,
+			"direction":          v.Direction,
+			"ethertype":          v.Ethertype,
+			"id":                 v.Id,
+			"port_range_max":     v.PortRangeMax,
+			"port_range_min":     v.PortRangeMin,
+			"protocol":           v.Protocol,
+			"remote_ip_prefix":   v.RemoteIpPrefix,
+			"status":             v.Status,
+			"virtual_machine_id": v.VirtualMachineId,
 		})
 
 	return objVal, diags
@@ -2778,6 +3086,10 @@ func (v SecurityRulesValue) Equal(o attr.Value) bool {
 		return false
 	}
 
+	if !v.VirtualMachineId.Equal(other.VirtualMachineId) {
+		return false
+	}
+
 	return true
 }
 
@@ -2791,15 +3103,16 @@ func (v SecurityRulesValue) Type(ctx context.Context) attr.Type {
 
 func (v SecurityRulesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"created_at":       basetypes.StringType{},
-		"direction":        basetypes.StringType{},
-		"ethertype":        basetypes.StringType{},
-		"id":               basetypes.Int64Type{},
-		"port_range_max":   basetypes.Int64Type{},
-		"port_range_min":   basetypes.Int64Type{},
-		"protocol":         basetypes.StringType{},
-		"remote_ip_prefix": basetypes.StringType{},
-		"status":           basetypes.StringType{},
+		"created_at":         basetypes.StringType{},
+		"direction":          basetypes.StringType{},
+		"ethertype":          basetypes.StringType{},
+		"id":                 basetypes.Int64Type{},
+		"port_range_max":     basetypes.Int64Type{},
+		"port_range_min":     basetypes.Int64Type{},
+		"protocol":           basetypes.StringType{},
+		"remote_ip_prefix":   basetypes.StringType{},
+		"status":             basetypes.StringType{},
+		"virtual_machine_id": basetypes.Int64Type{},
 	}
 }
 
@@ -3237,15 +3550,25 @@ func (v VolumeAttachmentsValue) ToObjectValue(ctx context.Context) (basetypes.Ob
 		)
 	}
 
-	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"created_at": basetypes.StringType{},
-			"device":     basetypes.StringType{},
-			"status":     basetypes.StringType{},
-			"volume": basetypes.ObjectType{
-				AttrTypes: VolumeValue{}.AttributeTypes(ctx),
-			},
+	attributeTypes := map[string]attr.Type{
+		"created_at": basetypes.StringType{},
+		"device":     basetypes.StringType{},
+		"status":     basetypes.StringType{},
+		"volume": basetypes.ObjectType{
+			AttrTypes: VolumeValue{}.AttributeTypes(ctx),
 		},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
 		map[string]attr.Value{
 			"created_at": v.CreatedAt,
 			"device":     v.Device,
@@ -3768,14 +4091,24 @@ func (v VolumeValue) String() string {
 func (v VolumeValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"description": basetypes.StringType{},
+		"id":          basetypes.Int64Type{},
+		"name":        basetypes.StringType{},
+		"size":        basetypes.Int64Type{},
+		"volume_type": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"description": basetypes.StringType{},
-			"id":          basetypes.Int64Type{},
-			"name":        basetypes.StringType{},
-			"size":        basetypes.Int64Type{},
-			"volume_type": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"description": v.Description,
 			"id":          v.Id,
@@ -4158,11 +4491,21 @@ func (v ProfileValue) String() string {
 func (v ProfileValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"description": basetypes.StringType{},
+		"name":        basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"description": basetypes.StringType{},
-			"name":        basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"description": v.Description,
 			"name":        v.Name,

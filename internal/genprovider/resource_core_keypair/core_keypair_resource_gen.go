@@ -4,6 +4,8 @@ package resource_core_keypair
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -16,8 +18,10 @@ func CoreKeypairResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"environment": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "The name of the environment where the key pair is being created.",
+				MarkdownDescription: "The name of the environment where the key pair is being created.",
 			},
 			"fingerprint": schema.StringAttribute{
 				Computed: true,
@@ -26,10 +30,17 @@ func CoreKeypairResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "The name of the key pair that is being created.",
+				MarkdownDescription: "The name of the key pair that is being created.",
+				Validators: []validator.String{
+					stringvalidator.LengthAtMost(50),
+				},
 			},
 			"public_key": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "The public key that is being used to import an SSH key pair.",
+				MarkdownDescription: "The public key that is being used to import an SSH key pair.",
 			},
 		},
 	}

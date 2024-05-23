@@ -448,12 +448,22 @@ func (v PermissionsValue) String() string {
 func (v PermissionsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"id":         basetypes.Int64Type{},
+		"permission": basetypes.StringType{},
+		"resource":   basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"id":         basetypes.Int64Type{},
-			"permission": basetypes.StringType{},
-			"resource":   basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"id":         v.Id,
 			"permission": v.Permission,
@@ -872,12 +882,22 @@ func (v PoliciesValue) String() string {
 func (v PoliciesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"description": basetypes.StringType{},
+		"id":          basetypes.Int64Type{},
+		"name":        basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"description": basetypes.StringType{},
-			"id":          basetypes.Int64Type{},
-			"name":        basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"description": v.Description,
 			"id":          v.Id,

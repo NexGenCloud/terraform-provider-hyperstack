@@ -461,13 +461,23 @@ func (v CoreEnvironmentsValue) String() string {
 func (v CoreEnvironmentsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"created_at": basetypes.StringType{},
+		"id":         basetypes.Int64Type{},
+		"name":       basetypes.StringType{},
+		"region":     basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"created_at": basetypes.StringType{},
-			"id":         basetypes.Int64Type{},
-			"name":       basetypes.StringType{},
-			"region":     basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"created_at": v.CreatedAt,
 			"id":         v.Id,

@@ -23,6 +23,11 @@ data_sources:
       path: /core/gpus
       method: GET
 
+  core_environment:
+    read:
+      path: /core/environments/{id}
+      method: GET
+
   core_environments:
     read:
       path: /core/environments
@@ -33,7 +38,17 @@ data_sources:
       path: /auth/me
       method: GET
 
-  auth_organizations:
+  auth_user_permissions:
+    read:
+      path: /auth/users/{id}/permissions
+      method: GET
+
+  auth_user_me_permissions:
+    read:
+      path: /auth/users/me/permissions
+      method: GET
+
+  auth_organization:
     read:
       path: /auth/organizations
       method: GET
@@ -46,6 +61,21 @@ data_sources:
   auth_role:
     read:
       path: /auth/roles/{id}
+      method: GET
+
+  auth_policies:
+    read:
+      path: /auth/policies
+      method: GET
+
+  auth_permissions:
+    read:
+      path: /auth/permissions
+      method: GET
+
+  core_keypair:
+    read:
+      path: /core/keypairs
       method: GET
 
   core_keypairs:

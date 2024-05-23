@@ -63,20 +63,20 @@ func (d *DataSourceCoreImages) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 	// Initialize the parameters as nil
-	params := (*image.RetrieveImagesParams)(nil)
-	result := (*image.RetrieveImagesResponse)(nil)
+	params := (*image.ListImagesParams)(nil)
+	result := (*image.ListImagesResponse)(nil)
 	err := error(nil)
 
 	// If data.Region is not nil or empty, construct the parameters
 	if !data.Region.IsNull() && data.Region.String() != "" {
 		stringRegion := string(data.Region.ValueString())
 
-		params = &image.RetrieveImagesParams{
+		params = &image.ListImagesParams{
 			Region: &stringRegion,
 		}
-		result, err = d.client.RetrieveImagesWithResponse(ctx, params)
+		result, err = d.client.ListImagesWithResponse(ctx, params)
 	} else {
-		result, err = d.client.RetrieveImagesWithResponse(ctx, nil)
+		result, err = d.client.ListImagesWithResponse(ctx, nil)
 	}
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -172,17 +172,28 @@ func (d *DataSourceCoreImages) MapImages(
 							if imageItem.Version != nil {
 								version = *imageItem.Version
 							}
+							isPublic := false
+							if imageItem.IsPublic != nil {
+								isPublic = *imageItem.IsPublic
+							}
+							description := ""
+							if imageItem.Description != nil {
+								description = *imageItem.Description
+							}
 
 							modelImage, diagnostic := datasource_core_images.NewImagesValue(
 								datasource_core_images.ImagesValue{}.AttributeTypes(ctx),
 								map[string]attr.Value{
 									"display_size": types.StringValue(displaySize),
 									"id":           types.Int64Value(id),
+									"is_public":    types.BoolValue(isPublic),
 									"name":         types.StringValue(name),
 									"region_name":  types.StringValue(regionName),
 									"size":         types.Int64Value(size),
 									"type":         types.StringValue(imageType),
 									"version":      types.StringValue(version),
+									"description":  types.StringValue(description),
+									"labels":       d.MapLabels(ctx, diags, *imageItem.Labels),
 								},
 							)
 							images = append(images, modelImage)
@@ -202,6 +213,33 @@ func (d *DataSourceCoreImages) MapImages(
 				//diags.Append(diagnostic...)
 			}
 			return coreImages
+		}(),
+	)
+	diags.Append(diagnostic...)
+	return model
+}
+
+func (d *DataSourceCoreImages) MapLabels(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data []image.LableResonse,
+) types.List {
+	model, diagnostic := types.ListValue(
+		datasource_core_images.LabelsValue{}.Type(ctx),
+		func() []attr.Value {
+			labels := make([]attr.Value, 0)
+			for _, row := range data {
+				model, diagnostic := datasource_core_images.NewLabelsValue(
+					datasource_core_images.LabelsValue{}.AttributeTypes(ctx),
+					map[string]attr.Value{
+						"id":   types.Int64Value(int64(*row.Id)),
+						"name": types.StringValue(*row.Label),
+					},
+				)
+				diags.Append(diagnostic...)
+				labels = append(labels, model)
+			}
+			return labels
 		}(),
 	)
 	diags.Append(diagnostic...)

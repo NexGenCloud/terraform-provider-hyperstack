@@ -410,12 +410,22 @@ func (v CoreRegionsValue) String() string {
 func (v CoreRegionsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"description": basetypes.StringType{},
+		"id":          basetypes.Int64Type{},
+		"name":        basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"description": basetypes.StringType{},
-			"id":          basetypes.Int64Type{},
-			"name":        basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"description": v.Description,
 			"id":          v.Id,

@@ -232,8 +232,9 @@ tasks:
     dotenv: ['.env']
     vars:
       TF_EXAMPLES: |-
-        org_base
-        org_roles
+        auth_me
+        auth_organization
+        auth_roles
         core_environments
         core_images
         core_regions

@@ -70,14 +70,14 @@ func (r *ResourceCoreVirtualMachine) Create(
 		return
 	}
 
-	result, err := r.client.CreateInstancesWithResponse(ctx, func() virtual_machine.CreateInstancesJSONRequestBody {
-		return virtual_machine.CreateInstancesJSONRequestBody{
+	result, err := r.client.CreateVirtualMachineWithResponse(ctx, func() virtual_machine.CreateVirtualMachineJSONRequestBody {
+		return virtual_machine.CreateVirtualMachineJSONRequestBody{
 			Name:                 dataOld.Name.ValueString(),
 			EnvironmentName:      dataOld.EnvironmentName.ValueString(),
 			ImageName:            dataOld.ImageName.ValueStringPointer(),
 			VolumeName:           dataOld.VolumeName.ValueStringPointer(),
 			CreateBootableVolume: dataOld.CreateBootableVolume.ValueBoolPointer(),
-			FlavorName:           dataOld.FlavorName.ValueStringPointer(),
+			FlavorName:           dataOld.FlavorName.ValueString(),
 			Flavor: func() *virtual_machine.FlavorObjectFields {
 				if dataOld.Flavor.IsNull() {
 					return nil
@@ -177,7 +177,7 @@ func (r *ResourceCoreVirtualMachine) Create(
 		3*time.Second,
 		300*time.Second,
 		func(ctx context.Context) (bool, error) {
-			result, err := r.client.GetAnInstanceDetailsWithResponse(ctx, id)
+			result, err := r.client.RetrieveVirtualMachineDetailsWithResponse(ctx, id)
 			if err != nil {
 				return false, err
 			}
@@ -219,7 +219,7 @@ func (r *ResourceCoreVirtualMachine) Read(
 		return
 	}
 
-	result, err := r.client.GetAnInstanceDetailsWithResponse(ctx, int(dataOld.Id.ValueInt64()))
+	result, err := r.client.RetrieveVirtualMachineDetailsWithResponse(ctx, int(dataOld.Id.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -307,7 +307,7 @@ func (r *ResourceCoreVirtualMachine) Delete(ctx context.Context, req resource.De
 
 	id := int(data.Id.ValueInt64())
 
-	result, err := r.client.DeleteAnInstanceWithResponse(ctx, id)
+	result, err := r.client.DeleteVirtualMachineWithResponse(ctx, id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -329,7 +329,7 @@ func (r *ResourceCoreVirtualMachine) Delete(ctx context.Context, req resource.De
 		3*time.Second,
 		120*time.Second,
 		func(ctx context.Context) (bool, error) {
-			result, err := r.client.GetAnInstanceDetailsWithResponse(ctx, id)
+			result, err := r.client.RetrieveVirtualMachineDetailsWithResponse(ctx, id)
 			if err != nil {
 				return false, err
 			}
@@ -377,7 +377,7 @@ func (r *ResourceCoreVirtualMachine) MergeData(
 func (r *ResourceCoreVirtualMachine) ApiToModel(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	response *virtual_machine.InstanceAdminFields,
+	response *virtual_machine.InstanceFields,
 ) resource_core_virtual_machine.CoreVirtualMachineModel {
 	return resource_core_virtual_machine.CoreVirtualMachineModel{
 		Id: func() types.Int64 {
@@ -428,18 +428,13 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 			}
 			return types.StringValue(*response.FloatingIpStatus)
 		}(),
-		OpenstackId: func() types.String {
-			if response.OpenstackId == nil {
-				return types.StringNull()
-			}
-			return types.StringValue(*response.OpenstackId)
-		}(),
 		Keypair:           r.MapKeypair(ctx, diags, *response.Keypair),
 		Environment:       r.MapEnvironment(ctx, diags, *response.Environment),
 		Image:             r.MapImage(ctx, diags, *response.Image),
+		Labels:            r.MapLabels(ctx, diags, *response.Labels),
 		Flavor:            r.MapFlavor(ctx, diags, *response.Flavor),
 		VolumeAttachments: r.MapVolumeAttachments(ctx, diags, *response.VolumeAttachments),
-		SecurityRules:     r.MapSecurityRules(ctx, diags, *response.SecurityRules),
+		SecurityRules:     r.MapSecurityRules(ctx, diags, *response.SecurityRules, int64(*response.Id)),
 		CreatedAt: func() types.String {
 			if response.CreatedAt == nil {
 				return types.StringNull()
@@ -468,6 +463,7 @@ func (r *ResourceCoreVirtualMachine) MapEnvironment(
 	model, diagnostic := resource_core_virtual_machine.NewEnvironmentValue(
 		resource_core_virtual_machine.EnvironmentValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
+			"id":     types.Int64Value(int64(*data.Id)),
 			"name":   types.StringValue(*data.Name),
 			"org_id": types.Int64Value(int64(*data.OrgId)),
 			"region": types.StringValue(*data.Region),
@@ -503,6 +499,7 @@ func (r *ResourceCoreVirtualMachine) MapFlavor(
 		resource_core_virtual_machine.FlavorValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
 			"id":        types.Int64Value(int64(*data.Id)),
+			"ephemeral": types.Int64Value(int64(*data.Ephemeral)),
 			"name":      types.StringValue(*data.Name),
 			"cpu":       types.Int64Value(int64(*data.Cpu)),
 			"ram":       types.NumberValue(big.NewFloat(float64(*data.Ram))),
@@ -593,6 +590,7 @@ func (r *ResourceCoreVirtualMachine) MapSecurityRules(
 	ctx context.Context,
 	diags *diag.Diagnostics,
 	data []virtual_machine.SecurityRulesFieldsForInstance,
+	vmId int64,
 ) types.List {
 	model, diagnostic := types.ListValue(
 		resource_core_virtual_machine.SecurityRulesValue{}.Type(ctx),
@@ -602,9 +600,10 @@ func (r *ResourceCoreVirtualMachine) MapSecurityRules(
 				model, diagnostic := resource_core_virtual_machine.NewSecurityRulesValue(
 					resource_core_virtual_machine.SecurityRulesValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
-						"id":        types.Int64Value(int64(*row.Id)),
-						"direction": types.StringValue(*row.Direction),
-						"protocol":  types.StringValue(*row.Protocol),
+						"id":                 types.Int64Value(int64(*row.Id)),
+						"virtual_machine_id": types.Int64Value(vmId),
+						"direction":          types.StringValue(*row.Direction),
+						"protocol":           types.StringValue(*row.Protocol),
 						"port_range_min": func() attr.Value {
 							if row.PortRangeMin == nil {
 								return types.Int64Null()
@@ -632,6 +631,26 @@ func (r *ResourceCoreVirtualMachine) MapSecurityRules(
 				roles = append(roles, model)
 			}
 			return roles
+		}(),
+	)
+	diags.Append(diagnostic...)
+	return model
+}
+
+func (r *ResourceCoreVirtualMachine) MapLabels(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data []string,
+) types.List {
+	model, diagnostic := types.ListValue(
+		types.StringType,
+		func() []attr.Value {
+			labels := make([]attr.Value, 0)
+			for _, row := range data {
+				model := types.StringValue(row)
+				labels = append(labels, model)
+			}
+			return labels
 		}(),
 	)
 	diags.Append(diagnostic...)

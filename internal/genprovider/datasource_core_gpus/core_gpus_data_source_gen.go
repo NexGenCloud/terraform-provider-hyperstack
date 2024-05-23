@@ -609,17 +609,27 @@ func (v CoreGpusValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue
 		)
 	}
 
-	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"created_at":       basetypes.StringType{},
-			"example_metadata": basetypes.StringType{},
-			"id":               basetypes.Int64Type{},
-			"name":             basetypes.StringType{},
-			"regions": basetypes.ListType{
-				ElemType: RegionsValue{}.Type(ctx),
-			},
-			"updated_at": basetypes.StringType{},
+	attributeTypes := map[string]attr.Type{
+		"created_at":       basetypes.StringType{},
+		"example_metadata": basetypes.StringType{},
+		"id":               basetypes.Int64Type{},
+		"name":             basetypes.StringType{},
+		"regions": basetypes.ListType{
+			ElemType: RegionsValue{}.Type(ctx),
 		},
+		"updated_at": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
 		map[string]attr.Value{
 			"created_at":       v.CreatedAt,
 			"example_metadata": v.ExampleMetadata,
@@ -1010,11 +1020,21 @@ func (v RegionsValue) String() string {
 func (v RegionsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	attributeTypes := map[string]attr.Type{
+		"id":   basetypes.Int64Type{},
+		"name": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
 	objVal, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"id":   basetypes.Int64Type{},
-			"name": basetypes.StringType{},
-		},
+		attributeTypes,
 		map[string]attr.Value{
 			"id":   v.Id,
 			"name": v.Name,

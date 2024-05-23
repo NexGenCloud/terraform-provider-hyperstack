@@ -63,7 +63,7 @@ func (d *DataSourceCoreRegions) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	result, err := d.client.GettingRegionsWithResponse(ctx)
+	result, err := d.client.ListRegionsWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

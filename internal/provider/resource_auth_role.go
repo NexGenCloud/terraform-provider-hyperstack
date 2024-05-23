@@ -265,7 +265,7 @@ func (r *ResourceAuthRole) ImportState(ctx context.Context, req resource.ImportS
 func (r *ResourceAuthRole) ApiToModel(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	response *rbac_role.RBACRoleFields,
+	response *rbac_role.RbacRoleFields,
 ) resource_auth_role.AuthRoleModel {
 	return resource_auth_role.AuthRoleModel{
 		Id: func() types.Int64 {
