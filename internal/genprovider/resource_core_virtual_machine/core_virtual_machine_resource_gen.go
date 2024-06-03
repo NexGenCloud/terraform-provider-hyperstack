@@ -11,6 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -37,20 +40,13 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"callback_url": schema.StringAttribute{
 				Optional:            true,
-				Computed:            true,
 				Description:         "An optional URL where actions performed on the virtual machine will be sent. For additional information on event callbacks, [**click here**](https://infrahub-doc.nexgencloud.com/docs/features/webhooks-callbacks).",
 				MarkdownDescription: "An optional URL where actions performed on the virtual machine will be sent. For additional information on event callbacks, [**click here**](https://infrahub-doc.nexgencloud.com/docs/features/webhooks-callbacks).",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
 					stringvalidator.LengthAtMost(250),
-				},
-			},
-			"contract_id": schema.Int64Attribute{
-				Computed: true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
 				},
 			},
 			"create_bootable_volume": schema.BoolAttribute{
@@ -65,6 +61,9 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"created_at": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"environment": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
@@ -99,28 +98,24 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			"fixed_ip": schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"flavor": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
 					"cpu": schema.Int64Attribute{
-						Optional: true,
 						Computed: true,
 					},
 					"disk": schema.Int64Attribute{
-						Optional: true,
 						Computed: true,
 					},
 					"ephemeral": schema.Int64Attribute{
 						Computed: true,
 					},
 					"gpu": schema.StringAttribute{
-						Optional: true,
 						Computed: true,
 					},
 					"gpu_count": schema.Int64Attribute{
-						Optional: true,
 						Computed: true,
 					},
 					"id": schema.Int64Attribute{
@@ -130,7 +125,6 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 						Computed: true,
 					},
 					"ram": schema.NumberAttribute{
-						Optional: true,
 						Computed: true,
 					},
 				},
@@ -139,7 +133,6 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 						AttrTypes: FlavorValue{}.AttributeTypes(ctx),
 					},
 				},
-				Optional: true,
 				Computed: true,
 			},
 			"flavor_name": schema.StringAttribute{
@@ -153,14 +146,20 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			"floating_ip": schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"floating_ip_status": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"id": schema.Int64Attribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"image": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
@@ -209,11 +208,12 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
+				Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 			},
 			"locked": schema.BoolAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.RequiresReplace(),
+					boolplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"name": schema.StringAttribute{
@@ -230,13 +230,13 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			"os": schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"power_state": schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"security_rules": schema.ListNestedAttribute{
@@ -244,32 +244,51 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 					Attributes: map[string]schema.Attribute{
 						"created_at": schema.StringAttribute{
 							Computed: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
 						},
 						"direction": schema.StringAttribute{
-							Required:            true,
+							Computed:            true,
 							Description:         "The direction of traffic that the firewall rule applies to.",
 							MarkdownDescription: "The direction of traffic that the firewall rule applies to.",
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
 						},
 						"ethertype": schema.StringAttribute{
-							Required:            true,
+							Computed:            true,
 							Description:         "The Ethernet type associated with the rule.",
 							MarkdownDescription: "The Ethernet type associated with the rule.",
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
 						},
 						"id": schema.Int64Attribute{
 							Computed: true,
+							PlanModifiers: []planmodifier.Int64{
+								int64planmodifier.UseStateForUnknown(),
+							},
 						},
 						"port_range_max": schema.Int64Attribute{
-							Optional: true,
 							Computed: true,
+							PlanModifiers: []planmodifier.Int64{
+								int64planmodifier.UseStateForUnknown(),
+							},
 						},
 						"port_range_min": schema.Int64Attribute{
-							Optional: true,
 							Computed: true,
+							PlanModifiers: []planmodifier.Int64{
+								int64planmodifier.UseStateForUnknown(),
+							},
 						},
 						"protocol": schema.StringAttribute{
-							Required:            true,
+							Computed:            true,
 							Description:         "The network protocol associated with the rule. Call the [`GET /core/sg-rules-protocols`](https://infrahub-api-doc.nexgencloud.com/#get-/core/sg-rules-protocols) endpoint to retrieve a list of permitted network protocols.",
 							MarkdownDescription: "The network protocol associated with the rule. Call the [`GET /core/sg-rules-protocols`](https://infrahub-api-doc.nexgencloud.com/#get-/core/sg-rules-protocols) endpoint to retrieve a list of permitted network protocols.",
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
 							Validators: []validator.String{
 								stringvalidator.OneOf(
 									"any",
@@ -302,15 +321,24 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 							},
 						},
 						"remote_ip_prefix": schema.StringAttribute{
-							Required:            true,
+							Computed:            true,
 							Description:         "The IP address range that is allowed to access the specified port. Use \"0.0.0.0/0\" to allow any IP address.",
 							MarkdownDescription: "The IP address range that is allowed to access the specified port. Use \"0.0.0.0/0\" to allow any IP address.",
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
 						},
 						"status": schema.StringAttribute{
 							Computed: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
 						},
 						"virtual_machine_id": schema.Int64Attribute{
-							Required: true,
+							Computed: true,
+							PlanModifiers: []planmodifier.Int64{
+								int64planmodifier.UseStateForUnknown(),
+							},
 						},
 					},
 					CustomType: SecurityRulesType{
@@ -319,11 +347,16 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 						},
 					},
 				},
-				Optional: true,
 				Computed: true,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"status": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"user_data": schema.StringAttribute{
 				Optional:            true,
@@ -331,13 +364,13 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				Description:         "Optional initialization configuration commands to manage the configuration of a virtual machine at launch using cloud-init scripts. For more information about custom VM configuration using cloud-init, [**click here**](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/initialization-configuration).",
 				MarkdownDescription: "Optional initialization configuration commands to manage the configuration of a virtual machine at launch using cloud-init scripts. For more information about custom VM configuration using cloud-init, [**click here**](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/initialization-configuration).",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"vm_state": schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"volume_attachments": schema.ListNestedAttribute{
@@ -345,29 +378,53 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 					Attributes: map[string]schema.Attribute{
 						"created_at": schema.StringAttribute{
 							Computed: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.RequiresReplace(),
+							},
 						},
 						"device": schema.StringAttribute{
 							Computed: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.RequiresReplace(),
+							},
 						},
 						"status": schema.StringAttribute{
 							Computed: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.RequiresReplace(),
+							},
 						},
 						"volume": schema.SingleNestedAttribute{
 							Attributes: map[string]schema.Attribute{
 								"description": schema.StringAttribute{
 									Computed: true,
+									PlanModifiers: []planmodifier.String{
+										stringplanmodifier.RequiresReplace(),
+									},
 								},
 								"id": schema.Int64Attribute{
 									Computed: true,
+									PlanModifiers: []planmodifier.Int64{
+										int64planmodifier.RequiresReplace(),
+									},
 								},
 								"name": schema.StringAttribute{
 									Computed: true,
+									PlanModifiers: []planmodifier.String{
+										stringplanmodifier.RequiresReplace(),
+									},
 								},
 								"size": schema.Int64Attribute{
 									Computed: true,
+									PlanModifiers: []planmodifier.Int64{
+										int64planmodifier.RequiresReplace(),
+									},
 								},
 								"volume_type": schema.StringAttribute{
 									Computed: true,
+									PlanModifiers: []planmodifier.String{
+										stringplanmodifier.RequiresReplace(),
+									},
 								},
 							},
 							CustomType: VolumeType{
@@ -376,6 +433,9 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 								},
 							},
 							Computed: true,
+							PlanModifiers: []planmodifier.Object{
+								objectplanmodifier.RequiresReplace(),
+							},
 						},
 					},
 					CustomType: VolumeAttachmentsType{
@@ -385,15 +445,15 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Computed: true,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.RequiresReplace(),
+				},
 			},
 			"volume_name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Description:         "The names of the volume(s) to be attached to the virtual machine being created.",
 				MarkdownDescription: "The names of the volume(s) to be attached to the virtual machine being created.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 		},
 		Blocks: map[string]schema.Block{
@@ -401,11 +461,16 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"description": schema.StringAttribute{
-							Optional: true,
 							Computed: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.RequiresReplace(),
+							},
 						},
 						"name": schema.StringAttribute{
-							Optional: true,
+							Computed: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.RequiresReplace(),
+							},
 						},
 					},
 					CustomType: ProfileType{
@@ -413,6 +478,9 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 							AttrTypes: ProfileValue{}.AttributeTypes(ctx),
 						},
 					},
+				},
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.RequiresReplace(),
 				},
 			},
 		},
@@ -422,7 +490,6 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 type CoreVirtualMachineModel struct {
 	AssignFloatingIp     types.Bool       `tfsdk:"assign_floating_ip"`
 	CallbackUrl          types.String     `tfsdk:"callback_url"`
-	ContractId           types.Int64      `tfsdk:"contract_id"`
 	CreateBootableVolume types.Bool       `tfsdk:"create_bootable_volume"`
 	CreatedAt            types.String     `tfsdk:"created_at"`
 	Environment          EnvironmentValue `tfsdk:"environment"`

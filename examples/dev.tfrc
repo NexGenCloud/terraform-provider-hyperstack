@@ -1,9 +1,0 @@
-provider_installation {
-  dev_overrides {
-    # Path from subfolder
-    "nexgen/hyperstack" = "../../artifacts/provider"
-  }
-
-  direct {
-  }
-}
