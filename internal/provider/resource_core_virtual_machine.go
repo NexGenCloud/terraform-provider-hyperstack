@@ -3,14 +3,14 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/virtual_machine"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_virtual_machine"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/NexGenCloud/hyperstack-sdk-go/lib/virtual_machine"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_virtual_machine"
 	"math/big"
 	"time"
 )
@@ -78,6 +78,7 @@ func (r *ResourceCoreVirtualMachine) Create(
 			VolumeName:           dataOld.VolumeName.ValueStringPointer(),
 			CreateBootableVolume: dataOld.CreateBootableVolume.ValueBoolPointer(),
 			FlavorName:           dataOld.FlavorName.ValueString(),
+			// TODO: disable setting here
 			Flavor: func() *virtual_machine.FlavorObjectFields {
 				if dataOld.Flavor.IsNull() {
 					return nil
@@ -122,6 +123,7 @@ func (r *ResourceCoreVirtualMachine) Create(
 			UserData:         dataOld.UserData.ValueStringPointer(),
 			CallbackUrl:      dataOld.CallbackUrl.ValueStringPointer(),
 			AssignFloatingIp: dataOld.AssignFloatingIp.ValueBoolPointer(),
+			// TODO: disable setting here
 			Profile: func() *virtual_machine.ProfileObjectFields {
 				if dataOld.Profile.IsNull() {
 					return nil
@@ -195,10 +197,21 @@ func (r *ResourceCoreVirtualMachine) Create(
 			return true, nil
 		},
 	)
+
+	// TODO: doesn't save resource info in state
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Waiting for state change error",
 			fmt.Sprintf("%s", err),
+		)
+		return
+	}
+
+	// TODO: doesn't save resource info in state
+	if *instanceModel.Status == "ERROR" {
+		resp.Diagnostics.AddError(
+			"Failed creating instance: status %s",
+			"ERROR",
 		)
 		return
 	}
@@ -291,11 +304,28 @@ func (r *ResourceCoreVirtualMachine) WaitForResult(
 }
 
 func (r *ResourceCoreVirtualMachine) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var dataOld resource_core_virtual_machine.CoreVirtualMachineModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &dataOld)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var data resource_core_virtual_machine.CoreVirtualMachineModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	labels := make([]string, len(dataOld.Labels.Elements()))
+	dataOld.Labels.ElementsAs(ctx, labels, false)
+
+	// TODO: finish implementing
 	resp.Diagnostics.AddError(
 		"Update not supported for VM resources",
-		"",
+		fmt.Sprintf("%+v", labels),
 	)
-	return
+	r.MergeData(&data, &dataOld)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (r *ResourceCoreVirtualMachine) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -356,22 +386,30 @@ func (r *ResourceCoreVirtualMachine) MergeData(
 	data *resource_core_virtual_machine.CoreVirtualMachineModel,
 	dataOld *resource_core_virtual_machine.CoreVirtualMachineModel,
 ) {
+	// Assign all values that are available only during creation stage
 	data.AssignFloatingIp = dataOld.AssignFloatingIp
-	if !dataOld.CallbackUrl.IsUnknown() {
-		data.CallbackUrl = dataOld.CallbackUrl
-	}
 	data.CreateBootableVolume = dataOld.CreateBootableVolume
 	data.EnvironmentName = dataOld.EnvironmentName
 	data.FlavorName = dataOld.FlavorName
 	data.ImageName = dataOld.ImageName
 	data.KeyName = dataOld.KeyName
 	data.Profile = dataOld.Profile
+
+	// TODO: not implemented as there is no field in output
+	if !dataOld.CallbackUrl.IsUnknown() {
+		data.CallbackUrl = dataOld.CallbackUrl
+	}
 	if !dataOld.UserData.IsUnknown() {
 		data.UserData = dataOld.UserData
 	}
-	if !dataOld.VolumeName.IsUnknown() {
-		data.VolumeName = dataOld.VolumeName
-	}
+
+	// TODO: verify
+	//if !dataOld.FloatingIp.IsUnknown() {
+	//	data.FloatingIp = dataOld.FloatingIp
+	//}
+	//if !dataOld.VolumeName.IsUnknown() {
+	//	data.VolumeName = dataOld.VolumeName
+	//}
 }
 
 func (r *ResourceCoreVirtualMachine) ApiToModel(
@@ -386,12 +424,7 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 			}
 			return types.Int64Value(int64(*response.Id))
 		}(),
-		Name: func() types.String {
-			if response.Name == nil {
-				return types.StringNull()
-			}
-			return types.StringValue(*response.Name)
-		}(),
+		Name: types.StringPointerValue(response.Name),
 		Status: func() types.String {
 			if response.Status == nil {
 				return types.StringNull()
@@ -410,18 +443,8 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 			}
 			return types.StringValue(*response.VmState)
 		}(),
-		FixedIp: func() types.String {
-			if response.FixedIp == nil {
-				return types.StringNull()
-			}
-			return types.StringValue(*response.FixedIp)
-		}(),
-		FloatingIp: func() types.String {
-			if response.FloatingIp == nil {
-				return types.StringNull()
-			}
-			return types.StringValue(*response.FloatingIp)
-		}(),
+		FixedIp:    types.StringPointerValue(response.FixedIp),
+		FloatingIp: types.StringPointerValue(response.FloatingIp),
 		FloatingIpStatus: func() types.String {
 			if response.FloatingIpStatus == nil {
 				return types.StringNull()
@@ -441,17 +464,20 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 			}
 			return types.StringValue(response.CreatedAt.String())
 		}(),
-
+		Locked: types.BoolPointerValue(response.Locked),
+		Os:     types.StringPointerValue(response.Os),
+		// Doesn't make sense for reads (only used during creation)
 		AssignFloatingIp:     types.BoolNull(),
-		CallbackUrl:          types.StringNull(),
 		CreateBootableVolume: types.BoolNull(),
 		EnvironmentName:      types.StringNull(),
 		FlavorName:           types.StringNull(),
 		ImageName:            types.StringNull(),
 		KeyName:              types.StringNull(),
 		Profile:              types.ListNull(resource_core_virtual_machine.ProfileType{}),
-		UserData:             types.StringNull(),
 		VolumeName:           types.StringNull(),
+		// TODO: not implemented as there is no field in output
+		CallbackUrl: types.StringUnknown(),
+		UserData:    types.StringUnknown(),
 	}
 }
 
@@ -543,7 +569,12 @@ func (r *ResourceCoreVirtualMachine) MapVolumeAttachments(
 					resource_core_virtual_machine.VolumeAttachmentsValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
 						"status": types.StringValue(*row.Status),
-						"device": types.StringValue(*row.Device),
+						"device": func() attr.Value {
+							if row.Device == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.Device)
+						}(),
 						"created_at": func() attr.Value {
 							if row.CreatedAt == nil {
 								return types.StringNull()
@@ -571,9 +602,14 @@ func (r *ResourceCoreVirtualMachine) MapVolume(
 	model, diagnostic := resource_core_virtual_machine.NewVolumeValue(
 		resource_core_virtual_machine.VolumeValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
-			"id":          types.Int64Value(int64(*data.Id)),
-			"name":        types.StringValue(*data.Name),
-			"description": types.StringValue(*data.Description),
+			"id":   types.Int64Value(int64(*data.Id)),
+			"name": types.StringValue(*data.Name),
+			"description": func() attr.Value {
+				if data.Description == nil {
+					return types.StringNull()
+				}
+				return types.StringValue(*data.Description)
+			}(),
 			"volume_type": types.StringValue(*data.VolumeType),
 			"size":        types.Int64Value(int64(*data.Size)),
 		},

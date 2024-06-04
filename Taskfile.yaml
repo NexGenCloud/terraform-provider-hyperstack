@@ -6,11 +6,12 @@ vars:
   NAME: "terraform-provider-hyperstack"
   DIR_DATA: "{{.ROOT_DIR}}/data"
   DIR_EXAMPLES: "{{.ROOT_DIR}}/examples"
+  DIR_TESTS: "{{.ROOT_DIR}}/tests"
   DIR_ARTIFACTS: "{{.ROOT_DIR}}/artifacts"
   DIR_BINPROVIDER: "{{.DIR_ARTIFACTS}}/provider"
   DIR_PROVIDER: "{{.ROOT_DIR}}/internal/provider"
   DIR_GENPROVIDER: "{{.ROOT_DIR}}/internal/genprovider"
-  API_JSON_PATH: "{{.DIR_ARTIFACTS}}/api.json"
+  API_SPEC_PATH: "{{.DIR_ARTIFACTS}}/api.json"
   PROVIDER_SPEC_PATH: "{{.DIR_ARTIFACTS}}/provider-spec.json"
 
   ARCH:
@@ -20,10 +21,12 @@ vars:
   TF_PROVIDER_VERSION: "0.1.0"
   TF_PROVIDER_NAME: "hyperstack"
   TF_PROVIDER_PATH: |-
-    registry.terraform.io/nexgencloud/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}/
+    registry.terraform.io/nexgencloud/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}
+  TF_PROVIDER_DIR: "{{.DIR_BINPROVIDER}}/{{.TF_PROVIDER_PATH}}"
+  TF_PROVIDER_BINARY: "{{.TF_PROVIDER_DIR}}/{{.NAME}}_v{{.TF_PROVIDER_VERSION}}"
 
 env:
-  TF_CLI_CONFIG_FILE: "{{.DIR_EXAMPLES}}/dev.tfrc"
+  TF_CLI_CONFIG_FILE: "{{.DIR_TESTS}}/dev.tfrc"
   HYPERSTACK_STAGING: "true"
   HYPERSTACK_API_KEY: ~
   TF_CLOUD_TOKEN: ~
@@ -62,18 +65,16 @@ tasks:
           # https://github.com/hashicorp/terraform/blob/main/BUILDING.md#cgo_enabled
           export CGO_ENABLED=0
         fi
-        mkdir -p "{{.DIR_BINPROVIDER}}"
-        go build -o "{{.DIR_BINPROVIDER}}/{{.NAME}}"
-        mkdir -p "$HOME/.config/terraform/registry.terraform.io/nexgencloud/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}"
-        cp "{{.DIR_BINPROVIDER}}/{{.NAME}}" "$HOME/.config/terraform/registry.terraform.io/nexgencloud/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}/"
+        mkdir -p "{{.TF_PROVIDER_DIR}}"
+        go build -o "{{.TF_PROVIDER_BINARY}}"
   gen:
     desc: |
       Generates schemas
     cmds:
-      - task: pull-api
-      - task: gen-openapi
+      - task: build-api-spec
+      - task: build-provider-spec
 
-  test:
+  test-unit:
     desc: |
       Tests the provider
     dotenv: ['.env']
@@ -226,12 +227,17 @@ tasks:
         }
         EOF
 
-  test-examples:
+  test:
     desc: |
       Tests the provider
     dotenv: ['.env']
     vars:
-      TF_EXAMPLES: |-
+      RUN_INIT: true
+      RUN_CREATE_PLAN: true
+      RUN_CREATE_APPLY: true
+      RUN_DESTROY_PLAN: true
+      RUN_DESTROY_APPLY: true
+      TF_TESTS: |-
         auth_me
         auth_organization
         auth_roles
@@ -247,12 +253,44 @@ tasks:
       - task: build
       # language=bash
       - |
-        for module in {{join " " (splitArgs .TF_EXAMPLES)}}; do
-          cd "{{.DIR_EXAMPLES}}/${module}"
-          terraform plan -out tfplan
-          terraform apply tfplan
-          terraform plan -out tfplan -destroy
-          terraform apply tfplan
+        # https://developer.hashicorp.com/terraform/cli/config/environment-variables
+        export TF_LOG=DEBUG
+        for module in {{join " " (splitArgs .TF_TESTS)}}; do
+          ARTIFACTS_DIR="{{.DIR_ARTIFACTS}}/tests/${module}"
+          MODULE_DIR="{{.DIR_TESTS}}/${module}"
+          cd "${MODULE_DIR}"
+
+          mkdir -p "${ARTIFACTS_DIR}/files"
+          export TF_DATA_DIR="${ARTIFACTS_DIR}/.terraform"
+          export TF_VAR_artifacts_directory="${ARTIFACTS_DIR}/files"
+          
+          # https://developer.hashicorp.com/terraform/language/settings/backends/configuration#file
+          # https://developer.hashicorp.com/terraform/language/settings/backends/configuration
+          # https://developer.hashicorp.com/terraform/language/settings/backends/local
+          BACKEND_FILE="${ARTIFACTS_DIR}/backend.tfvars"
+          echo "path=\"${ARTIFACTS_DIR}/terraform.tfstate\"" > "${BACKEND_FILE}"
+          
+          if [[ "{{.RUN_INIT}}" == "true" ]]; then
+            # Remove lock file due to possible checksum change
+            rm -f "${MODULE_DIR}/.terraform.lock.hcl"
+            # TODO: store output and show only on error
+            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_init.log" \
+              terraform init -input=false -backend-config="${BACKEND_FILE}" > /dev/null
+          fi
+          
+          TFPLAN="${ARTIFACTS_DIR}/tfplan"
+          [[ "{{.RUN_CREATE_PLAN}}" == "true" ]] && \
+            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_create_plan.log" \
+            terraform plan -out "${TFPLAN}"
+          [[ "{{.RUN_CREATE_APPLY}}" == "true" ]] && \
+            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_create_apply.log" \
+            terraform apply "${TFPLAN}"
+          [[ "{{.RUN_DESTROY_PLAN}}" == "true" ]] && \
+            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_destroy_plan.log" \
+            terraform plan -out "${TFPLAN}" -destroy
+          [[ "{{.RUN_DESTROY_APPLY}}" == "true" ]] && \
+            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_destroy_apply.log" \
+            terraform apply "${TFPLAN}"
           cd - > /dev/null
         done
 
@@ -263,40 +301,44 @@ tasks:
     cmds:
       # language=bash
       - |
-        curl -X GET "https://infrahub-api-stg.ngbackend.cloud/v1/auth/me" \
+        curl -X GET "https://infrahub-api-stg.ngbackend.cloud/v1/core/flavors" \
           -H "accept: application/json" \
           -H "api_key: ${HYPERSTACK_API_KEY}"
 
-  pull-api:
+  build-api-spec:
     desc: |
       Pulls the latest api.json from the server
     vars:
       SPEC_PATH: |-
         https://infrahub-api-doc.nexgencloud.com/api.json
+      SCRIPTS_DIR: "scripts"
+      FIX_API_SPEC: "{{.SCRIPTS_DIR}}/fix_api_spec.py"
     cmds:
       # language=bash
       - |
         echo "Pulling the latest swagger spec and generating Go SDK..."
         curl "{{.SPEC_PATH}}"  | \
           python3 -c "import sys, urllib.parse; print(urllib.parse.unquote(sys.stdin.read()))" \
-            > "{{.API_JSON_PATH}}"
-        python3 scripts/apifixer.py artifacts/api.json
+            > "{{.API_SPEC_PATH}}"
+        python3 "{{.FIX_API_SPEC}}" "{{.API_SPEC_PATH}}"
 
-  gen-openapi:
+  build-provider-spec:
     desc: |
       Gen schemas
     vars:
       TF_DATA_SOURCES:
         # language=bash
         sh: cat "{{.DIR_DATA}}/generator-config.yml" | yq e -o=c ".data_sources | keys | .[]"
+      SCRIPTS_DIR: "scripts"
+      FIX_PROVIDER_SPEC: "{{.SCRIPTS_DIR}}/fix_provider_spec.py"
     cmds:
       # language=bash
       - |
         tfplugingen-openapi generate \
           --config "{{.DIR_DATA}}/generator-config.yml" \
           --output "{{.PROVIDER_SPEC_PATH}}" \
-          "{{.API_JSON_PATH}}"
-        python3 scripts/specfixer.py "{{.PROVIDER_SPEC_PATH}}"
+          "{{.API_SPEC_PATH}}"
+        python3 "{{.FIX_PROVIDER_SPEC}}" "{{.PROVIDER_SPEC_PATH}}"
       # language=bash
       - |
         rm -Rf "{{.DIR_GENPROVIDER}}"
