@@ -1,59 +1,59 @@
 output "id" {
-  value = hyperstack_core_virtual_machine.this.id
+  value = module.vm.vm.id
 }
 
 output "name" {
-  value = hyperstack_core_virtual_machine.this.name
+  value = module.vm.vm.name
 }
 
 output "status" {
-  value = hyperstack_core_virtual_machine.this.status
+  value = module.vm.vm.status
 }
 
 output "environment" {
-  value = hyperstack_core_virtual_machine.this.environment
+  value = module.vm.vm.environment
 }
 
 output "image" {
-  value = hyperstack_core_virtual_machine.this.image
+  value = module.vm.vm.image
 }
 
 output "flavor" {
-  value = hyperstack_core_virtual_machine.this.flavor
+  value = module.vm.vm.flavor
 }
 
 output "keypair" {
-  value = hyperstack_core_virtual_machine.this.keypair
+  value = module.vm.vm.keypair
 }
 
 output "volume_attachments" {
-  value = hyperstack_core_virtual_machine.this.volume_attachments
+  value = module.vm.vm.volume_attachments
 }
 
 output "security_rules" {
-  value = hyperstack_core_virtual_machine.this.security_rules
+  value = module.vm.vm.security_rules
 }
 
 output "power_state" {
-  value = hyperstack_core_virtual_machine.this.power_state
+  value = module.vm.vm.power_state
 }
 
 output "vm_state" {
-  value = hyperstack_core_virtual_machine.this.vm_state
+  value = module.vm.vm.vm_state
 }
 
 output "fixed_ip" {
-  value = hyperstack_core_virtual_machine.this.fixed_ip
+  value = module.vm.vm.fixed_ip
 }
 
 output "floating_ip" {
-  value = hyperstack_core_virtual_machine.this.floating_ip
+  value = module.vm.vm.floating_ip
 }
 
 output "floating_ip_status" {
-  value = hyperstack_core_virtual_machine.this.floating_ip_status
+  value = module.vm.vm.floating_ip_status
 }
 
 output "created_at" {
-  value = hyperstack_core_virtual_machine.this.created_at
+  value = module.vm.vm.created_at
 }

@@ -1,7 +1,7 @@
 provider_installation {
   filesystem_mirror {
     # Path from subfolder
-    path    = "../../artifacts/provider"
+    path    = "../../artifacts/provider-mirror"
     include = ["nexgencloud/*"]
   }
 

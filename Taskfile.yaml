@@ -8,65 +8,73 @@ vars:
   DIR_EXAMPLES: "{{.ROOT_DIR}}/examples"
   DIR_TESTS: "{{.ROOT_DIR}}/tests"
   DIR_ARTIFACTS: "{{.ROOT_DIR}}/artifacts"
-  DIR_BINPROVIDER: "{{.DIR_ARTIFACTS}}/provider"
+  DIR_DIST: "{{.ROOT_DIR}}/dist"
+  DIR_PROVIDER_MIRROR: "{{.DIR_ARTIFACTS}}/provider-mirror"
   DIR_PROVIDER: "{{.ROOT_DIR}}/internal/provider"
   DIR_GENPROVIDER: "{{.ROOT_DIR}}/internal/genprovider"
   API_SPEC_PATH: "{{.DIR_ARTIFACTS}}/api.json"
   PROVIDER_SPEC_PATH: "{{.DIR_ARTIFACTS}}/provider-spec.json"
-
-  ARCH:
-    # language=bash
-    sh: echo "$(go env GOOS)_$(go env GOARCH)"
-
-  TF_PROVIDER_VERSION: "0.1.0"
-  TF_PROVIDER_NAME: "hyperstack"
-  TF_PROVIDER_PATH: |-
-    registry.terraform.io/nexgencloud/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}
-  TF_PROVIDER_DIR: "{{.DIR_BINPROVIDER}}/{{.TF_PROVIDER_PATH}}"
-  TF_PROVIDER_BINARY: "{{.TF_PROVIDER_DIR}}/{{.NAME}}_v{{.TF_PROVIDER_VERSION}}"
+  HYPERSTACK_API_ADDRESS: "https://infrahub-api.nexgencloud.com/v1"
 
 env:
-  TF_CLI_CONFIG_FILE: "{{.DIR_TESTS}}/dev.tfrc"
-  HYPERSTACK_STAGING: "true"
-  HYPERSTACK_API_KEY: ~
+  GPG_FINGERPRINT: ~
+
   TF_CLOUD_TOKEN: ~
   TF_CLOUD_KEY_ID: ~
   TF_CLOUD_ORG: nexgencloud
 
+  HYPERSTACK_API_KEY: ~
+  HYPERSTACK_API_ADDRESS: "{{.HYPERSTACK_API_ADDRESS}}"
+  HYPERSTACK_API_SPEC_ADDRESS: "https://infrahub-api-doc.nexgencloud.com/api.json"
+
 
 tasks:
-  init:
-    desc: |
-      Install all the necessary dependencies
-    cmds:
-      # language=bash
-      - |
-        # TODO: check go.mod
-        go install
-        go install github.com/hashicorp/terraform-plugin-codegen-openapi/cmd/tfplugingen-openapi@latest
-        go install github.com/hashicorp/terraform-plugin-codegen-framework/cmd/tfplugingen-framework@latest
-
-  update:
-    desc: |
-      Updates dependencies
-    cmds:
-      # language=bash
-      - |
-        go mod tidy
-
   build:
     desc: |
       Builds the provider
+      
+      Build & publish docs:
+      https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-release-publish
+    vars:
+      TF_PROVIDER_NAME: "hyperstack"
+      TF_PROVIDER_REPO: "registry.terraform.io/nexgencloud"
+      ARCH:
+        # language=bash
+        sh: echo "$(go env GOOS)_$(go env GOARCH)"
+      SILENT: |-
+        {{.SILENT | default "false"}}
+    env:
+      API_ADDRESS: "{{.HYPERSTACK_API_ADDRESS}}"
+      PROVIDER_NAME: "{{.TF_PROVIDER_NAME}}"
+      PROVIDER_ADDRESS: "{{.TF_PROVIDER_REPO}}/{{.TF_PROVIDER_NAME}}"
+      ENV_PREFIX: "HYPERSTACK_"
+      PROVIDER_PACKAGE: "github.com/NexGenCloud/terraform-provider-hyperstack"
     cmds:
       # language=bash
       - |
-        if [[ "$(go env GOOS)" != "darwin" ]]; then
-          # https://github.com/aws/aws-lambda-go/issues/340#issue-748665352
-          # https://github.com/hashicorp/terraform/blob/main/BUILDING.md#cgo_enabled
-          export CGO_ENABLED=0
+        echo -n "Building provider... "
+        if [[ "{{.SILENT}}" != "true" ]]; then
+          echo ""
         fi
-        mkdir -p "{{.TF_PROVIDER_DIR}}"
-        go build -o "{{.TF_PROVIDER_BINARY}}"
+      # language=bash
+      - |
+        if [[ "{{.SILENT}}" == "true" ]]; then
+          exec &> /dev/null
+        fi
+        goreleaser check
+        TMP_BIN_PATH="{{.DIR_ARTIFACTS}}/provider"
+        goreleaser build --snapshot --clean --single-target -o "${TMP_BIN_PATH}"
+        
+        METADATA="$(cat "{{.DIR_DIST}}/metadata.json")"
+        VERSION="$(echo "${METADATA}" | jq -r '.version' | cut -d'-' -f1)"
+        PROVIDER_MIRROR_DIR="{{.DIR_PROVIDER_MIRROR}}/${PROVIDER_ADDRESS}/${VERSION}/{{.ARCH}}"
+        PROJECT_NAME="$(echo "${METADATA}" | jq -r '.project_name')"
+        PROVIDER_FILENAME="${PROJECT_NAME}_v${VERSION}"
+        mkdir -p "${PROVIDER_MIRROR_DIR}"
+        mv "${TMP_BIN_PATH}" "${PROVIDER_MIRROR_DIR}/${PROVIDER_FILENAME}"
+      # language=bash
+      - echo "done"
+
   gen:
     desc: |
       Generates schemas
@@ -74,15 +82,166 @@ tasks:
       - task: build-api-spec
       - task: build-provider-spec
 
+  test:
+    desc: |
+      Tests the provider
+    dotenv: [ '.env' ]
+    env:
+      TF_CLI_CONFIG_FILE: "{{.DIR_TESTS}}/provider-mirror.tfrc"
+      # https://developer.hashicorp.com/terraform/cli/config/environment-variables
+      TF_LOG: DEBUG
+    vars:
+      RUN_INIT: true
+      RUN_CREATE_PLAN: true
+      RUN_CREATE_APPLY: true
+      RUN_DESTROY_PLAN: true
+      RUN_DESTROY_APPLY: true
+      TEST_NAME: |-
+        {{.TEST_NAME | default ""}}
+      TESTS: |-
+        auth_me
+        auth_organization
+        auth_roles
+        core_dashboard
+        core_environment
+        core_environments
+        core_firewall_protocols
+        core_flavors
+        core_gpus
+        core_images
+        core_keypairs
+        core_regions
+        core_stocks
+        core_vm
+        core_vms
+        core_volume
+        core_volume_types
+        core_volumes
+    cmds:
+      - task: build
+        vars:
+          SILENT: true
+      # language=bash
+      - |
+        for module in {{join " " (splitArgs .TESTS)}}; do
+          if [[ "{{.TEST_NAME}}" != "" && "{{.TEST_NAME}}" != "${module}" ]]; then
+            continue
+          fi
+        
+          echo "Testing ${module}..."
+          ARTIFACTS_DIR="{{.DIR_ARTIFACTS}}/tests/${module}"
+          MODULE_DIR="{{.DIR_TESTS}}/${module}"
+          cd "${MODULE_DIR}"
+
+          mkdir -p "${ARTIFACTS_DIR}/files"
+          export TF_DATA_DIR="${ARTIFACTS_DIR}/.terraform"
+          export TF_VAR_artifacts_directory="${ARTIFACTS_DIR}/files"
+          
+          # https://developer.hashicorp.com/terraform/language/settings/backends/configuration#file
+          # https://developer.hashicorp.com/terraform/language/settings/backends/configuration
+          # https://developer.hashicorp.com/terraform/language/settings/backends/local
+          BACKEND_FILE="${ARTIFACTS_DIR}/backend.tfvars"
+          echo "path=\"${ARTIFACTS_DIR}/terraform.tfstate\"" > "${BACKEND_FILE}"
+          
+          if [[ "{{.RUN_INIT}}" == "true" ]]; then
+            # Remove lock file due to possible checksum change
+            rm -f "${MODULE_DIR}/.terraform.lock.hcl"
+            # TODO: store output and show only on error
+            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_init.log" \
+              terraform init -input=false -backend-config="${BACKEND_FILE}"
+          fi
+          
+          TFPLAN="${ARTIFACTS_DIR}/tfplan"
+          [[ "{{.RUN_CREATE_PLAN}}" == "true" ]] && \
+            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_create_plan.log" \
+            terraform plan -out "${TFPLAN}"
+          [[ "{{.RUN_CREATE_APPLY}}" == "true" ]] && \
+            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_create_apply.log" \
+            terraform apply "${TFPLAN}"
+          [[ "{{.RUN_DESTROY_PLAN}}" == "true" ]] && \
+            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_destroy_plan.log" \
+            terraform plan -out "${TFPLAN}" -destroy
+          [[ "{{.RUN_DESTROY_APPLY}}" == "true" ]] && \
+            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_destroy_apply.log" \
+            terraform apply "${TFPLAN}"
+          cd - > /dev/null
+        done
+
   test-unit:
     desc: |
       Tests the provider
-    dotenv: ['.env']
+    dotenv: [ '.env' ]
     cmds:
       - task: build
       # language=bash
       - |
         TF_ACC=1 go test ./... -v -timeout 120m
+
+  debug-call:
+    desc: |
+      Runs simple API request
+    dotenv: [ '.env' ]
+    vars:
+      NAME: "debug/me"
+    cmds:
+      # language=bash
+      - |
+        curl -X GET "${HYPERSTACK_API_ADDRESS}/{{.NAME}}" \
+          -H "accept: application/json" \
+          -H "api_key: ${HYPERSTACK_API_KEY}"
+
+  build-api-spec:
+    desc: |
+      Pulls the latest api.json from the server
+    vars:
+      SCRIPTS_DIR: "scripts"
+      FIX_API_SPEC: "{{.SCRIPTS_DIR}}/fix_api_spec.py"
+    cmds:
+      # language=bash
+      - |
+        echo "Pulling the latest swagger spec and generating Go SDK..."
+        curl "${HYPERSTACK_API_SPEC_ADDRESS}"  | \
+          python3 -c "import sys, urllib.parse; print(urllib.parse.unquote(sys.stdin.read()))" \
+            > "{{.API_SPEC_PATH}}"
+        python3 "{{.FIX_API_SPEC}}" "{{.API_SPEC_PATH}}"
+
+  build-provider-spec:
+    desc: |
+      Gen schemas
+    vars:
+      TF_DATA_SOURCES:
+        # language=bash
+        sh: cat "{{.DIR_DATA}}/generator-config.yml" | yq e -o=c ".data_sources | keys | .[]"
+      SCRIPTS_DIR: "scripts"
+      FIX_PROVIDER_SPEC: "{{.SCRIPTS_DIR}}/fix_provider_spec.py"
+    cmds:
+      # language=bash
+      - |
+        tfplugingen-openapi generate \
+          --config "{{.DIR_DATA}}/generator-config.yml" \
+          --output "{{.PROVIDER_SPEC_PATH}}" \
+          "{{.API_SPEC_PATH}}"
+        python3 "{{.FIX_PROVIDER_SPEC}}" "{{.PROVIDER_SPEC_PATH}}"
+      # language=bash
+      - |
+        rm -Rf "{{.DIR_GENPROVIDER}}"
+        mkdir -p "{{.DIR_GENPROVIDER}}"
+        tfplugingen-framework generate data-sources \
+          --input "{{.DIR_ARTIFACTS}}/provider-spec.json" \
+          --output "{{.DIR_GENPROVIDER}}"
+        tfplugingen-framework generate resources \
+          --input "{{.DIR_ARTIFACTS}}/provider-spec.json" \
+          --output "{{.DIR_GENPROVIDER}}"
+      # language=bash
+      - |
+        rm -Rf "{{.DIR_PROVIDER}}/data_source"
+        mkdir -p "{{.DIR_PROVIDER}}/data_source"
+        for row in {{join " " (splitArgs .TF_DATA_SOURCES)}}; do
+          tfplugingen-framework scaffold data-source \
+            --name "${row}" \
+            --force \
+            --output-dir "{{.DIR_PROVIDER}}/data_source"
+        done
 
   provider-create:
     desc: |
@@ -105,18 +264,43 @@ tasks:
           --data @key.json \
           https://app.terraform.io/api/registry/private/v2/gpg-keys
 
-  provider-publish:
+  release:
     desc: |
-      Publishes new provider version
-    dotenv: ['../../.env']
-    dir: "{{.DIR_BINPROVIDER}}"
+      Releases the provider
+      
+      Build & publish docs:
+      https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-release-publish
     vars:
+      UNLOCK_GPG_AGENT: true
+
+      # TODO: rework
       BIN_NAME: "{{.NAME}}_v{{.TF_PROVIDER_VERSION}}"
       ZIP_NAME: "{{.BIN_NAME}}_{{.ARCH}}.zip"
       SHA_NAME: "{{.BIN_NAME}}_SHA256SUMS"
       PLATFORM_JSON: "{{.DIR_BINPROVIDER}}/platform.json"
       VERSION_JSON: "{{.DIR_BINPROVIDER}}/version.json"
+
+      TF_PROVIDER_VERSION: "0.1.0"
+      TF_PROVIDER_NAME: "hyperstack"
+      TF_PROVIDER_PATH: |-
+        registry.terraform.io/nexgencloud/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}
+      TF_PROVIDER_DIR: "{{.DIR_BINPROVIDER}}/{{.TF_PROVIDER_PATH}}"
+      TF_PROVIDER_BINARY: "{{.TF_PROVIDER_DIR}}/{{.NAME}}_v{{.TF_PROVIDER_VERSION}}"
+    # TODO: rework
+    dotenv: ['../../.env']
+    # TODO: rework
+    dir: "{{.DIR_BINPROVIDER}}"
     cmds:
+      # language=bash
+      - |
+        # Unlock GPG Agent
+        if [[ "{{.UNLOCK_GPG_AGENT}}" == "true" ]]; then
+          gpg --output /dev/null --detach-sign .gitignore
+        fi
+        
+        # TODO: rework
+        echo Not implemented
+        exit 1
       - task: build
       # https://developer.hashicorp.com/terraform/registry/providers/publishing#manually-preparing-a-release
       # language=bash
@@ -227,135 +411,22 @@ tasks:
         }
         EOF
 
-  test:
+  provider-publish:
     desc: |
-      Tests the provider
-    dotenv: ['.env']
+      Publishes new provider version
+    dotenv: ['../../.env']
+    dir: "{{.DIR_BINPROVIDER}}"
     vars:
-      RUN_INIT: true
-      RUN_CREATE_PLAN: true
-      RUN_CREATE_APPLY: true
-      RUN_DESTROY_PLAN: true
-      RUN_DESTROY_APPLY: true
-      TF_TESTS: |-
-        auth_me
-        auth_organization
-        auth_roles
-        core_environments
-        core_images
-        core_regions
-        core_gpus
-        core_flavors
-        core_keypairs
-        core_vms
-        core_vm
-    cmds:
-      - task: build
-      # language=bash
-      - |
-        # https://developer.hashicorp.com/terraform/cli/config/environment-variables
-        export TF_LOG=DEBUG
-        for module in {{join " " (splitArgs .TF_TESTS)}}; do
-          ARTIFACTS_DIR="{{.DIR_ARTIFACTS}}/tests/${module}"
-          MODULE_DIR="{{.DIR_TESTS}}/${module}"
-          cd "${MODULE_DIR}"
+      BIN_NAME: "{{.NAME}}_v{{.TF_PROVIDER_VERSION}}"
+      ZIP_NAME: "{{.BIN_NAME}}_{{.ARCH}}.zip"
+      SHA_NAME: "{{.BIN_NAME}}_SHA256SUMS"
+      PLATFORM_JSON: "{{.DIR_BINPROVIDER}}/platform.json"
+      VERSION_JSON: "{{.DIR_BINPROVIDER}}/version.json"
 
-          mkdir -p "${ARTIFACTS_DIR}/files"
-          export TF_DATA_DIR="${ARTIFACTS_DIR}/.terraform"
-          export TF_VAR_artifacts_directory="${ARTIFACTS_DIR}/files"
-          
-          # https://developer.hashicorp.com/terraform/language/settings/backends/configuration#file
-          # https://developer.hashicorp.com/terraform/language/settings/backends/configuration
-          # https://developer.hashicorp.com/terraform/language/settings/backends/local
-          BACKEND_FILE="${ARTIFACTS_DIR}/backend.tfvars"
-          echo "path=\"${ARTIFACTS_DIR}/terraform.tfstate\"" > "${BACKEND_FILE}"
-          
-          if [[ "{{.RUN_INIT}}" == "true" ]]; then
-            # Remove lock file due to possible checksum change
-            rm -f "${MODULE_DIR}/.terraform.lock.hcl"
-            # TODO: store output and show only on error
-            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_init.log" \
-              terraform init -input=false -backend-config="${BACKEND_FILE}" > /dev/null
-          fi
-          
-          TFPLAN="${ARTIFACTS_DIR}/tfplan"
-          [[ "{{.RUN_CREATE_PLAN}}" == "true" ]] && \
-            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_create_plan.log" \
-            terraform plan -out "${TFPLAN}"
-          [[ "{{.RUN_CREATE_APPLY}}" == "true" ]] && \
-            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_create_apply.log" \
-            terraform apply "${TFPLAN}"
-          [[ "{{.RUN_DESTROY_PLAN}}" == "true" ]] && \
-            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_destroy_plan.log" \
-            terraform plan -out "${TFPLAN}" -destroy
-          [[ "{{.RUN_DESTROY_APPLY}}" == "true" ]] && \
-            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_destroy_apply.log" \
-            terraform apply "${TFPLAN}"
-          cd - > /dev/null
-        done
-
-  debug-me:
-    desc: |
-      Checks API token
-    dotenv: ['.env']
+      TF_PROVIDER_VERSION: "0.1.0"
+      TF_PROVIDER_NAME: "hyperstack"
+      TF_PROVIDER_PATH: |-
+        registry.terraform.io/nexgencloud/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}
+      TF_PROVIDER_DIR: "{{.DIR_BINPROVIDER}}/{{.TF_PROVIDER_PATH}}"
+      TF_PROVIDER_BINARY: "{{.TF_PROVIDER_DIR}}/{{.NAME}}_v{{.TF_PROVIDER_VERSION}}"
     cmds:
-      # language=bash
-      - |
-        curl -X GET "https://infrahub-api-stg.ngbackend.cloud/v1/core/flavors" \
-          -H "accept: application/json" \
-          -H "api_key: ${HYPERSTACK_API_KEY}"
-
-  build-api-spec:
-    desc: |
-      Pulls the latest api.json from the server
-    vars:
-      SPEC_PATH: |-
-        https://infrahub-api-doc.nexgencloud.com/api.json
-      SCRIPTS_DIR: "scripts"
-      FIX_API_SPEC: "{{.SCRIPTS_DIR}}/fix_api_spec.py"
-    cmds:
-      # language=bash
-      - |
-        echo "Pulling the latest swagger spec and generating Go SDK..."
-        curl "{{.SPEC_PATH}}"  | \
-          python3 -c "import sys, urllib.parse; print(urllib.parse.unquote(sys.stdin.read()))" \
-            > "{{.API_SPEC_PATH}}"
-        python3 "{{.FIX_API_SPEC}}" "{{.API_SPEC_PATH}}"
-
-  build-provider-spec:
-    desc: |
-      Gen schemas
-    vars:
-      TF_DATA_SOURCES:
-        # language=bash
-        sh: cat "{{.DIR_DATA}}/generator-config.yml" | yq e -o=c ".data_sources | keys | .[]"
-      SCRIPTS_DIR: "scripts"
-      FIX_PROVIDER_SPEC: "{{.SCRIPTS_DIR}}/fix_provider_spec.py"
-    cmds:
-      # language=bash
-      - |
-        tfplugingen-openapi generate \
-          --config "{{.DIR_DATA}}/generator-config.yml" \
-          --output "{{.PROVIDER_SPEC_PATH}}" \
-          "{{.API_SPEC_PATH}}"
-        python3 "{{.FIX_PROVIDER_SPEC}}" "{{.PROVIDER_SPEC_PATH}}"
-      # language=bash
-      - |
-        rm -Rf "{{.DIR_GENPROVIDER}}"
-        mkdir -p "{{.DIR_GENPROVIDER}}"
-        tfplugingen-framework generate data-sources \
-          --input "{{.DIR_ARTIFACTS}}/provider-spec.json" \
-          --output "{{.DIR_GENPROVIDER}}"
-        tfplugingen-framework generate resources \
-          --input "{{.DIR_ARTIFACTS}}/provider-spec.json" \
-          --output "{{.DIR_GENPROVIDER}}"
-      # language=bash
-      - |
-        rm -Rf "{{.DIR_PROVIDER}}/data_source"
-        mkdir -p "{{.DIR_PROVIDER}}/data_source"
-        for row in {{join " " (splitArgs .TF_DATA_SOURCES)}}; do
-          tfplugingen-framework scaffold data-source \
-            --name "${row}" \
-            --force \
-            --output-dir "{{.DIR_PROVIDER}}/data_source"
-        done

@@ -1,4 +1,4 @@
 resource "hyperstack_core_environment" "this" {
-  name   = local.name
+  name   = var.name
   region = var.region
 }

@@ -24,10 +24,39 @@ Notes:
 import argparse
 import json
 import re
+from typing import Dict, Any
+
+AttrType = Dict[str, Any]
 
 
-def process_emptry_attr_types(json_data):
-  paths = json_data.get("paths", {})
+def attr_remove_ref_spaces(data: AttrType) -> None:
+  """
+  Iteratively goes through the document removing any spaces from
+  $ref references in JSON schema.
+
+  Args:
+      data: Data chunk to process.
+  """
+  if isinstance(data, dict):
+    for key, value in list(data.items()):
+      if key == "$ref" and isinstance(value, str):
+        # Replace spaces after 'schemas/' in $ref strings
+        data[key] = re.sub(r'\s+', '', value)
+      else:
+        attr_remove_ref_spaces(value)
+  elif isinstance(data, list):
+    for item in data:
+      attr_remove_ref_spaces(item)
+
+
+def attr_fix_empty_types(data: AttrType) -> None:
+  """
+  Replaces all empty schema types to strings.
+
+  Args:
+      data: Data chunk to process.
+  """
+  paths = data.get("paths", {})
   for path in paths:
     methods = paths[path]
     for method in methods:
@@ -40,24 +69,15 @@ def process_emptry_attr_types(json_data):
               print("Fixing empty attribute type in %s" % path)
 
 
-def process_ref_strings(json_data):
-  """ Recursively process $ref strings in the JSON data. """
-  if isinstance(json_data, dict):
-    for key, value in list(json_data.items()):
-      if key == "$ref" and isinstance(value, str):
-        # Replace spaces after 'schemas/' in $ref strings
-        json_data[key] = re.sub(r'\s+', '', value)
-      else:
-        process_ref_strings(value)
-  elif isinstance(json_data, list):
-    for item in json_data:
-      process_ref_strings(item)
+def attr_fix_components(data: AttrType) -> None:
+  """
+  Goes through all schemas applying various fixes to API definitions.
 
-
-def process_components_schemas(json_data):
-  """ Process the components.schemas part of the JSON to replace keys with spaces. """
-  paths = json_data.get("paths", {})
-  components = json_data.get("components", {})
+  Args:
+      data: Data chunk to process.
+  """
+  paths = data.get("paths", {})
+  components = data.get("components", {})
   schemas = components.get("schemas", {})
 
   for key in list(schemas.keys()):
@@ -104,6 +124,11 @@ def process_components_schemas(json_data):
     "type": "integer",
   }
 
+  # Fix digit-prefixed keys
+  props = schemas["NewConfigurationsResponse"]["properties"]
+  for p in list(props.keys()):
+    props["N%s" % p] = props.pop(p)
+
   paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"] = paths["/core/virtual-machines/{id}/sg-rules"]
   del paths["/core/virtual-machines/{id}/sg-rules"]
   paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"]["post"]["parameters"][0]["name"] = "virtual_machine_id"
@@ -116,20 +141,21 @@ def process_components_schemas(json_data):
   paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"]["delete"]["parameters"][1]["name"] = "id"
 
 
-def main(file_path):
-  with open(file_path, 'r') as file:
+def fix_api_spec(spec_file: str) -> None:
+  """
+  Updates specification file in place, applying various schema fixes.
+
+  Args:
+      spec_file: Path to schema file
+  """
+  with open(spec_file, 'r') as file:
     data = json.load(file)
 
-  # Process $ref strings
-  process_ref_strings(data)
+  attr_remove_ref_spaces(data)
+  attr_fix_components(data)
+  attr_fix_empty_types(data)
 
-  # Process components.schemas to replace keys with spaces
-  process_components_schemas(data)
-
-  process_emptry_attr_types(data)
-
-  # Write the modified data back to the file
-  with open(file_path, 'w') as file:
+  with open(spec_file, 'w') as file:
     json.dump(data, file, indent=4)
 
 
@@ -144,4 +170,4 @@ if __name__ == "__main__":
   )
   args = parser.parse_args()
 
-  main(args.spec_file)
+  fix_api_spec(args.spec_file)

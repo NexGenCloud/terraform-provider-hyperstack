@@ -3,6 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/keypair"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_keypair"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -10,9 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/NexGenCloud/hyperstack-sdk-go/lib/keypair"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_keypair"
 	"io/ioutil"
 	"strings"
 )
@@ -35,6 +35,7 @@ func (r *ResourceCoreKeypair) Metadata(ctx context.Context, req resource.Metadat
 
 func (r *ResourceCoreKeypair) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_core_keypair.CoreKeypairResourceSchema(ctx)
+	// TODO: remove, use python fixer
 	resp.Schema.Attributes["public_key"] = schema.StringAttribute{
 		Required: true,
 		PlanModifiers: []planmodifier.String{

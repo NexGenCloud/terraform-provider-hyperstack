@@ -3,6 +3,21 @@ provider:
   #schema_ref: '#/components/schemas/hyperstack_provider_schema'
 
 data_sources:
+  core_dashboard:
+    read:
+      path: /core/dashboard
+      method: GET
+
+  core_stocks:
+    read:
+      path: /core/stocks
+      method: GET
+
+  core_firewall_protocols:
+    read:
+      path: /core/sg-rules-protocols
+      method: GET
+
   core_flavors:
     read:
       path: /core/flavors
@@ -31,6 +46,16 @@ data_sources:
   core_environments:
     read:
       path: /core/environments
+      method: GET
+
+  core_volumes:
+    read:
+      path: /core/volumes
+      method: GET
+
+  core_volume_types:
+    read:
+      path: /core/volume-types
       method: GET
 
   auth_me:
@@ -133,4 +158,12 @@ resources:
       method: GET
     create:
       path: /core/virtual-machines
+      method: POST
+
+  core_volume:
+    read:
+      path: /core/volumes/{id}
+      method: GET
+    create:
+      path: /core/volumes
       method: POST

@@ -78,7 +78,6 @@ def attr_set_modifier(attr: AttrType, modifier: str | None) -> None:
         Modifier name to put in go call, e.g. RequiresReplace.
         If None, deletes any existing plan modifiers.
   """
-
   def mod(attr_type, attr_value, attr_subtype):
     if modifier is None:
       del attr_value["plan_modifiers"]
@@ -180,6 +179,20 @@ def fix_provider_spec(spec_file: str) -> None:
     if row["name"] == "core_virtual_machine_sg_rule":
       for attr in row["schema"]["attributes"]:
         attr_set_modifier(attr, "RequiresReplace")
+
+    if row["name"] == "core_volume":
+      for attr in row["schema"]["attributes"]:
+        immutable_params = [
+          "name",
+          "environment_name",
+          "description",
+          "volume_type",
+          "size",
+          "image_id",
+          "callback_url",
+        ]
+        if attr["name"] in immutable_params:
+          attr_set_modifier(attr, "RequiresReplace")
 
     if row["name"] == "core_virtual_machine":
       row["schema"]["blocks"] = []

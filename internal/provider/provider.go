@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"os"
 
@@ -12,11 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var (
-	API_SERVER         = "https://infrahub-api.nexgencloud.com/v1"
-	API_SERVER_STAGING = "https://infrahub-api-stg.ngbackend.cloud/v1"
-)
-
 var _ provider.Provider = &hyperstackProvider{}
 
 type hyperstackProvider struct {
@@ -24,8 +20,8 @@ type hyperstackProvider struct {
 }
 
 type hyperstackProviderModel struct {
-	ApiToken types.String `tfsdk:"api_key"`
-	Staging  types.Bool   `tfsdk:"staging"`
+	ApiToken   types.String `tfsdk:"api_key"`
+	ApiAddress types.String `tfsdk:"api_address"`
 }
 
 func (p *hyperstackProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -35,55 +31,69 @@ func (p *hyperstackProvider) Metadata(ctx context.Context, req provider.Metadata
 
 func (p *hyperstackProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Terraform provider for Nexgen Hyperstack platform",
 		Attributes: map[string]schema.Attribute{
-			"staging": schema.BoolAttribute{
-				MarkdownDescription: "If staging server should be used",
-				Optional:            true,
-			},
 			"api_key": schema.StringAttribute{
-				MarkdownDescription: "Hyperstack API token",
-				Optional:            true,
+				Description: "Hyperstack API token",
+				Optional:    true,
+				Sensitive:   true,
+			},
+			"api_address": schema.StringAttribute{
+				Description: "Hyperstack API address",
+				Optional:    true,
 			},
 		},
 	}
 }
 
 func (p *hyperstackProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	apiToken := os.Getenv("HYPERSTACK_API_KEY")
-	staging := os.Getenv("HYPERSTACK_STAGING") == "true"
 
 	var data hyperstackProviderModel
-
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	apiTokenEnv := fmt.Sprintf("%sAPI_KEY", EnvPrefix)
+	apiToken := os.Getenv(apiTokenEnv)
 	if !data.ApiToken.IsNull() {
 		apiToken = data.ApiToken.ValueString()
 	}
-
-	if !data.Staging.IsNull() {
-		staging = data.Staging.ValueBool()
-	}
-
 	if apiToken == "" {
 		resp.Diagnostics.AddError(
-			"Missing API Token Configuration",
-			"While configuring the provider, the API token was not found in "+
-				"the HYPERSTACK_API_KEY environment variable or provider "+
-				"configuration block api_key attribute.",
+			"Missing API token Configuration",
+			fmt.Sprintf(
+				"While configuring the provider, the API token was not found in "+
+					"the %s environment variable or provider "+
+					"configuration block api_key attribute.",
+				apiTokenEnv,
+			),
 		)
 	}
 
-	apiServer := API_SERVER
-	if staging {
-		apiServer = API_SERVER_STAGING
+	apiAddressEnv := fmt.Sprintf("%sAPI_ADDRESS", EnvPrefix)
+	apiAddress := os.Getenv(apiAddressEnv)
+	if !data.ApiAddress.IsNull() {
+		apiAddress = data.ApiAddress.ValueString()
+	}
+	if apiAddress == "" {
+		apiAddress = ApiAddress
+	}
+	if apiAddress == "" {
+		resp.Diagnostics.AddError(
+			"Missing API server Configuration",
+			fmt.Sprintf(
+				"While configuring the provider, the API server was not found in "+
+					"the %s environment variable or provider "+
+					"configuration block api_key attribute.",
+				apiAddressEnv,
+			),
+		)
 	}
 
 	hyperstack := client.NewHyperstackClient(
 		apiToken,
-		apiServer,
+		apiAddress,
 	)
 	resp.DataSourceData = hyperstack
 	resp.ResourceData = hyperstack
@@ -96,6 +106,7 @@ func (p *hyperstackProvider) Resources(ctx context.Context) []func() resource.Re
 		NewResourceCoreKeypair,
 		NewResourceCoreVirtualMachine,
 		NewResourceCoreVirtualMachineSgRule,
+		NewResourceCoreVolume,
 	}
 }
 
@@ -104,20 +115,25 @@ func (p *hyperstackProvider) DataSources(ctx context.Context) []func() datasourc
 		NewDataSourceAuthMe,
 		NewDataSourceAuthOrganization,
 		NewDataSourceAuthPermissions,
-		NewDataSourceAuthUserPermissions,
-		NewDataSourceAuthUserMePermissions,
 		NewDataSourceAuthPolicies,
 		NewDataSourceAuthRole,
 		NewDataSourceAuthRoles,
+		NewDataSourceAuthUserMePermissions,
+		NewDataSourceAuthUserPermissions,
+		NewDataSourceCoreDashboard,
 		NewDataSourceCoreEnvironment,
 		NewDataSourceCoreEnvironments,
+		NewDataSourceCoreFirewallProtocols,
+		NewDataSourceCoreFlavors,
+		NewDataSourceCoreGpus,
+		NewDataSourceCoreImages,
 		NewDataSourceCoreKeypair,
 		NewDataSourceCoreKeypairs,
-		NewDataSourceCoreVirtualMachines,
 		NewDataSourceCoreRegions,
-		NewDataSourceCoreGpus,
-		NewDataSourceCoreFlavors,
-		NewDataSourceCoreImages,
+		NewDataSourceCoreStocks,
+		NewDataSourceCoreVirtualMachines,
+		NewDataSourceCoreVolumeTypes,
+		NewDataSourceCoreVolumes,
 	}
 }
 
