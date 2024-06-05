@@ -211,7 +211,7 @@ func (r *ResourceCoreVirtualMachine) Create(
 	if *instanceModel.Status == "ERROR" {
 		resp.Diagnostics.AddError(
 			"Failed creating instance: status %s",
-			"ERROR",
+			*instanceModel.Status,
 		)
 		return
 	}
@@ -268,6 +268,7 @@ func (r *ResourceCoreVirtualMachine) Read(
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
+// TODO: deduplicate
 func (r *ResourceCoreVirtualMachine) WaitForResult(
 	ctx context.Context,
 	pollInterval,

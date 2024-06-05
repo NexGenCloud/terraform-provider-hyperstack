@@ -103,6 +103,7 @@ tasks:
         auth_organization
         auth_roles
         core_dashboard
+        core_environment
         core_environments
         core_firewall_protocols
         core_flavors
@@ -113,6 +114,9 @@ tasks:
         core_stocks
         core_vm
         core_vms
+        core_volume
+        core_volume_types
+        core_volumes
     cmds:
       - task: build
         vars:

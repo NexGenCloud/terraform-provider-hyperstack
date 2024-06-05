@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"io/ioutil"
 )
 
@@ -144,13 +145,23 @@ func (d *DataSourceCoreStocks) MapStockModels(
 		func() []attr.Value {
 			models := make([]attr.Value, 0)
 			for _, row := range data {
-				conf, diagnostic := datasource_core_stocks.ConfigurationsValue{
-					N10x: types.Int64Value(int64(*row.Configurations.N10x)),
-					N1x:  types.Int64Value(int64(*row.Configurations.N1x)),
-					N2x:  types.Int64Value(int64(*row.Configurations.N2x)),
-					N4x:  types.Int64Value(int64(*row.Configurations.N4x)),
-					N8x:  types.Int64Value(int64(*row.Configurations.N8x)),
-				}.ToObjectValue(ctx)
+				// TODO: simplify
+				conf, diagnostic := types.ObjectValue(
+					map[string]attr.Type{
+						"n10x": basetypes.Int64Type{},
+						"n1x":  basetypes.Int64Type{},
+						"n2x":  basetypes.Int64Type{},
+						"n4x":  basetypes.Int64Type{},
+						"n8x":  basetypes.Int64Type{},
+					},
+					map[string]attr.Value{
+						"n10x": types.Int64Value(int64(*row.Configurations.N10x)),
+						"n1x":  types.Int64Value(int64(*row.Configurations.N1x)),
+						"n2x":  types.Int64Value(int64(*row.Configurations.N2x)),
+						"n4x":  types.Int64Value(int64(*row.Configurations.N4x)),
+						"n8x":  types.Int64Value(int64(*row.Configurations.N8x)),
+					},
+				)
 				diags.Append(diagnostic...)
 				model, diagnostic := datasource_core_stocks.NewModelsValue(
 					datasource_core_stocks.ModelsValue{}.AttributeTypes(ctx),

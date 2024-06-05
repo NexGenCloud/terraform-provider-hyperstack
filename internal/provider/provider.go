@@ -106,6 +106,7 @@ func (p *hyperstackProvider) Resources(ctx context.Context) []func() resource.Re
 		NewResourceCoreKeypair,
 		NewResourceCoreVirtualMachine,
 		NewResourceCoreVirtualMachineSgRule,
+		NewResourceCoreVolume,
 	}
 }
 
@@ -131,6 +132,8 @@ func (p *hyperstackProvider) DataSources(ctx context.Context) []func() datasourc
 		NewDataSourceCoreRegions,
 		NewDataSourceCoreStocks,
 		NewDataSourceCoreVirtualMachines,
+		NewDataSourceCoreVolumeTypes,
+		NewDataSourceCoreVolumes,
 	}
 }
 

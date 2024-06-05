@@ -180,6 +180,20 @@ def fix_provider_spec(spec_file: str) -> None:
       for attr in row["schema"]["attributes"]:
         attr_set_modifier(attr, "RequiresReplace")
 
+    if row["name"] == "core_volume":
+      for attr in row["schema"]["attributes"]:
+        immutable_params = [
+          "name",
+          "environment_name",
+          "description",
+          "volume_type",
+          "size",
+          "image_id",
+          "callback_url",
+        ]
+        if attr["name"] in immutable_params:
+          attr_set_modifier(attr, "RequiresReplace")
+
     if row["name"] == "core_virtual_machine":
       row["schema"]["blocks"] = []
 

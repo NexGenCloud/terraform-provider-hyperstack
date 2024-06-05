@@ -48,6 +48,16 @@ data_sources:
       path: /core/environments
       method: GET
 
+  core_volumes:
+    read:
+      path: /core/volumes
+      method: GET
+
+  core_volume_types:
+    read:
+      path: /core/volume-types
+      method: GET
+
   auth_me:
     read:
       path: /auth/me
@@ -148,4 +158,12 @@ resources:
       method: GET
     create:
       path: /core/virtual-machines
+      method: POST
+
+  core_volume:
+    read:
+      path: /core/volumes/{id}
+      method: GET
+    create:
+      path: /core/volumes
       method: POST
