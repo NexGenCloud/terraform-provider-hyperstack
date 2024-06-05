@@ -124,6 +124,11 @@ def attr_fix_components(data: AttrType) -> None:
     "type": "integer",
   }
 
+  # Fix digit-prefixed keys
+  props = schemas["NewConfigurationsResponse"]["properties"]
+  for p in list(props.keys()):
+    props["N%s" % p] = props.pop(p)
+
   paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"] = paths["/core/virtual-machines/{id}/sg-rules"]
   del paths["/core/virtual-machines/{id}/sg-rules"]
   paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"]["post"]["parameters"][0]["name"] = "virtual_machine_id"

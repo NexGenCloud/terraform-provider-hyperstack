@@ -3,6 +3,21 @@ provider:
   #schema_ref: '#/components/schemas/hyperstack_provider_schema'
 
 data_sources:
+  core_dashboard:
+    read:
+      path: /core/dashboard
+      method: GET
+
+  core_stocks:
+    read:
+      path: /core/stocks
+      method: GET
+
+  core_firewall_protocols:
+    read:
+      path: /core/sg-rules-protocols
+      method: GET
+
   core_flavors:
     read:
       path: /core/flavors

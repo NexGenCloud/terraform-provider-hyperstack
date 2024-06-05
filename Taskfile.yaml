@@ -102,14 +102,17 @@ tasks:
         auth_me
         auth_organization
         auth_roles
+        core_dashboard
         core_environments
-        core_images
-        core_regions
-        core_gpus
+        core_firewall_protocols
         core_flavors
+        core_gpus
+        core_images
         core_keypairs
-        core_vms
+        core_regions
+        core_stocks
         core_vm
+        core_vms
     cmds:
       - task: build
         vars:
