@@ -8,7 +8,3 @@ terraform {
 
   backend "local" {}
 }
-
-provider "hyperstack" {
-  staging = true
-}

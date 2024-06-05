@@ -10,6 +10,22 @@ Before you start, make sure you have the following tools installed:
 - [Task 3.25](https://taskfile.dev/installation/): A task runner for executing project tasks.
 - [jq 1.6](https://jqlang.github.io/jq/download/): A command-line JSON processor.
 - [yq v4](https://github.com/mikefarah/yq/): A command-line YAML processor.
+- GPG and gpg-agent
+
+There are also CLI dependencies that are installed vith Go:
+
+- [GoReleaser](https://goreleaser.com/)
+  ````bash
+  go install github.com/goreleaser/goreleaser@latest
+  ````
+- [OpenAPI Provider Spec Generator](https://developer.hashicorp.com/terraform/plugin/code-generation/openapi-generator): generates provider spec using OpenAPI definition
+  ````bash
+  go install github.com/goreleaser/goreleaser@latest
+  ````
+- [Framework Code Generator](https://developer.hashicorp.com/terraform/plugin/code-generation/framework-generator): generates Golang schemas using provider spec
+  ````bash
+  go install github.com/hashicorp/terraform-plugin-codegen-framework/cmd/tfplugingen-framework@latest
+  ````
 
 ## Building the Provider
 

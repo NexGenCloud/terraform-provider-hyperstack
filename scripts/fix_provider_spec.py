@@ -78,7 +78,6 @@ def attr_set_modifier(attr: AttrType, modifier: str | None) -> None:
         Modifier name to put in go call, e.g. RequiresReplace.
         If None, deletes any existing plan modifiers.
   """
-
   def mod(attr_type, attr_value, attr_subtype):
     if modifier is None:
       del attr_value["plan_modifiers"]
