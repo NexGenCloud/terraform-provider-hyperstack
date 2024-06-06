@@ -5,6 +5,6 @@ provider "registry.terraform.io/nexgencloud/hyperstack" {
   version     = "0.1.0"
   constraints = "~> 0.1"
   hashes = [
-    "h1:SUOO0fbmcx7KRCb8Qzqnw72fGogngb5MHW1UWnC2KOI=",
+    "h1:OBtA/1CWoy4/q2Nt3h10az/XE2S2Khzt2SX/pn16dXs=",
   ]
 }
