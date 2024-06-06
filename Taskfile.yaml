@@ -4,7 +4,7 @@ silent: true
 
 vars:
   NAME: "terraform-provider-hyperstack"
-  DIR_DATA: "{{.ROOT_DIR}}/data"
+  DIR_BUILD: "{{.ROOT_DIR}}/build"
   DIR_EXAMPLES: "{{.ROOT_DIR}}/examples"
   DIR_TESTS: "{{.ROOT_DIR}}/tests"
   DIR_ARTIFACTS: "{{.ROOT_DIR}}/artifacts"
@@ -29,6 +29,18 @@ env:
 
 
 tasks:
+  docker-build:
+    env:
+      DOCKER_BUILDKIT: "1"
+    cmds:
+      # language=bash
+      - |
+        docker build \
+          -f Dockerfile \
+          -t "{{.NAME}}" \
+          --target runtime \
+          .
+
   build:
     desc: |
       Builds the provider
@@ -91,11 +103,18 @@ tasks:
       # https://developer.hashicorp.com/terraform/cli/config/environment-variables
       TF_LOG: DEBUG
     vars:
-      RUN_INIT: true
-      RUN_CREATE_PLAN: true
-      RUN_CREATE_APPLY: true
-      RUN_DESTROY_PLAN: true
-      RUN_DESTROY_APPLY: true
+      RUN_BUILD:  |-
+        {{.RUN_BUILD | default "true"}}
+      RUN_INIT:  |-
+        {{.RUN_INIT | default "true"}}
+      RUN_CREATE_PLAN:  |-
+        {{.RUN_CREATE_PLAN | default "true"}}
+      RUN_CREATE_APPLY:  |-
+        {{.RUN_CREATE_APPLY | default "true"}}
+      RUN_DESTROY_PLAN:  |-
+        {{.RUN_DESTROY_PLAN | default "true"}}
+      RUN_DESTROY_APPLY:  |-
+        {{.RUN_DESTROY_APPLY | default "true"}}
       TEST_NAME: |-
         {{.TEST_NAME | default ""}}
       TESTS: |-
@@ -118,9 +137,6 @@ tasks:
         core_volume_types
         core_volumes
     cmds:
-      - task: build
-        vars:
-          SILENT: true
       # language=bash
       - |
         for module in {{join " " (splitArgs .TESTS)}}; do
@@ -211,14 +227,14 @@ tasks:
     vars:
       TF_DATA_SOURCES:
         # language=bash
-        sh: cat "{{.DIR_DATA}}/generator-config.yml" | yq e -o=c ".data_sources | keys | .[]"
+        sh: cat "{{.DIR_BUILD}}/generator-config.yml" | yq e -o=c ".data_sources | keys | .[]"
       SCRIPTS_DIR: "scripts"
       FIX_PROVIDER_SPEC: "{{.SCRIPTS_DIR}}/fix_provider_spec.py"
     cmds:
       # language=bash
       - |
         tfplugingen-openapi generate \
-          --config "{{.DIR_DATA}}/generator-config.yml" \
+          --config "{{.DIR_BUILD}}/generator-config.yml" \
           --output "{{.PROVIDER_SPEC_PATH}}" \
           "{{.API_SPEC_PATH}}"
         python3 "{{.FIX_PROVIDER_SPEC}}" "{{.PROVIDER_SPEC_PATH}}"
