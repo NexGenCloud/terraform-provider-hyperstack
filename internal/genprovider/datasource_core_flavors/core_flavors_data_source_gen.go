@@ -33,9 +33,6 @@ func CoreFlavorsDataSourceSchema(ctx context.Context) schema.Schema {
 									"disk": schema.Int64Attribute{
 										Computed: true,
 									},
-									"ephemeral": schema.Int64Attribute{
-										Computed: true,
-									},
 									"gpu": schema.StringAttribute{
 										Computed: true,
 									},
@@ -644,24 +641,6 @@ func (t FlavorsType) ValueFromObject(ctx context.Context, in basetypes.ObjectVal
 			fmt.Sprintf(`disk expected to be basetypes.Int64Value, was: %T`, diskAttribute))
 	}
 
-	ephemeralAttribute, ok := attributes["ephemeral"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`ephemeral is missing from object`)
-
-		return nil, diags
-	}
-
-	ephemeralVal, ok := ephemeralAttribute.(basetypes.Int64Value)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`ephemeral expected to be basetypes.Int64Value, was: %T`, ephemeralAttribute))
-	}
-
 	gpuAttribute, ok := attributes["gpu"]
 
 	if !ok {
@@ -796,7 +775,6 @@ func (t FlavorsType) ValueFromObject(ctx context.Context, in basetypes.ObjectVal
 		Cpu:            cpuVal,
 		CreatedAt:      createdAtVal,
 		Disk:           diskVal,
-		Ephemeral:      ephemeralVal,
 		Gpu:            gpuVal,
 		GpuCount:       gpuCountVal,
 		Id:             idVal,
@@ -925,24 +903,6 @@ func NewFlavorsValue(attributeTypes map[string]attr.Type, attributes map[string]
 			fmt.Sprintf(`disk expected to be basetypes.Int64Value, was: %T`, diskAttribute))
 	}
 
-	ephemeralAttribute, ok := attributes["ephemeral"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`ephemeral is missing from object`)
-
-		return NewFlavorsValueUnknown(), diags
-	}
-
-	ephemeralVal, ok := ephemeralAttribute.(basetypes.Int64Value)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`ephemeral expected to be basetypes.Int64Value, was: %T`, ephemeralAttribute))
-	}
-
 	gpuAttribute, ok := attributes["gpu"]
 
 	if !ok {
@@ -1077,7 +1037,6 @@ func NewFlavorsValue(attributeTypes map[string]attr.Type, attributes map[string]
 		Cpu:            cpuVal,
 		CreatedAt:      createdAtVal,
 		Disk:           diskVal,
-		Ephemeral:      ephemeralVal,
 		Gpu:            gpuVal,
 		GpuCount:       gpuCountVal,
 		Id:             idVal,
@@ -1160,7 +1119,6 @@ type FlavorsValue struct {
 	Cpu            basetypes.Int64Value  `tfsdk:"cpu"`
 	CreatedAt      basetypes.StringValue `tfsdk:"created_at"`
 	Disk           basetypes.Int64Value  `tfsdk:"disk"`
-	Ephemeral      basetypes.Int64Value  `tfsdk:"ephemeral"`
 	Gpu            basetypes.StringValue `tfsdk:"gpu"`
 	GpuCount       basetypes.Int64Value  `tfsdk:"gpu_count"`
 	Id             basetypes.Int64Value  `tfsdk:"id"`
@@ -1172,7 +1130,7 @@ type FlavorsValue struct {
 }
 
 func (v FlavorsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 11)
+	attrTypes := make(map[string]tftypes.Type, 10)
 
 	var val tftypes.Value
 	var err error
@@ -1180,7 +1138,6 @@ func (v FlavorsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, erro
 	attrTypes["cpu"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["created_at"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["disk"] = basetypes.Int64Type{}.TerraformType(ctx)
-	attrTypes["ephemeral"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["gpu"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["gpu_count"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
@@ -1193,7 +1150,7 @@ func (v FlavorsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, erro
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 11)
+		vals := make(map[string]tftypes.Value, 10)
 
 		val, err = v.Cpu.ToTerraformValue(ctx)
 
@@ -1218,14 +1175,6 @@ func (v FlavorsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, erro
 		}
 
 		vals["disk"] = val
-
-		val, err = v.Ephemeral.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["ephemeral"] = val
 
 		val, err = v.Gpu.ToTerraformValue(ctx)
 
@@ -1316,7 +1265,6 @@ func (v FlavorsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue,
 		"cpu":             basetypes.Int64Type{},
 		"created_at":      basetypes.StringType{},
 		"disk":            basetypes.Int64Type{},
-		"ephemeral":       basetypes.Int64Type{},
 		"gpu":             basetypes.StringType{},
 		"gpu_count":       basetypes.Int64Type{},
 		"id":              basetypes.Int64Type{},
@@ -1340,7 +1288,6 @@ func (v FlavorsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue,
 			"cpu":             v.Cpu,
 			"created_at":      v.CreatedAt,
 			"disk":            v.Disk,
-			"ephemeral":       v.Ephemeral,
 			"gpu":             v.Gpu,
 			"gpu_count":       v.GpuCount,
 			"id":              v.Id,
@@ -1377,10 +1324,6 @@ func (v FlavorsValue) Equal(o attr.Value) bool {
 	}
 
 	if !v.Disk.Equal(other.Disk) {
-		return false
-	}
-
-	if !v.Ephemeral.Equal(other.Ephemeral) {
 		return false
 	}
 
@@ -1428,7 +1371,6 @@ func (v FlavorsValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 		"cpu":             basetypes.Int64Type{},
 		"created_at":      basetypes.StringType{},
 		"disk":            basetypes.Int64Type{},
-		"ephemeral":       basetypes.Int64Type{},
 		"gpu":             basetypes.StringType{},
 		"gpu_count":       basetypes.Int64Type{},
 		"id":              basetypes.Int64Type{},

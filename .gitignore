@@ -2,3 +2,4 @@ artifacts/
 dist/
 
 *.env
+.DS_Store

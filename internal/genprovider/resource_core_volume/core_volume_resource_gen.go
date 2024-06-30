@@ -5,10 +5,11 @@ package resource_core_volume
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -24,21 +25,21 @@ func CoreVolumeResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"callback_url": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "A URL that can be attached to the volume you are creating. This `callback_url` will post any action events that occur to your volume to the provided URL.",
-				MarkdownDescription: "A URL that can be attached to the volume you are creating. This `callback_url` will post any action events that occur to your volume to the provided URL.",
-				Validators: []validator.String{
-					stringvalidator.LengthAtMost(250),
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"created_at": schema.StringAttribute{
 				Computed: true,
 			},
 			"description": schema.StringAttribute{
-				Required:            true,
-				Description:         "A brief description or comment about the volume.",
-				MarkdownDescription: "A brief description or comment about the volume.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"environment": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
@@ -54,31 +55,35 @@ func CoreVolumeResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"environment_name": schema.StringAttribute{
-				Required:            true,
-				Description:         "The name of the [environment](https://infrahub-doc.nexgencloud.com/docs/features/environments-available-features) within which the volume is being created.",
-				MarkdownDescription: "The name of the [environment](https://infrahub-doc.nexgencloud.com/docs/features/environments-available-features) within which the volume is being created.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"id": schema.Int64Attribute{
 				Computed: true,
 			},
 			"image_id": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "The ID of the operating system image that will be associated with the volume. By providing an `image_id` in the create volume request, you will create a bootable volume.",
-				MarkdownDescription: "The ID of the operating system image that will be associated with the volume. By providing an `image_id` in the create volume request, you will create a bootable volume.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"name": schema.StringAttribute{
-				Required:            true,
-				Description:         "The name of the volume being created.",
-				MarkdownDescription: "The name of the volume being created.",
-				Validators: []validator.String{
-					stringvalidator.LengthAtMost(50),
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"size": schema.Int64Attribute{
-				Required:            true,
-				Description:         "The size of the volume in GB. 1048576GB storage capacity per volume.",
-				MarkdownDescription: "The size of the volume in GB. 1048576GB storage capacity per volume.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"status": schema.StringAttribute{
 				Computed: true,
@@ -87,9 +92,11 @@ func CoreVolumeResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"volume_type": schema.StringAttribute{
-				Required:            true,
-				Description:         "Specifies the type of volume being created, which determines the storage technology it will use. Call the \"[List volume types](https://infrahub-api-doc.nexgencloud.com/#get-/core/volumes)\" endpoint to retrieve a list of available volume model types.",
-				MarkdownDescription: "Specifies the type of volume being created, which determines the storage technology it will use. Call the \"[List volume types](https://infrahub-api-doc.nexgencloud.com/#get-/core/volumes)\" endpoint to retrieve a list of available volume model types.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}

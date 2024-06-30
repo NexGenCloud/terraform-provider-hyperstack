@@ -1,13 +1,12 @@
 module github.com/NexGenCloud/terraform-provider-hyperstack
 
-go 1.21
+go 1.22
 
 replace github.com/NexGenCloud/hyperstack-sdk-go => ../hyperstack-sdk-go
 
 require (
 	github.com/NexGenCloud/hyperstack-sdk-go v0.1.1
 	github.com/hashicorp/terraform-plugin-framework v1.9.0
-	github.com/hashicorp/terraform-plugin-framework-validators v0.12.0
 	github.com/hashicorp/terraform-plugin-go v0.23.0
 	github.com/hashicorp/terraform-plugin-testing v1.8.0
 )

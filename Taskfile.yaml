@@ -164,7 +164,7 @@ tasks:
             rm -f "${MODULE_DIR}/.terraform.lock.hcl"
             # TODO: store output and show only on error
             TF_LOG_PATH="${ARTIFACTS_DIR}/tf_init.log" \
-              terraform init -input=false -backend-config="${BACKEND_FILE}"
+              terraform init -input=false -migrate-state -backend-config="${BACKEND_FILE}"
           fi
           
           TFPLAN="${ARTIFACTS_DIR}/tfplan"
@@ -209,6 +209,7 @@ tasks:
   build-api-spec:
     desc: |
       Pulls the latest api.json from the server
+    dotenv: [ '.env' ]
     vars:
       SCRIPTS_DIR: "scripts"
       FIX_API_SPEC: "{{.SCRIPTS_DIR}}/fix_api_spec.py"
@@ -219,7 +220,7 @@ tasks:
         curl "${HYPERSTACK_API_SPEC_ADDRESS}"  | \
           python3 -c "import sys, urllib.parse; print(urllib.parse.unquote(sys.stdin.read()))" \
             > "{{.API_SPEC_PATH}}"
-        python3 "{{.FIX_API_SPEC}}" "{{.API_SPEC_PATH}}"
+        python3.11 "{{.FIX_API_SPEC}}" "{{.API_SPEC_PATH}}"
 
   build-provider-spec:
     desc: |
@@ -237,7 +238,7 @@ tasks:
           --config "{{.DIR_BUILD}}/generator-config.yml" \
           --output "{{.PROVIDER_SPEC_PATH}}" \
           "{{.API_SPEC_PATH}}"
-        python3 "{{.FIX_PROVIDER_SPEC}}" "{{.PROVIDER_SPEC_PATH}}"
+        python3.11 "{{.FIX_PROVIDER_SPEC}}" "{{.PROVIDER_SPEC_PATH}}"
       # language=bash
       - |
         rm -Rf "{{.DIR_GENPROVIDER}}"

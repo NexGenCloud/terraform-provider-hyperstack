@@ -104,14 +104,14 @@ func (d *DataSourceCoreDashboard) ApiToModel(
 			CostPerHour: types.NumberValue(big.NewFloat(float64(*response.Instance.CostPerHour))),
 			Count:       types.Int64Value(int64(*response.Instance.Count)),
 			Gpus:        types.Int64Value(int64(*response.Instance.Gpus)),
-			Ram:         types.Int64Value(int64(*response.Instance.Ram)),
+			Ram:         types.NumberValue(big.NewFloat(float64(*response.Instance.Ram))),
 			Vcpus:       types.Int64Value(int64(*response.Instance.Vcpus)),
 		},
 		Container: datasource_core_dashboard.ContainerValue{
 			CostPerHour: types.NumberValue(big.NewFloat(float64(*response.Container.CostPerHour))),
 			Count:       types.Int64Value(int64(*response.Container.Count)),
 			Gpus:        types.Int64Value(int64(*response.Container.Gpus)),
-			Ram:         types.Int64Value(int64(*response.Container.Ram)),
+			Ram:         types.NumberValue(big.NewFloat(float64(*response.Container.Ram))),
 			Vcpus:       types.Int64Value(int64(*response.Container.Vcpus)),
 		},
 		Volume: datasource_core_dashboard.VolumeValue{

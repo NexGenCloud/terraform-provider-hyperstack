@@ -3,13 +3,13 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/image"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_images"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/NexGenCloud/hyperstack-sdk-go/lib/image"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_images"
 	"io/ioutil"
 )
 
@@ -193,7 +193,8 @@ func (d *DataSourceCoreImages) MapImages(
 									"type":         types.StringValue(imageType),
 									"version":      types.StringValue(version),
 									"description":  types.StringValue(description),
-									"labels":       d.MapLabels(ctx, diags, *imageItem.Labels),
+									// Not available on staging yet ??
+									//"labels":       d.MapLabels(ctx, diags, *imageItem.Labels),
 								},
 							)
 							images = append(images, modelImage)
@@ -219,29 +220,30 @@ func (d *DataSourceCoreImages) MapImages(
 	return model
 }
 
-func (d *DataSourceCoreImages) MapLabels(
-	ctx context.Context,
-	diags *diag.Diagnostics,
-	data []image.LableResonse,
-) types.List {
-	model, diagnostic := types.ListValue(
-		datasource_core_images.LabelsValue{}.Type(ctx),
-		func() []attr.Value {
-			labels := make([]attr.Value, 0)
-			for _, row := range data {
-				model, diagnostic := datasource_core_images.NewLabelsValue(
-					datasource_core_images.LabelsValue{}.AttributeTypes(ctx),
-					map[string]attr.Value{
-						"id":   types.Int64Value(int64(*row.Id)),
-						"name": types.StringValue(*row.Label),
-					},
-				)
-				diags.Append(diagnostic...)
-				labels = append(labels, model)
-			}
-			return labels
-		}(),
-	)
-	diags.Append(diagnostic...)
-	return model
-}
+// Not available on staging yet ??
+//func (d *DataSourceCoreImages) MapLabels(
+//	ctx context.Context,
+//	diags *diag.Diagnostics,
+//	data []image.LableResonse,
+//) types.List {
+//	model, diagnostic := types.ListValue(
+//		datasource_core_images.LabelsValue{}.Type(ctx),
+//		func() []attr.Value {
+//			labels := make([]attr.Value, 0)
+//			for _, row := range data {
+//				model, diagnostic := datasource_core_images.NewLabelsValue(
+//					datasource_core_images.LabelsValue{}.AttributeTypes(ctx),
+//					map[string]attr.Value{
+//						"id":   types.Int64Value(int64(*row.Id)),
+//						"name": types.StringValue(*row.Label),
+//					},
+//				)
+//				diags.Append(diagnostic...)
+//				labels = append(labels, model)
+//			}
+//			return labels
+//		}(),
+//	)
+//	diags.Append(diagnostic...)
+//	return model
+//}

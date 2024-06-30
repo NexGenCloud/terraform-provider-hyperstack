@@ -3,12 +3,12 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/auth"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_auth_me"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"io/ioutil"
 )
 
@@ -96,7 +96,7 @@ func (d *DataSourceAuthMe) Read(ctx context.Context, req datasource.ReadRequest,
 func (d *DataSourceAuthMe) ApiToModel(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	response *auth.AuthUserFields,
+	response *auth.UserFields,
 ) datasource_auth_me.AuthMeModel {
 	return datasource_auth_me.AuthMeModel{
 		CreatedAt: func() types.String {
