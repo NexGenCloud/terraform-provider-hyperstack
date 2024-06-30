@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.11
 
 """
 Script Name: fix_provider_spec.py
@@ -169,7 +169,10 @@ def fix_provider_spec(spec_file: str) -> None:
   datasources = data.get("datasources", [])
   for row in datasources:
     if row["name"] == "core_keypair":
-      row["schema"]["attributes"] = row["schema"]["attributes"][0]["set_nested"]["nested_object"]["attributes"]
+      for attr in row["schema"]["attributes"]:
+        if attr["name"] == "core_keypair":
+          row["schema"]["attributes"] = attr["set_nested"]["nested_object"]["attributes"]
+          break
       for attr in row["schema"]["attributes"]:
         if attr["name"] == "id":
           attr["int64"]["computed_optional_required"] = "required"

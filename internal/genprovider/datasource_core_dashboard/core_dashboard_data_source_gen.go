@@ -29,7 +29,7 @@ func CoreDashboardDataSourceSchema(ctx context.Context) schema.Schema {
 					"gpus": schema.Int64Attribute{
 						Computed: true,
 					},
-					"ram": schema.Int64Attribute{
+					"ram": schema.NumberAttribute{
 						Computed: true,
 					},
 					"vcpus": schema.Int64Attribute{
@@ -54,7 +54,7 @@ func CoreDashboardDataSourceSchema(ctx context.Context) schema.Schema {
 					"gpus": schema.Int64Attribute{
 						Computed: true,
 					},
-					"ram": schema.Int64Attribute{
+					"ram": schema.NumberAttribute{
 						Computed: true,
 					},
 					"vcpus": schema.Int64Attribute{
@@ -186,12 +186,12 @@ func (t ContainerType) ValueFromObject(ctx context.Context, in basetypes.ObjectV
 		return nil, diags
 	}
 
-	ramVal, ok := ramAttribute.(basetypes.Int64Value)
+	ramVal, ok := ramAttribute.(basetypes.NumberValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`ram expected to be basetypes.Int64Value, was: %T`, ramAttribute))
+			fmt.Sprintf(`ram expected to be basetypes.NumberValue, was: %T`, ramAttribute))
 	}
 
 	vcpusAttribute, ok := attributes["vcpus"]
@@ -353,12 +353,12 @@ func NewContainerValue(attributeTypes map[string]attr.Type, attributes map[strin
 		return NewContainerValueUnknown(), diags
 	}
 
-	ramVal, ok := ramAttribute.(basetypes.Int64Value)
+	ramVal, ok := ramAttribute.(basetypes.NumberValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`ram expected to be basetypes.Int64Value, was: %T`, ramAttribute))
+			fmt.Sprintf(`ram expected to be basetypes.NumberValue, was: %T`, ramAttribute))
 	}
 
 	vcpusAttribute, ok := attributes["vcpus"]
@@ -464,7 +464,7 @@ type ContainerValue struct {
 	CostPerHour basetypes.NumberValue `tfsdk:"cost_per_hour"`
 	Count       basetypes.Int64Value  `tfsdk:"count"`
 	Gpus        basetypes.Int64Value  `tfsdk:"gpus"`
-	Ram         basetypes.Int64Value  `tfsdk:"ram"`
+	Ram         basetypes.NumberValue `tfsdk:"ram"`
 	Vcpus       basetypes.Int64Value  `tfsdk:"vcpus"`
 	state       attr.ValueState
 }
@@ -478,7 +478,7 @@ func (v ContainerValue) ToTerraformValue(ctx context.Context) (tftypes.Value, er
 	attrTypes["cost_per_hour"] = basetypes.NumberType{}.TerraformType(ctx)
 	attrTypes["count"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["gpus"] = basetypes.Int64Type{}.TerraformType(ctx)
-	attrTypes["ram"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["ram"] = basetypes.NumberType{}.TerraformType(ctx)
 	attrTypes["vcpus"] = basetypes.Int64Type{}.TerraformType(ctx)
 
 	objectType := tftypes.Object{AttributeTypes: attrTypes}
@@ -560,7 +560,7 @@ func (v ContainerValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValu
 		"cost_per_hour": basetypes.NumberType{},
 		"count":         basetypes.Int64Type{},
 		"gpus":          basetypes.Int64Type{},
-		"ram":           basetypes.Int64Type{},
+		"ram":           basetypes.NumberType{},
 		"vcpus":         basetypes.Int64Type{},
 	}
 
@@ -636,7 +636,7 @@ func (v ContainerValue) AttributeTypes(ctx context.Context) map[string]attr.Type
 		"cost_per_hour": basetypes.NumberType{},
 		"count":         basetypes.Int64Type{},
 		"gpus":          basetypes.Int64Type{},
-		"ram":           basetypes.Int64Type{},
+		"ram":           basetypes.NumberType{},
 		"vcpus":         basetypes.Int64Type{},
 	}
 }
@@ -730,12 +730,12 @@ func (t InstanceType) ValueFromObject(ctx context.Context, in basetypes.ObjectVa
 		return nil, diags
 	}
 
-	ramVal, ok := ramAttribute.(basetypes.Int64Value)
+	ramVal, ok := ramAttribute.(basetypes.NumberValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`ram expected to be basetypes.Int64Value, was: %T`, ramAttribute))
+			fmt.Sprintf(`ram expected to be basetypes.NumberValue, was: %T`, ramAttribute))
 	}
 
 	vcpusAttribute, ok := attributes["vcpus"]
@@ -897,12 +897,12 @@ func NewInstanceValue(attributeTypes map[string]attr.Type, attributes map[string
 		return NewInstanceValueUnknown(), diags
 	}
 
-	ramVal, ok := ramAttribute.(basetypes.Int64Value)
+	ramVal, ok := ramAttribute.(basetypes.NumberValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`ram expected to be basetypes.Int64Value, was: %T`, ramAttribute))
+			fmt.Sprintf(`ram expected to be basetypes.NumberValue, was: %T`, ramAttribute))
 	}
 
 	vcpusAttribute, ok := attributes["vcpus"]
@@ -1008,7 +1008,7 @@ type InstanceValue struct {
 	CostPerHour basetypes.NumberValue `tfsdk:"cost_per_hour"`
 	Count       basetypes.Int64Value  `tfsdk:"count"`
 	Gpus        basetypes.Int64Value  `tfsdk:"gpus"`
-	Ram         basetypes.Int64Value  `tfsdk:"ram"`
+	Ram         basetypes.NumberValue `tfsdk:"ram"`
 	Vcpus       basetypes.Int64Value  `tfsdk:"vcpus"`
 	state       attr.ValueState
 }
@@ -1022,7 +1022,7 @@ func (v InstanceValue) ToTerraformValue(ctx context.Context) (tftypes.Value, err
 	attrTypes["cost_per_hour"] = basetypes.NumberType{}.TerraformType(ctx)
 	attrTypes["count"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["gpus"] = basetypes.Int64Type{}.TerraformType(ctx)
-	attrTypes["ram"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["ram"] = basetypes.NumberType{}.TerraformType(ctx)
 	attrTypes["vcpus"] = basetypes.Int64Type{}.TerraformType(ctx)
 
 	objectType := tftypes.Object{AttributeTypes: attrTypes}
@@ -1104,7 +1104,7 @@ func (v InstanceValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue
 		"cost_per_hour": basetypes.NumberType{},
 		"count":         basetypes.Int64Type{},
 		"gpus":          basetypes.Int64Type{},
-		"ram":           basetypes.Int64Type{},
+		"ram":           basetypes.NumberType{},
 		"vcpus":         basetypes.Int64Type{},
 	}
 
@@ -1180,7 +1180,7 @@ func (v InstanceValue) AttributeTypes(ctx context.Context) map[string]attr.Type 
 		"cost_per_hour": basetypes.NumberType{},
 		"count":         basetypes.Int64Type{},
 		"gpus":          basetypes.Int64Type{},
-		"ram":           basetypes.Int64Type{},
+		"ram":           basetypes.NumberType{},
 		"vcpus":         basetypes.Int64Type{},
 	}
 }

@@ -97,7 +97,7 @@ func (d *DataSourceAuthOrganization) Read(ctx context.Context, req datasource.Re
 func (d *DataSourceAuthOrganization) ApiToModel(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	response *organization.OrganizationFields,
+	response *organization.OrganizationInfoModel,
 ) datasource_auth_organization.AuthOrganizationModel {
 	return datasource_auth_organization.AuthOrganizationModel{
 		Id: func() types.Int64 {
@@ -121,7 +121,7 @@ func (d *DataSourceAuthOrganization) ApiToModel(
 func (d *DataSourceAuthOrganization) MapUsers(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data *[]organization.OrganizationUserResponseModel,
+	data *[]organization.OrganizationUserModel,
 ) types.List {
 	model, diagnostic := types.ListValue(
 		datasource_auth_organization.UsersValue{}.Type(ctx),
@@ -143,12 +143,13 @@ func (d *DataSourceAuthOrganization) MapUsers(
 						"username": func() types.String {
 							return types.StringValue(*row.Username)
 						}(),
-						"last_login": func() types.String {
-							if row.LastLogin == nil {
-								return types.StringNull()
-							}
-							return types.StringValue(row.LastLogin.String())
-						}(),
+						// Not available on staging yet ??
+						//"last_login": func() types.String {
+						//	if row.LastLogin == nil {
+						//		return types.StringNull()
+						//	}
+						//	return types.StringValue(row.LastLogin.String())
+						//}(),
 						"name": func() types.String {
 							return types.StringValue(*row.Name)
 						}(),
@@ -175,7 +176,7 @@ func (d *DataSourceAuthOrganization) MapUsers(
 func (d *DataSourceAuthOrganization) MapUsersRoles(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data *[]organization.RbacRoleField,
+	data *[]organization.RBACRoleFieldForOrganization,
 ) types.List {
 	model, diagnostic := types.ListValue(
 		datasource_auth_organization.RbacRolesValue{}.Type(ctx),

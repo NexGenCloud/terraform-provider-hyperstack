@@ -21,17 +21,11 @@ func CoreVirtualMachinesDataSourceSchema(ctx context.Context) schema.Schema {
 			"core_virtual_machines": schema.SetNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"contract_id": schema.Int64Attribute{
-							Computed: true,
-						},
 						"created_at": schema.StringAttribute{
 							Computed: true,
 						},
 						"environment": schema.SingleNestedAttribute{
 							Attributes: map[string]schema.Attribute{
-								"id": schema.Int64Attribute{
-									Computed: true,
-								},
 								"name": schema.StringAttribute{
 									Computed: true,
 								},
@@ -58,9 +52,6 @@ func CoreVirtualMachinesDataSourceSchema(ctx context.Context) schema.Schema {
 									Computed: true,
 								},
 								"disk": schema.Int64Attribute{
-									Computed: true,
-								},
-								"ephemeral": schema.Int64Attribute{
 									Computed: true,
 								},
 								"gpu": schema.StringAttribute{
@@ -121,17 +112,10 @@ func CoreVirtualMachinesDataSourceSchema(ctx context.Context) schema.Schema {
 							},
 							Computed: true,
 						},
-						"labels": schema.ListAttribute{
-							ElementType: types.StringType,
-							Computed:    true,
-						},
-						"locked": schema.BoolAttribute{
-							Computed: true,
-						},
 						"name": schema.StringAttribute{
 							Computed: true,
 						},
-						"os": schema.StringAttribute{
+						"openstack_id": schema.StringAttribute{
 							Computed: true,
 						},
 						"power_state": schema.StringAttribute{
@@ -270,24 +254,6 @@ func (t CoreVirtualMachinesType) ValueFromObject(ctx context.Context, in basetyp
 
 	attributes := in.Attributes()
 
-	contractIdAttribute, ok := attributes["contract_id"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`contract_id is missing from object`)
-
-		return nil, diags
-	}
-
-	contractIdVal, ok := contractIdAttribute.(basetypes.Int64Value)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`contract_id expected to be basetypes.Int64Value, was: %T`, contractIdAttribute))
-	}
-
 	createdAtAttribute, ok := attributes["created_at"]
 
 	if !ok {
@@ -450,42 +416,6 @@ func (t CoreVirtualMachinesType) ValueFromObject(ctx context.Context, in basetyp
 			fmt.Sprintf(`keypair expected to be basetypes.ObjectValue, was: %T`, keypairAttribute))
 	}
 
-	labelsAttribute, ok := attributes["labels"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`labels is missing from object`)
-
-		return nil, diags
-	}
-
-	labelsVal, ok := labelsAttribute.(basetypes.ListValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`labels expected to be basetypes.ListValue, was: %T`, labelsAttribute))
-	}
-
-	lockedAttribute, ok := attributes["locked"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`locked is missing from object`)
-
-		return nil, diags
-	}
-
-	lockedVal, ok := lockedAttribute.(basetypes.BoolValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`locked expected to be basetypes.BoolValue, was: %T`, lockedAttribute))
-	}
-
 	nameAttribute, ok := attributes["name"]
 
 	if !ok {
@@ -504,22 +434,22 @@ func (t CoreVirtualMachinesType) ValueFromObject(ctx context.Context, in basetyp
 			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
 	}
 
-	osAttribute, ok := attributes["os"]
+	openstackIdAttribute, ok := attributes["openstack_id"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`os is missing from object`)
+			`openstack_id is missing from object`)
 
 		return nil, diags
 	}
 
-	osVal, ok := osAttribute.(basetypes.StringValue)
+	openstackIdVal, ok := openstackIdAttribute.(basetypes.StringValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`os expected to be basetypes.StringValue, was: %T`, osAttribute))
+			fmt.Sprintf(`openstack_id expected to be basetypes.StringValue, was: %T`, openstackIdAttribute))
 	}
 
 	powerStateAttribute, ok := attributes["power_state"]
@@ -617,7 +547,6 @@ func (t CoreVirtualMachinesType) ValueFromObject(ctx context.Context, in basetyp
 	}
 
 	return CoreVirtualMachinesValue{
-		ContractId:        contractIdVal,
 		CreatedAt:         createdAtVal,
 		Environment:       environmentVal,
 		FixedIp:           fixedIpVal,
@@ -627,10 +556,8 @@ func (t CoreVirtualMachinesType) ValueFromObject(ctx context.Context, in basetyp
 		Id:                idVal,
 		Image:             imageVal,
 		Keypair:           keypairVal,
-		Labels:            labelsVal,
-		Locked:            lockedVal,
 		Name:              nameVal,
-		Os:                osVal,
+		OpenstackId:       openstackIdVal,
 		PowerState:        powerStateVal,
 		SecurityRules:     securityRulesVal,
 		Status:            statusVal,
@@ -703,24 +630,6 @@ func NewCoreVirtualMachinesValue(attributeTypes map[string]attr.Type, attributes
 		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
-	contractIdAttribute, ok := attributes["contract_id"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`contract_id is missing from object`)
-
-		return NewCoreVirtualMachinesValueUnknown(), diags
-	}
-
-	contractIdVal, ok := contractIdAttribute.(basetypes.Int64Value)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`contract_id expected to be basetypes.Int64Value, was: %T`, contractIdAttribute))
-	}
-
 	createdAtAttribute, ok := attributes["created_at"]
 
 	if !ok {
@@ -883,42 +792,6 @@ func NewCoreVirtualMachinesValue(attributeTypes map[string]attr.Type, attributes
 			fmt.Sprintf(`keypair expected to be basetypes.ObjectValue, was: %T`, keypairAttribute))
 	}
 
-	labelsAttribute, ok := attributes["labels"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`labels is missing from object`)
-
-		return NewCoreVirtualMachinesValueUnknown(), diags
-	}
-
-	labelsVal, ok := labelsAttribute.(basetypes.ListValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`labels expected to be basetypes.ListValue, was: %T`, labelsAttribute))
-	}
-
-	lockedAttribute, ok := attributes["locked"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`locked is missing from object`)
-
-		return NewCoreVirtualMachinesValueUnknown(), diags
-	}
-
-	lockedVal, ok := lockedAttribute.(basetypes.BoolValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`locked expected to be basetypes.BoolValue, was: %T`, lockedAttribute))
-	}
-
 	nameAttribute, ok := attributes["name"]
 
 	if !ok {
@@ -937,22 +810,22 @@ func NewCoreVirtualMachinesValue(attributeTypes map[string]attr.Type, attributes
 			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
 	}
 
-	osAttribute, ok := attributes["os"]
+	openstackIdAttribute, ok := attributes["openstack_id"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`os is missing from object`)
+			`openstack_id is missing from object`)
 
 		return NewCoreVirtualMachinesValueUnknown(), diags
 	}
 
-	osVal, ok := osAttribute.(basetypes.StringValue)
+	openstackIdVal, ok := openstackIdAttribute.(basetypes.StringValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`os expected to be basetypes.StringValue, was: %T`, osAttribute))
+			fmt.Sprintf(`openstack_id expected to be basetypes.StringValue, was: %T`, openstackIdAttribute))
 	}
 
 	powerStateAttribute, ok := attributes["power_state"]
@@ -1050,7 +923,6 @@ func NewCoreVirtualMachinesValue(attributeTypes map[string]attr.Type, attributes
 	}
 
 	return CoreVirtualMachinesValue{
-		ContractId:        contractIdVal,
 		CreatedAt:         createdAtVal,
 		Environment:       environmentVal,
 		FixedIp:           fixedIpVal,
@@ -1060,10 +932,8 @@ func NewCoreVirtualMachinesValue(attributeTypes map[string]attr.Type, attributes
 		Id:                idVal,
 		Image:             imageVal,
 		Keypair:           keypairVal,
-		Labels:            labelsVal,
-		Locked:            lockedVal,
 		Name:              nameVal,
-		Os:                osVal,
+		OpenstackId:       openstackIdVal,
 		PowerState:        powerStateVal,
 		SecurityRules:     securityRulesVal,
 		Status:            statusVal,
@@ -1141,7 +1011,6 @@ func (t CoreVirtualMachinesType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = CoreVirtualMachinesValue{}
 
 type CoreVirtualMachinesValue struct {
-	ContractId        basetypes.Int64Value  `tfsdk:"contract_id"`
 	CreatedAt         basetypes.StringValue `tfsdk:"created_at"`
 	Environment       basetypes.ObjectValue `tfsdk:"environment"`
 	FixedIp           basetypes.StringValue `tfsdk:"fixed_ip"`
@@ -1151,10 +1020,8 @@ type CoreVirtualMachinesValue struct {
 	Id                basetypes.Int64Value  `tfsdk:"id"`
 	Image             basetypes.ObjectValue `tfsdk:"image"`
 	Keypair           basetypes.ObjectValue `tfsdk:"keypair"`
-	Labels            basetypes.ListValue   `tfsdk:"labels"`
-	Locked            basetypes.BoolValue   `tfsdk:"locked"`
 	Name              basetypes.StringValue `tfsdk:"name"`
-	Os                basetypes.StringValue `tfsdk:"os"`
+	OpenstackId       basetypes.StringValue `tfsdk:"openstack_id"`
 	PowerState        basetypes.StringValue `tfsdk:"power_state"`
 	SecurityRules     basetypes.ListValue   `tfsdk:"security_rules"`
 	Status            basetypes.StringValue `tfsdk:"status"`
@@ -1164,12 +1031,11 @@ type CoreVirtualMachinesValue struct {
 }
 
 func (v CoreVirtualMachinesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 19)
+	attrTypes := make(map[string]tftypes.Type, 16)
 
 	var val tftypes.Value
 	var err error
 
-	attrTypes["contract_id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["created_at"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["environment"] = basetypes.ObjectType{
 		AttrTypes: EnvironmentValue{}.AttributeTypes(ctx),
@@ -1187,12 +1053,8 @@ func (v CoreVirtualMachinesValue) ToTerraformValue(ctx context.Context) (tftypes
 	attrTypes["keypair"] = basetypes.ObjectType{
 		AttrTypes: KeypairValue{}.AttributeTypes(ctx),
 	}.TerraformType(ctx)
-	attrTypes["labels"] = basetypes.ListType{
-		ElemType: types.StringType,
-	}.TerraformType(ctx)
-	attrTypes["locked"] = basetypes.BoolType{}.TerraformType(ctx)
 	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
-	attrTypes["os"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["openstack_id"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["power_state"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["security_rules"] = basetypes.ListType{
 		ElemType: SecurityRulesValue{}.Type(ctx),
@@ -1207,15 +1069,7 @@ func (v CoreVirtualMachinesValue) ToTerraformValue(ctx context.Context) (tftypes
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 19)
-
-		val, err = v.ContractId.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["contract_id"] = val
+		vals := make(map[string]tftypes.Value, 16)
 
 		val, err = v.CreatedAt.ToTerraformValue(ctx)
 
@@ -1289,22 +1143,6 @@ func (v CoreVirtualMachinesValue) ToTerraformValue(ctx context.Context) (tftypes
 
 		vals["keypair"] = val
 
-		val, err = v.Labels.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["labels"] = val
-
-		val, err = v.Locked.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["locked"] = val
-
 		val, err = v.Name.ToTerraformValue(ctx)
 
 		if err != nil {
@@ -1313,13 +1151,13 @@ func (v CoreVirtualMachinesValue) ToTerraformValue(ctx context.Context) (tftypes
 
 		vals["name"] = val
 
-		val, err = v.Os.ToTerraformValue(ctx)
+		val, err = v.OpenstackId.ToTerraformValue(ctx)
 
 		if err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
 		}
 
-		vals["os"] = val
+		vals["openstack_id"] = val
 
 		val, err = v.PowerState.ToTerraformValue(ctx)
 
@@ -1532,51 +1370,8 @@ func (v CoreVirtualMachinesValue) ToObjectValue(ctx context.Context) (basetypes.
 		)
 	}
 
-	labelsVal, d := types.ListValue(types.StringType, v.Labels.Elements())
-
-	diags.Append(d...)
-
-	if d.HasError() {
-		return types.ObjectUnknown(map[string]attr.Type{
-			"contract_id": basetypes.Int64Type{},
-			"created_at":  basetypes.StringType{},
-			"environment": basetypes.ObjectType{
-				AttrTypes: EnvironmentValue{}.AttributeTypes(ctx),
-			},
-			"fixed_ip": basetypes.StringType{},
-			"flavor": basetypes.ObjectType{
-				AttrTypes: FlavorValue{}.AttributeTypes(ctx),
-			},
-			"floating_ip":        basetypes.StringType{},
-			"floating_ip_status": basetypes.StringType{},
-			"id":                 basetypes.Int64Type{},
-			"image": basetypes.ObjectType{
-				AttrTypes: ImageValue{}.AttributeTypes(ctx),
-			},
-			"keypair": basetypes.ObjectType{
-				AttrTypes: KeypairValue{}.AttributeTypes(ctx),
-			},
-			"labels": basetypes.ListType{
-				ElemType: types.StringType,
-			},
-			"locked":      basetypes.BoolType{},
-			"name":        basetypes.StringType{},
-			"os":          basetypes.StringType{},
-			"power_state": basetypes.StringType{},
-			"security_rules": basetypes.ListType{
-				ElemType: SecurityRulesValue{}.Type(ctx),
-			},
-			"status":   basetypes.StringType{},
-			"vm_state": basetypes.StringType{},
-			"volume_attachments": basetypes.ListType{
-				ElemType: VolumeAttachmentsValue{}.Type(ctx),
-			},
-		}), diags
-	}
-
 	attributeTypes := map[string]attr.Type{
-		"contract_id": basetypes.Int64Type{},
-		"created_at":  basetypes.StringType{},
+		"created_at": basetypes.StringType{},
 		"environment": basetypes.ObjectType{
 			AttrTypes: EnvironmentValue{}.AttributeTypes(ctx),
 		},
@@ -1593,13 +1388,9 @@ func (v CoreVirtualMachinesValue) ToObjectValue(ctx context.Context) (basetypes.
 		"keypair": basetypes.ObjectType{
 			AttrTypes: KeypairValue{}.AttributeTypes(ctx),
 		},
-		"labels": basetypes.ListType{
-			ElemType: types.StringType,
-		},
-		"locked":      basetypes.BoolType{},
-		"name":        basetypes.StringType{},
-		"os":          basetypes.StringType{},
-		"power_state": basetypes.StringType{},
+		"name":         basetypes.StringType{},
+		"openstack_id": basetypes.StringType{},
+		"power_state":  basetypes.StringType{},
 		"security_rules": basetypes.ListType{
 			ElemType: SecurityRulesValue{}.Type(ctx),
 		},
@@ -1621,7 +1412,6 @@ func (v CoreVirtualMachinesValue) ToObjectValue(ctx context.Context) (basetypes.
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
-			"contract_id":        v.ContractId,
 			"created_at":         v.CreatedAt,
 			"environment":        environment,
 			"fixed_ip":           v.FixedIp,
@@ -1631,10 +1421,8 @@ func (v CoreVirtualMachinesValue) ToObjectValue(ctx context.Context) (basetypes.
 			"id":                 v.Id,
 			"image":              image,
 			"keypair":            keypair,
-			"labels":             labelsVal,
-			"locked":             v.Locked,
 			"name":               v.Name,
-			"os":                 v.Os,
+			"openstack_id":       v.OpenstackId,
 			"power_state":        v.PowerState,
 			"security_rules":     securityRules,
 			"status":             v.Status,
@@ -1658,10 +1446,6 @@ func (v CoreVirtualMachinesValue) Equal(o attr.Value) bool {
 
 	if v.state != attr.ValueStateKnown {
 		return true
-	}
-
-	if !v.ContractId.Equal(other.ContractId) {
-		return false
 	}
 
 	if !v.CreatedAt.Equal(other.CreatedAt) {
@@ -1700,19 +1484,11 @@ func (v CoreVirtualMachinesValue) Equal(o attr.Value) bool {
 		return false
 	}
 
-	if !v.Labels.Equal(other.Labels) {
-		return false
-	}
-
-	if !v.Locked.Equal(other.Locked) {
-		return false
-	}
-
 	if !v.Name.Equal(other.Name) {
 		return false
 	}
 
-	if !v.Os.Equal(other.Os) {
+	if !v.OpenstackId.Equal(other.OpenstackId) {
 		return false
 	}
 
@@ -1749,8 +1525,7 @@ func (v CoreVirtualMachinesValue) Type(ctx context.Context) attr.Type {
 
 func (v CoreVirtualMachinesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"contract_id": basetypes.Int64Type{},
-		"created_at":  basetypes.StringType{},
+		"created_at": basetypes.StringType{},
 		"environment": basetypes.ObjectType{
 			AttrTypes: EnvironmentValue{}.AttributeTypes(ctx),
 		},
@@ -1767,13 +1542,9 @@ func (v CoreVirtualMachinesValue) AttributeTypes(ctx context.Context) map[string
 		"keypair": basetypes.ObjectType{
 			AttrTypes: KeypairValue{}.AttributeTypes(ctx),
 		},
-		"labels": basetypes.ListType{
-			ElemType: types.StringType,
-		},
-		"locked":      basetypes.BoolType{},
-		"name":        basetypes.StringType{},
-		"os":          basetypes.StringType{},
-		"power_state": basetypes.StringType{},
+		"name":         basetypes.StringType{},
+		"openstack_id": basetypes.StringType{},
+		"power_state":  basetypes.StringType{},
 		"security_rules": basetypes.ListType{
 			ElemType: SecurityRulesValue{}.Type(ctx),
 		},
@@ -1809,24 +1580,6 @@ func (t EnvironmentType) ValueFromObject(ctx context.Context, in basetypes.Objec
 	var diags diag.Diagnostics
 
 	attributes := in.Attributes()
-
-	idAttribute, ok := attributes["id"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`id is missing from object`)
-
-		return nil, diags
-	}
-
-	idVal, ok := idAttribute.(basetypes.Int64Value)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
-	}
 
 	nameAttribute, ok := attributes["name"]
 
@@ -1887,7 +1640,6 @@ func (t EnvironmentType) ValueFromObject(ctx context.Context, in basetypes.Objec
 	}
 
 	return EnvironmentValue{
-		Id:     idVal,
 		Name:   nameVal,
 		OrgId:  orgIdVal,
 		Region: regionVal,
@@ -1958,24 +1710,6 @@ func NewEnvironmentValue(attributeTypes map[string]attr.Type, attributes map[str
 		return NewEnvironmentValueUnknown(), diags
 	}
 
-	idAttribute, ok := attributes["id"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`id is missing from object`)
-
-		return NewEnvironmentValueUnknown(), diags
-	}
-
-	idVal, ok := idAttribute.(basetypes.Int64Value)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
-	}
-
 	nameAttribute, ok := attributes["name"]
 
 	if !ok {
@@ -2035,7 +1769,6 @@ func NewEnvironmentValue(attributeTypes map[string]attr.Type, attributes map[str
 	}
 
 	return EnvironmentValue{
-		Id:     idVal,
 		Name:   nameVal,
 		OrgId:  orgIdVal,
 		Region: regionVal,
@@ -2111,7 +1844,6 @@ func (t EnvironmentType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = EnvironmentValue{}
 
 type EnvironmentValue struct {
-	Id     basetypes.Int64Value  `tfsdk:"id"`
 	Name   basetypes.StringValue `tfsdk:"name"`
 	OrgId  basetypes.Int64Value  `tfsdk:"org_id"`
 	Region basetypes.StringValue `tfsdk:"region"`
@@ -2119,12 +1851,11 @@ type EnvironmentValue struct {
 }
 
 func (v EnvironmentValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 4)
+	attrTypes := make(map[string]tftypes.Type, 3)
 
 	var val tftypes.Value
 	var err error
 
-	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["org_id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["region"] = basetypes.StringType{}.TerraformType(ctx)
@@ -2133,15 +1864,7 @@ func (v EnvironmentValue) ToTerraformValue(ctx context.Context) (tftypes.Value, 
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 4)
-
-		val, err = v.Id.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["id"] = val
+		vals := make(map[string]tftypes.Value, 3)
 
 		val, err = v.Name.ToTerraformValue(ctx)
 
@@ -2197,7 +1920,6 @@ func (v EnvironmentValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVa
 	var diags diag.Diagnostics
 
 	attributeTypes := map[string]attr.Type{
-		"id":     basetypes.Int64Type{},
 		"name":   basetypes.StringType{},
 		"org_id": basetypes.Int64Type{},
 		"region": basetypes.StringType{},
@@ -2214,7 +1936,6 @@ func (v EnvironmentValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVa
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
-			"id":     v.Id,
 			"name":   v.Name,
 			"org_id": v.OrgId,
 			"region": v.Region,
@@ -2236,10 +1957,6 @@ func (v EnvironmentValue) Equal(o attr.Value) bool {
 
 	if v.state != attr.ValueStateKnown {
 		return true
-	}
-
-	if !v.Id.Equal(other.Id) {
-		return false
 	}
 
 	if !v.Name.Equal(other.Name) {
@@ -2267,7 +1984,6 @@ func (v EnvironmentValue) Type(ctx context.Context) attr.Type {
 
 func (v EnvironmentValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"id":     basetypes.Int64Type{},
 		"name":   basetypes.StringType{},
 		"org_id": basetypes.Int64Type{},
 		"region": basetypes.StringType{},
@@ -2333,24 +2049,6 @@ func (t FlavorType) ValueFromObject(ctx context.Context, in basetypes.ObjectValu
 		diags.AddError(
 			"Attribute Wrong Type",
 			fmt.Sprintf(`disk expected to be basetypes.Int64Value, was: %T`, diskAttribute))
-	}
-
-	ephemeralAttribute, ok := attributes["ephemeral"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`ephemeral is missing from object`)
-
-		return nil, diags
-	}
-
-	ephemeralVal, ok := ephemeralAttribute.(basetypes.Int64Value)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`ephemeral expected to be basetypes.Int64Value, was: %T`, ephemeralAttribute))
 	}
 
 	gpuAttribute, ok := attributes["gpu"]
@@ -2448,15 +2146,14 @@ func (t FlavorType) ValueFromObject(ctx context.Context, in basetypes.ObjectValu
 	}
 
 	return FlavorValue{
-		Cpu:       cpuVal,
-		Disk:      diskVal,
-		Ephemeral: ephemeralVal,
-		Gpu:       gpuVal,
-		GpuCount:  gpuCountVal,
-		Id:        idVal,
-		Name:      nameVal,
-		Ram:       ramVal,
-		state:     attr.ValueStateKnown,
+		Cpu:      cpuVal,
+		Disk:     diskVal,
+		Gpu:      gpuVal,
+		GpuCount: gpuCountVal,
+		Id:       idVal,
+		Name:     nameVal,
+		Ram:      ramVal,
+		state:    attr.ValueStateKnown,
 	}, diags
 }
 
@@ -2559,24 +2256,6 @@ func NewFlavorValue(attributeTypes map[string]attr.Type, attributes map[string]a
 			fmt.Sprintf(`disk expected to be basetypes.Int64Value, was: %T`, diskAttribute))
 	}
 
-	ephemeralAttribute, ok := attributes["ephemeral"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`ephemeral is missing from object`)
-
-		return NewFlavorValueUnknown(), diags
-	}
-
-	ephemeralVal, ok := ephemeralAttribute.(basetypes.Int64Value)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`ephemeral expected to be basetypes.Int64Value, was: %T`, ephemeralAttribute))
-	}
-
 	gpuAttribute, ok := attributes["gpu"]
 
 	if !ok {
@@ -2672,15 +2351,14 @@ func NewFlavorValue(attributeTypes map[string]attr.Type, attributes map[string]a
 	}
 
 	return FlavorValue{
-		Cpu:       cpuVal,
-		Disk:      diskVal,
-		Ephemeral: ephemeralVal,
-		Gpu:       gpuVal,
-		GpuCount:  gpuCountVal,
-		Id:        idVal,
-		Name:      nameVal,
-		Ram:       ramVal,
-		state:     attr.ValueStateKnown,
+		Cpu:      cpuVal,
+		Disk:     diskVal,
+		Gpu:      gpuVal,
+		GpuCount: gpuCountVal,
+		Id:       idVal,
+		Name:     nameVal,
+		Ram:      ramVal,
+		state:    attr.ValueStateKnown,
 	}, diags
 }
 
@@ -2752,26 +2430,24 @@ func (t FlavorType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = FlavorValue{}
 
 type FlavorValue struct {
-	Cpu       basetypes.Int64Value  `tfsdk:"cpu"`
-	Disk      basetypes.Int64Value  `tfsdk:"disk"`
-	Ephemeral basetypes.Int64Value  `tfsdk:"ephemeral"`
-	Gpu       basetypes.StringValue `tfsdk:"gpu"`
-	GpuCount  basetypes.Int64Value  `tfsdk:"gpu_count"`
-	Id        basetypes.Int64Value  `tfsdk:"id"`
-	Name      basetypes.StringValue `tfsdk:"name"`
-	Ram       basetypes.NumberValue `tfsdk:"ram"`
-	state     attr.ValueState
+	Cpu      basetypes.Int64Value  `tfsdk:"cpu"`
+	Disk     basetypes.Int64Value  `tfsdk:"disk"`
+	Gpu      basetypes.StringValue `tfsdk:"gpu"`
+	GpuCount basetypes.Int64Value  `tfsdk:"gpu_count"`
+	Id       basetypes.Int64Value  `tfsdk:"id"`
+	Name     basetypes.StringValue `tfsdk:"name"`
+	Ram      basetypes.NumberValue `tfsdk:"ram"`
+	state    attr.ValueState
 }
 
 func (v FlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 8)
+	attrTypes := make(map[string]tftypes.Type, 7)
 
 	var val tftypes.Value
 	var err error
 
 	attrTypes["cpu"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["disk"] = basetypes.Int64Type{}.TerraformType(ctx)
-	attrTypes["ephemeral"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["gpu"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["gpu_count"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
@@ -2782,7 +2458,7 @@ func (v FlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 8)
+		vals := make(map[string]tftypes.Value, 7)
 
 		val, err = v.Cpu.ToTerraformValue(ctx)
 
@@ -2799,14 +2475,6 @@ func (v FlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error
 		}
 
 		vals["disk"] = val
-
-		val, err = v.Ephemeral.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["ephemeral"] = val
 
 		val, err = v.Gpu.ToTerraformValue(ctx)
 
@@ -2880,7 +2548,6 @@ func (v FlavorValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, 
 	attributeTypes := map[string]attr.Type{
 		"cpu":       basetypes.Int64Type{},
 		"disk":      basetypes.Int64Type{},
-		"ephemeral": basetypes.Int64Type{},
 		"gpu":       basetypes.StringType{},
 		"gpu_count": basetypes.Int64Type{},
 		"id":        basetypes.Int64Type{},
@@ -2901,7 +2568,6 @@ func (v FlavorValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, 
 		map[string]attr.Value{
 			"cpu":       v.Cpu,
 			"disk":      v.Disk,
-			"ephemeral": v.Ephemeral,
 			"gpu":       v.Gpu,
 			"gpu_count": v.GpuCount,
 			"id":        v.Id,
@@ -2932,10 +2598,6 @@ func (v FlavorValue) Equal(o attr.Value) bool {
 	}
 
 	if !v.Disk.Equal(other.Disk) {
-		return false
-	}
-
-	if !v.Ephemeral.Equal(other.Ephemeral) {
 		return false
 	}
 
@@ -2974,7 +2636,6 @@ func (v FlavorValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
 		"cpu":       basetypes.Int64Type{},
 		"disk":      basetypes.Int64Type{},
-		"ephemeral": basetypes.Int64Type{},
 		"gpu":       basetypes.StringType{},
 		"gpu_count": basetypes.Int64Type{},
 		"id":        basetypes.Int64Type{},

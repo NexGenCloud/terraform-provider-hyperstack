@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.11
 
 """
 Script Name: fix_api_spec.py
@@ -106,6 +106,8 @@ def attr_fix_components(data: AttrType) -> None:
       # print(props)
       # print(schemas[new_key]["properties"])
 
+  schemas["InstanceOverviewFields"]["properties"]["ram"]["type"] = "number"
+  schemas["ContainerOverviewFields"]["properties"]["ram"]["type"] = "number"
   schemas["InstanceFlavorFields"]["properties"]["ram"]["type"] = "number"
   schemas["FlavorFields"]["properties"]["ram"]["type"] = "number"
 

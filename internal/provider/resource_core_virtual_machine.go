@@ -317,14 +317,16 @@ func (r *ResourceCoreVirtualMachine) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	labels := make([]string, len(dataOld.Labels.Elements()))
-	dataOld.Labels.ElementsAs(ctx, labels, false)
+	// Not available on staging yet ??
+	//labels := make([]string, len(dataOld.Labels.Elements()))
+	//dataOld.Labels.ElementsAs(ctx, labels, false)
 
 	// TODO: finish implementing
-	resp.Diagnostics.AddError(
-		"Update not supported for VM resources",
-		fmt.Sprintf("%+v", labels),
-	)
+	// Not available on staging yet ??
+	//resp.Diagnostics.AddError(
+	//	"Update not supported for VM resources",
+	//	fmt.Sprintf("%+v", labels),
+	//)
 	r.MergeData(&data, &dataOld)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -452,10 +454,11 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 			}
 			return types.StringValue(*response.FloatingIpStatus)
 		}(),
-		Keypair:           r.MapKeypair(ctx, diags, *response.Keypair),
-		Environment:       r.MapEnvironment(ctx, diags, *response.Environment),
-		Image:             r.MapImage(ctx, diags, *response.Image),
-		Labels:            r.MapLabels(ctx, diags, *response.Labels),
+		Keypair:     r.MapKeypair(ctx, diags, *response.Keypair),
+		Environment: r.MapEnvironment(ctx, diags, *response.Environment),
+		Image:       r.MapImage(ctx, diags, *response.Image),
+		// Not available on staging yet ??
+		//Labels:            r.MapLabels(ctx, diags, *response.Labels),
 		Flavor:            r.MapFlavor(ctx, diags, *response.Flavor),
 		VolumeAttachments: r.MapVolumeAttachments(ctx, diags, *response.VolumeAttachments),
 		SecurityRules:     r.MapSecurityRules(ctx, diags, *response.SecurityRules, int64(*response.Id)),
@@ -465,8 +468,9 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 			}
 			return types.StringValue(response.CreatedAt.String())
 		}(),
-		Locked: types.BoolPointerValue(response.Locked),
-		Os:     types.StringPointerValue(response.Os),
+		// Not available on staging yet ??
+		//Locked: types.BoolPointerValue(response.Locked),
+		//Os:     types.StringPointerValue(response.Os),
 		// Doesn't make sense for reads (only used during creation)
 		AssignFloatingIp:     types.BoolNull(),
 		CreateBootableVolume: types.BoolNull(),
