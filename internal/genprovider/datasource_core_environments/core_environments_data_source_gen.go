@@ -42,12 +42,33 @@ func CoreEnvironmentsDataSourceSchema(ctx context.Context) schema.Schema {
 				},
 				Computed: true,
 			},
+			"page": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Page Number",
+				MarkdownDescription: "Page Number",
+			},
+			"page_size": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Data Per Page",
+				MarkdownDescription: "Data Per Page",
+			},
+			"search": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Search By ID or Name or Region",
+				MarkdownDescription: "Search By ID or Name or Region",
+			},
 		},
 	}
 }
 
 type CoreEnvironmentsModel struct {
-	CoreEnvironments types.Set `tfsdk:"core_environments"`
+	CoreEnvironments types.Set    `tfsdk:"core_environments"`
+	Page             types.String `tfsdk:"page"`
+	PageSize         types.String `tfsdk:"page_size"`
+	Search           types.String `tfsdk:"search"`
 }
 
 var _ basetypes.ObjectTypable = CoreEnvironmentsType{}

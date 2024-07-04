@@ -6,6 +6,6 @@ module "vm" {
   environment_name    = module.environment.environment.name
   flavor_name         = local.flavor_name
   image_name          = local.image_name
-  region              = var.region
+  region              = var.hyperstack_region
 
 }

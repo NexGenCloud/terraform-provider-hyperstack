@@ -41,7 +41,7 @@ def attr_remove_ref_spaces(data: AttrType) -> None:
     for key, value in list(data.items()):
       if key == "$ref" and isinstance(value, str):
         # Replace spaces after 'schemas/' in $ref strings
-        data[key] = re.sub(r'\s+', '', value)
+        data[key] = re.sub(r'(\s+|%20)', '', value)
       else:
         attr_remove_ref_spaces(value)
   elif isinstance(data, list):
@@ -81,29 +81,42 @@ def attr_fix_components(data: AttrType) -> None:
   schemas = components.get("schemas", {})
 
   for key in list(schemas.keys()):
-    new_key = re.sub(r'\s+', '', key)
+    new_key = re.sub(r'(\s+|%20)', '', key)
     if new_key != key:
       schemas[new_key] = schemas.pop(key)
 
     props = schemas[new_key]["properties"]
+    # TODO: how do we get it? e.g. count
+    to_delete = ["status", "message", "page", "page_size", "count"]
     if "status" in props and "message" in props:
       print("Fixing %s" % new_key)
-      del props["status"]
-      del props["message"]
+
+      for r in to_delete:
+        if r in props:
+          del props[r]
+
 
       # TODO: recheck
       if new_key == "Instances" and "instance_count" in props:
         del props["instance_count"]
 
       if len(props.keys()) > 1:
+        pass
+
+      subfield = True
+      if len(props.keys()) == 0:
+        props = {}
+      elif len(props.keys()) == 1:
+        props = list(props.values())[0]
+      else:
+        # TODO: not anymore as now we have some filters like page
         print("Warning: check this key")
 
-      props = {} if len(props.keys()) == 0 else list(props.values())[0]
-      if "type" not in props:
+      if "type" not in props and "$ref" not in props:
         props["type"] = "object"
 
       schemas[new_key] = props
-      # print(props)
+      #print(props)
       # print(schemas[new_key]["properties"])
 
   schemas["InstanceOverviewFields"]["properties"]["ram"]["type"] = "number"

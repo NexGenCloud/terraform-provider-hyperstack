@@ -4,6 +4,8 @@ package resource_core_keypair
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -16,8 +18,10 @@ func CoreKeypairResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"environment": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "The name of the environment where the key pair is being created.",
+				MarkdownDescription: "The name of the environment where the key pair is being created.",
 			},
 			"fingerprint": schema.StringAttribute{
 				Computed: true,
@@ -26,10 +30,33 @@ func CoreKeypairResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "The name of the key pair that is being created.",
+				MarkdownDescription: "The name of the key pair that is being created.",
+				Validators: []validator.String{
+					stringvalidator.LengthAtMost(50),
+				},
+			},
+			"page": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Page Number",
+				MarkdownDescription: "Page Number",
+			},
+			"page_size": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Data Per Page",
+				MarkdownDescription: "Data Per Page",
 			},
 			"public_key": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "The public key that is being used to import an SSH key pair.",
+				MarkdownDescription: "The public key that is being used to import an SSH key pair.",
+			},
+			"search": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}
@@ -41,5 +68,8 @@ type CoreKeypairModel struct {
 	Fingerprint types.String `tfsdk:"fingerprint"`
 	Id          types.Int64  `tfsdk:"id"`
 	Name        types.String `tfsdk:"name"`
+	Page        types.String `tfsdk:"page"`
+	PageSize    types.String `tfsdk:"page_size"`
 	PublicKey   types.String `tfsdk:"public_key"`
+	Search      types.String `tfsdk:"search"`
 }

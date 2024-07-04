@@ -1,6 +1,5 @@
-variable "region" {
+variable "hyperstack_region" {
   type    = string
-  default = "staging-CA-1"
 }
 
 variable "artifacts_directory" {
@@ -9,7 +8,6 @@ variable "artifacts_directory" {
 
 variable "name_prefix" {
   type    = string
-  default = "test-"
 }
 
 variable "instance_gpu" {

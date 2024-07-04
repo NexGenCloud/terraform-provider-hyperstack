@@ -64,7 +64,13 @@ func (d *DataSourceCoreVolumes) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	result, err := d.client.ListVolumesWithResponse(ctx)
+	result, err := d.client.ListVolumesWithResponse(ctx, func() *volume.ListVolumesParams {
+		return &volume.ListVolumesParams{
+			Page:     nil,
+			PageSize: nil,
+			Search:   nil,
+		}
+	}())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error",

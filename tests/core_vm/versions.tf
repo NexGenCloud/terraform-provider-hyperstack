@@ -10,9 +10,9 @@ terraform {
       source  = "hashicorp/tls"
       version = "~> 4.0.5"
     }
-    template = {
-      source  = "hashicorp/template"
-      version = "~> 2.2.0"
+    cloudinit = {
+      source  = "hashicorp/cloudinit"
+      version = "~> 2.3.4"
     }
     hyperstack = {
       source  = "nexgencloud/hyperstack"

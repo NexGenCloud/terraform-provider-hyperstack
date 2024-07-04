@@ -2,5 +2,5 @@ module "environment" {
   source = "../../examples/core_environment"
 
   name   = local.name
-  region = var.region
+  region = var.hyperstack_region
 }

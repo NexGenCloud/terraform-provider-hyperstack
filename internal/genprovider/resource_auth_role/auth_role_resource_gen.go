@@ -4,6 +4,8 @@ package resource_auth_role
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -16,13 +18,20 @@ func AuthRoleResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"description": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Description of the role.",
+				MarkdownDescription: "Description of the role.",
 			},
 			"id": schema.Int64Attribute{
 				Computed: true,
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Name of the RBAC role.",
+				MarkdownDescription: "Name of the RBAC role.",
+				Validators: []validator.String{
+					stringvalidator.LengthAtMost(200),
+				},
 			},
 			"permissions": schema.ListAttribute{
 				ElementType: types.Int64Type,

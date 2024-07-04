@@ -3,13 +3,13 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/keypair"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_keypairs"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/NexGenCloud/hyperstack-sdk-go/lib/keypair"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_keypairs"
 	"io/ioutil"
 )
 
@@ -63,7 +63,13 @@ func (d *DataSourceCoreKeypairs) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	result, err := d.client.ListKeyPairsWithResponse(ctx)
+	result, err := d.client.ListKeyPairsWithResponse(ctx, func() *keypair.ListKeyPairsParams {
+		return &keypair.ListKeyPairsParams{
+			Page:     nil,
+			PageSize: nil,
+			Search:   nil,
+		}
+	}())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

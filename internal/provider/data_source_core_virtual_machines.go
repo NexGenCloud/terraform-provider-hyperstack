@@ -3,13 +3,13 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/virtual_machine"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_virtual_machines"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/NexGenCloud/hyperstack-sdk-go/lib/virtual_machine"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_virtual_machines"
 	"math/big"
 )
 
@@ -63,7 +63,13 @@ func (d *DataSourceCoreVirtualMachines) Read(ctx context.Context, req datasource
 		return
 	}
 
-	result, err := d.client.ListVirtualMachinesWithResponse(ctx)
+	result, err := d.client.ListVirtualMachinesWithResponse(ctx, func() *virtual_machine.ListVirtualMachinesParams {
+		return &virtual_machine.ListVirtualMachinesParams{
+			Page:     nil,
+			PageSize: nil,
+			Search:   nil,
+		}
+	}())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -332,7 +338,7 @@ func (d *DataSourceCoreVirtualMachines) MapVolumeAttachments(
 func (d *DataSourceCoreVirtualMachines) MapVolume(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data virtual_machine.VolumeFieldsForInstance,
+	data virtual_machine.VolumeFieldsforInstance,
 ) attr.Value {
 	model, diagnostic := datasource_core_virtual_machines.NewVolumeValue(
 		datasource_core_virtual_machines.VolumeValue{}.AttributeTypes(ctx),
@@ -355,7 +361,7 @@ func (d *DataSourceCoreVirtualMachines) MapVolume(
 func (d *DataSourceCoreVirtualMachines) MapSecurityRules(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data []virtual_machine.SecurityRulesFieldsForInstance,
+	data []virtual_machine.SecurityRulesFieldsforInstance,
 ) types.List {
 	model, diagnostic := types.ListValue(
 		datasource_core_virtual_machines.SecurityRulesValue{}.Type(ctx),

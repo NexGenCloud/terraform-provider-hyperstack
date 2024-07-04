@@ -21,10 +21,28 @@ func AuthOrganizationDataSourceSchema(ctx context.Context) schema.Schema {
 			"created_at": schema.StringAttribute{
 				Computed: true,
 			},
+			"credit": schema.Int64Attribute{
+				Computed: true,
+			},
 			"id": schema.Int64Attribute{
 				Computed: true,
 			},
 			"name": schema.StringAttribute{
+				Computed: true,
+			},
+			"threshold": schema.Int64Attribute{
+				Computed: true,
+			},
+			"total_clusters": schema.Int64Attribute{
+				Computed: true,
+			},
+			"total_containers": schema.Int64Attribute{
+				Computed: true,
+			},
+			"total_instances": schema.Int64Attribute{
+				Computed: true,
+			},
+			"total_volumes": schema.Int64Attribute{
 				Computed: true,
 			},
 			"users": schema.ListNestedAttribute{
@@ -37,6 +55,9 @@ func AuthOrganizationDataSourceSchema(ctx context.Context) schema.Schema {
 							Computed: true,
 						},
 						"joined_at": schema.StringAttribute{
+							Computed: true,
+						},
+						"last_login": schema.StringAttribute{
 							Computed: true,
 						},
 						"name": schema.StringAttribute{
@@ -80,10 +101,16 @@ func AuthOrganizationDataSourceSchema(ctx context.Context) schema.Schema {
 }
 
 type AuthOrganizationModel struct {
-	CreatedAt types.String `tfsdk:"created_at"`
-	Id        types.Int64  `tfsdk:"id"`
-	Name      types.String `tfsdk:"name"`
-	Users     types.List   `tfsdk:"users"`
+	CreatedAt       types.String `tfsdk:"created_at"`
+	Credit          types.Int64  `tfsdk:"credit"`
+	Id              types.Int64  `tfsdk:"id"`
+	Name            types.String `tfsdk:"name"`
+	Threshold       types.Int64  `tfsdk:"threshold"`
+	TotalClusters   types.Int64  `tfsdk:"total_clusters"`
+	TotalContainers types.Int64  `tfsdk:"total_containers"`
+	TotalInstances  types.Int64  `tfsdk:"total_instances"`
+	TotalVolumes    types.Int64  `tfsdk:"total_volumes"`
+	Users           types.List   `tfsdk:"users"`
 }
 
 var _ basetypes.ObjectTypable = UsersType{}
@@ -163,6 +190,24 @@ func (t UsersType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue
 		diags.AddError(
 			"Attribute Wrong Type",
 			fmt.Sprintf(`joined_at expected to be basetypes.StringValue, was: %T`, joinedAtAttribute))
+	}
+
+	lastLoginAttribute, ok := attributes["last_login"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`last_login is missing from object`)
+
+		return nil, diags
+	}
+
+	lastLoginVal, ok := lastLoginAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`last_login expected to be basetypes.StringValue, was: %T`, lastLoginAttribute))
 	}
 
 	nameAttribute, ok := attributes["name"]
@@ -263,6 +308,7 @@ func (t UsersType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue
 		Email:     emailVal,
 		Id:        idVal,
 		JoinedAt:  joinedAtVal,
+		LastLogin: lastLoginVal,
 		Name:      nameVal,
 		RbacRoles: rbacRolesVal,
 		Role:      roleVal,
@@ -389,6 +435,24 @@ func NewUsersValue(attributeTypes map[string]attr.Type, attributes map[string]at
 			fmt.Sprintf(`joined_at expected to be basetypes.StringValue, was: %T`, joinedAtAttribute))
 	}
 
+	lastLoginAttribute, ok := attributes["last_login"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`last_login is missing from object`)
+
+		return NewUsersValueUnknown(), diags
+	}
+
+	lastLoginVal, ok := lastLoginAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`last_login expected to be basetypes.StringValue, was: %T`, lastLoginAttribute))
+	}
+
 	nameAttribute, ok := attributes["name"]
 
 	if !ok {
@@ -487,6 +551,7 @@ func NewUsersValue(attributeTypes map[string]attr.Type, attributes map[string]at
 		Email:     emailVal,
 		Id:        idVal,
 		JoinedAt:  joinedAtVal,
+		LastLogin: lastLoginVal,
 		Name:      nameVal,
 		RbacRoles: rbacRolesVal,
 		Role:      roleVal,
@@ -567,6 +632,7 @@ type UsersValue struct {
 	Email     basetypes.StringValue `tfsdk:"email"`
 	Id        basetypes.Int64Value  `tfsdk:"id"`
 	JoinedAt  basetypes.StringValue `tfsdk:"joined_at"`
+	LastLogin basetypes.StringValue `tfsdk:"last_login"`
 	Name      basetypes.StringValue `tfsdk:"name"`
 	RbacRoles basetypes.ListValue   `tfsdk:"rbac_roles"`
 	Role      basetypes.StringValue `tfsdk:"role"`
@@ -576,7 +642,7 @@ type UsersValue struct {
 }
 
 func (v UsersValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 8)
+	attrTypes := make(map[string]tftypes.Type, 9)
 
 	var val tftypes.Value
 	var err error
@@ -584,6 +650,7 @@ func (v UsersValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error)
 	attrTypes["email"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["joined_at"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["last_login"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["rbac_roles"] = basetypes.ListType{
 		ElemType: RbacRolesValue{}.Type(ctx),
@@ -596,7 +663,7 @@ func (v UsersValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error)
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 8)
+		vals := make(map[string]tftypes.Value, 9)
 
 		val, err = v.Email.ToTerraformValue(ctx)
 
@@ -621,6 +688,14 @@ func (v UsersValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error)
 		}
 
 		vals["joined_at"] = val
+
+		val, err = v.LastLogin.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["last_login"] = val
 
 		val, err = v.Name.ToTerraformValue(ctx)
 
@@ -721,10 +796,11 @@ func (v UsersValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, d
 	}
 
 	attributeTypes := map[string]attr.Type{
-		"email":     basetypes.StringType{},
-		"id":        basetypes.Int64Type{},
-		"joined_at": basetypes.StringType{},
-		"name":      basetypes.StringType{},
+		"email":      basetypes.StringType{},
+		"id":         basetypes.Int64Type{},
+		"joined_at":  basetypes.StringType{},
+		"last_login": basetypes.StringType{},
+		"name":       basetypes.StringType{},
 		"rbac_roles": basetypes.ListType{
 			ElemType: RbacRolesValue{}.Type(ctx),
 		},
@@ -747,6 +823,7 @@ func (v UsersValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, d
 			"email":      v.Email,
 			"id":         v.Id,
 			"joined_at":  v.JoinedAt,
+			"last_login": v.LastLogin,
 			"name":       v.Name,
 			"rbac_roles": rbacRoles,
 			"role":       v.Role,
@@ -784,6 +861,10 @@ func (v UsersValue) Equal(o attr.Value) bool {
 		return false
 	}
 
+	if !v.LastLogin.Equal(other.LastLogin) {
+		return false
+	}
+
 	if !v.Name.Equal(other.Name) {
 		return false
 	}
@@ -817,10 +898,11 @@ func (v UsersValue) Type(ctx context.Context) attr.Type {
 
 func (v UsersValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"email":     basetypes.StringType{},
-		"id":        basetypes.Int64Type{},
-		"joined_at": basetypes.StringType{},
-		"name":      basetypes.StringType{},
+		"email":      basetypes.StringType{},
+		"id":         basetypes.Int64Type{},
+		"joined_at":  basetypes.StringType{},
+		"last_login": basetypes.StringType{},
+		"name":       basetypes.StringType{},
 		"rbac_roles": basetypes.ListType{
 			ElemType: RbacRolesValue{}.Type(ctx),
 		},

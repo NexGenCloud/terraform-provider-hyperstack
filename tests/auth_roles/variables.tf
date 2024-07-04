@@ -1,6 +1,5 @@
 variable "name_prefix" {
   type    = string
-  default = "test-"
 }
 
 variable "role_source" {

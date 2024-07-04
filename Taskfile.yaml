@@ -102,6 +102,7 @@ tasks:
       TF_CLI_CONFIG_FILE: "{{.DIR_TESTS}}/provider-mirror.tfrc"
       # https://developer.hashicorp.com/terraform/cli/config/environment-variables
       TF_LOG: DEBUG
+      TF_VAR_name_prefix: "test-"
     vars:
       RUN_BUILD:  |-
         {{.RUN_BUILD | default "true"}}
@@ -212,15 +213,18 @@ tasks:
     dotenv: [ '.env' ]
     vars:
       SCRIPTS_DIR: "scripts"
+      SORT_SCHEMAS: "{{.SCRIPTS_DIR}}/sort_schemas.py"
       FIX_API_SPEC: "{{.SCRIPTS_DIR}}/fix_api_spec.py"
     cmds:
       # language=bash
       - |
-        echo "Pulling the latest swagger spec and generating Go SDK..."
-        curl "${HYPERSTACK_API_SPEC_ADDRESS}"  | \
-          python3 -c "import sys, urllib.parse; print(urllib.parse.unquote(sys.stdin.read()))" \
-            > "{{.API_SPEC_PATH}}"
+        echo -n "Pulling the latest OpenAPI spec... "
+        curl -s "${HYPERSTACK_API_SPEC_ADDRESS}" > "{{.API_SPEC_PATH}}"
+        echo "done"
+        echo -n "Fixing api spec... "
+        python3.11 "{{.SORT_SCHEMAS}}" "{{.API_SPEC_PATH}}"
         python3.11 "{{.FIX_API_SPEC}}" "{{.API_SPEC_PATH}}"
+        echo "done"
 
   build-provider-spec:
     desc: |
