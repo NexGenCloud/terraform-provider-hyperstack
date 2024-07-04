@@ -80,7 +80,13 @@ func (r *ResourceCoreKeypair) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	// Perform a Read operation to get all keypairs
-	searchResult, err := r.client.ListKeyPairsWithResponse(ctx)
+	searchResult, err := r.client.ListKeyPairsWithResponse(ctx, func() *keypair.ListKeyPairsParams {
+		return &keypair.ListKeyPairsParams{
+			Page:     nil,
+			PageSize: nil,
+			Search:   nil,
+		}
+	}())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -218,7 +224,13 @@ func (r *ResourceCoreKeypair) Read(
 	}
 
 	// Perform a Read operation to get all keypairs
-	searchResult, err := r.client.ListKeyPairsWithResponse(ctx)
+	searchResult, err := r.client.ListKeyPairsWithResponse(ctx, func() *keypair.ListKeyPairsParams {
+		return &keypair.ListKeyPairsParams{
+			Page:     nil,
+			PageSize: nil,
+			Search:   nil,
+		}
+	}())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -272,7 +284,13 @@ func (r *ResourceCoreKeypair) Delete(ctx context.Context, req resource.DeleteReq
 	}
 
 	// Perform a Read operation to get all keypairs
-	result, err := r.client.ListKeyPairsWithResponse(ctx)
+	result, err := r.client.ListKeyPairsWithResponse(ctx, func() *keypair.ListKeyPairsParams {
+		return &keypair.ListKeyPairsParams{
+			Page:     nil,
+			PageSize: nil,
+			Search:   nil,
+		}
+	}())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

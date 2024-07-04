@@ -3,13 +3,13 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/flavor"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_flavors"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/NexGenCloud/hyperstack-sdk-go/lib/flavor"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_flavors"
 	"io/ioutil"
 	"math/big"
 )
@@ -174,6 +174,10 @@ func (d *DataSourceCoreFlavors) MapFlavors(
 							if flavorItem.Name != nil {
 								name = *flavorItem.Name
 							}
+							displayName := ""
+							if flavorItem.DisplayName != nil {
+								displayName = *flavorItem.DisplayName
+							}
 							ram := big.NewFloat(0)
 							if flavorItem.Ram != nil {
 								ram = big.NewFloat(float64(*flavorItem.Ram))
@@ -196,6 +200,7 @@ func (d *DataSourceCoreFlavors) MapFlavors(
 									"name":            types.StringValue(name),
 									"ram":             types.NumberValue(ram),
 									"region_name":     types.StringValue(regionName),
+									"display_name":    types.StringValue(displayName),
 									"stock_available": types.BoolValue(stockAvailable),
 								},
 							)

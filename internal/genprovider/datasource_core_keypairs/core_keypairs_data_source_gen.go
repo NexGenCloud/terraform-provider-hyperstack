@@ -48,12 +48,31 @@ func CoreKeypairsDataSourceSchema(ctx context.Context) schema.Schema {
 				},
 				Computed: true,
 			},
+			"page": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Page Number",
+				MarkdownDescription: "Page Number",
+			},
+			"page_size": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Data Per Page",
+				MarkdownDescription: "Data Per Page",
+			},
+			"search": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
 
 type CoreKeypairsModel struct {
-	CoreKeypairs types.Set `tfsdk:"core_keypairs"`
+	CoreKeypairs types.Set    `tfsdk:"core_keypairs"`
+	Page         types.String `tfsdk:"page"`
+	PageSize     types.String `tfsdk:"page_size"`
+	Search       types.String `tfsdk:"search"`
 }
 
 var _ basetypes.ObjectTypable = CoreKeypairsType{}

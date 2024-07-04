@@ -3,13 +3,13 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/rbac_role"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_auth_role"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/NexGenCloud/hyperstack-sdk-go/lib/rbac_role"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_auth_role"
 	"io/ioutil"
 )
 
@@ -63,7 +63,7 @@ func (d *DataSourceAuthRole) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	result, err := d.client.GetARBACRoleDetailWithResponse(ctx, int(data.Id.ValueInt64()))
+	result, err := d.client.RetrieveRBACRoleDetailsWithResponse(ctx, int(data.Id.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -116,10 +116,10 @@ func (d *DataSourceAuthRole) ApiToModel(
 			return types.StringValue(*response.Description)
 		}(),
 		Policies: func() types.List {
-			return d.MapRolesPolicies(ctx, diags, *response.Policies)
+			return d.MapRolePolicies(ctx, diags, *response.Policies)
 		}(),
 		Permissions: func() types.List {
-			return d.MapRolesPermissions(ctx, diags, *response.Permissions)
+			return d.MapRolePermissions(ctx, diags, *response.Permissions)
 		}(),
 		CreatedAt: func() types.String {
 			if response.CreatedAt == nil {
@@ -130,7 +130,7 @@ func (d *DataSourceAuthRole) ApiToModel(
 	}
 }
 
-func (d *DataSourceAuthRole) MapRolesPolicies(
+func (d *DataSourceAuthRole) MapRolePolicies(
 	ctx context.Context,
 	diags *diag.Diagnostics,
 	data []rbac_role.RolePolicyFields,
@@ -158,7 +158,7 @@ func (d *DataSourceAuthRole) MapRolesPolicies(
 	return model
 }
 
-func (d *DataSourceAuthRole) MapRolesPermissions(
+func (d *DataSourceAuthRole) MapRolePermissions(
 	ctx context.Context,
 	diags *diag.Diagnostics,
 	data []rbac_role.RolePermissionFields,

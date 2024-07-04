@@ -63,7 +63,7 @@ func (d *DataSourceAuthOrganization) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	result, err := d.client.GetOrganizationInfoWithResponse(ctx)
+	result, err := d.client.RetrieveOrganizationInformationWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error",
@@ -97,7 +97,7 @@ func (d *DataSourceAuthOrganization) Read(ctx context.Context, req datasource.Re
 func (d *DataSourceAuthOrganization) ApiToModel(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	response *organization.OrganizationInfoModel,
+	response *organization.OrganizationFields,
 ) datasource_auth_organization.AuthOrganizationModel {
 	return datasource_auth_organization.AuthOrganizationModel{
 		Id: func() types.Int64 {
@@ -121,7 +121,7 @@ func (d *DataSourceAuthOrganization) ApiToModel(
 func (d *DataSourceAuthOrganization) MapUsers(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data *[]organization.OrganizationUserModel,
+	data *[]organization.OrganizationUserResponseModel,
 ) types.List {
 	model, diagnostic := types.ListValue(
 		datasource_auth_organization.UsersValue{}.Type(ctx),
@@ -143,13 +143,12 @@ func (d *DataSourceAuthOrganization) MapUsers(
 						"username": func() types.String {
 							return types.StringValue(*row.Username)
 						}(),
-						// Not available on staging yet ??
-						//"last_login": func() types.String {
-						//	if row.LastLogin == nil {
-						//		return types.StringNull()
-						//	}
-						//	return types.StringValue(row.LastLogin.String())
-						//}(),
+						"last_login": func() types.String {
+							if row.LastLogin == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(row.LastLogin.String())
+						}(),
 						"name": func() types.String {
 							return types.StringValue(*row.Name)
 						}(),
@@ -176,14 +175,14 @@ func (d *DataSourceAuthOrganization) MapUsers(
 func (d *DataSourceAuthOrganization) MapUsersRoles(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data *[]organization.RBACRoleFieldForOrganization,
+	data *[]organization.RbacRoleField,
 ) types.List {
 	model, diagnostic := types.ListValue(
 		datasource_auth_organization.RbacRolesValue{}.Type(ctx),
 		func() []attr.Value {
 			roles := make([]attr.Value, 0)
 			for _, row := range *data {
-				model, diagnostic := datasource_auth_organization.NewUsersValue(
+				model, diagnostic := datasource_auth_organization.NewRbacRolesValue(
 					datasource_auth_organization.RbacRolesValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
 						"name": func() types.String {

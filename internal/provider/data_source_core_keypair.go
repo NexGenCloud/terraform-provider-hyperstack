@@ -62,7 +62,13 @@ func (d *DataSourceCoreKeypair) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	result, err := d.client.ListKeyPairsWithResponse(ctx)
+	result, err := d.client.ListKeyPairsWithResponse(ctx, func() *keypair.ListKeyPairsParams {
+		return &keypair.ListKeyPairsParams{
+			Page:     nil,
+			PageSize: nil,
+			Search:   nil,
+		}
+	}())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

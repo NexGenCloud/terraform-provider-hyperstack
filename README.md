@@ -12,6 +12,7 @@ Before you start, make sure you have the following tools installed:
 - [yq v4](https://github.com/mikefarah/yq/): A command-line YAML processor.
 - GPG and gpg-agent
 - Python 3.11
+- [canonicaljson](https://pypi.org/project/canonicaljson/) pip module
 
 There are also CLI dependencies that are installed vith Go:
 

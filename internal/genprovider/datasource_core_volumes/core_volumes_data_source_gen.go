@@ -55,7 +55,7 @@ func CoreVolumesDataSourceSchema(ctx context.Context) schema.Schema {
 						"name": schema.StringAttribute{
 							Computed: true,
 						},
-						"size": schema.StringAttribute{
+						"size": schema.Int64Attribute{
 							Computed: true,
 						},
 						"status": schema.StringAttribute{
@@ -76,12 +76,27 @@ func CoreVolumesDataSourceSchema(ctx context.Context) schema.Schema {
 				},
 				Computed: true,
 			},
+			"page": schema.Int64Attribute{
+				Optional: true,
+				Computed: true,
+			},
+			"page_size": schema.Int64Attribute{
+				Optional: true,
+				Computed: true,
+			},
+			"search": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
 
 type CoreVolumesModel struct {
-	CoreVolumes types.Set `tfsdk:"core_volumes"`
+	CoreVolumes types.Set    `tfsdk:"core_volumes"`
+	Page        types.Int64  `tfsdk:"page"`
+	PageSize    types.Int64  `tfsdk:"page_size"`
+	Search      types.String `tfsdk:"search"`
 }
 
 var _ basetypes.ObjectTypable = CoreVolumesType{}
@@ -263,12 +278,12 @@ func (t CoreVolumesType) ValueFromObject(ctx context.Context, in basetypes.Objec
 		return nil, diags
 	}
 
-	sizeVal, ok := sizeAttribute.(basetypes.StringValue)
+	sizeVal, ok := sizeAttribute.(basetypes.Int64Value)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`size expected to be basetypes.StringValue, was: %T`, sizeAttribute))
+			fmt.Sprintf(`size expected to be basetypes.Int64Value, was: %T`, sizeAttribute))
 	}
 
 	statusAttribute, ok := attributes["status"]
@@ -563,12 +578,12 @@ func NewCoreVolumesValue(attributeTypes map[string]attr.Type, attributes map[str
 		return NewCoreVolumesValueUnknown(), diags
 	}
 
-	sizeVal, ok := sizeAttribute.(basetypes.StringValue)
+	sizeVal, ok := sizeAttribute.(basetypes.Int64Value)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`size expected to be basetypes.StringValue, was: %T`, sizeAttribute))
+			fmt.Sprintf(`size expected to be basetypes.Int64Value, was: %T`, sizeAttribute))
 	}
 
 	statusAttribute, ok := attributes["status"]
@@ -722,7 +737,7 @@ type CoreVolumesValue struct {
 	Id          basetypes.Int64Value  `tfsdk:"id"`
 	ImageId     basetypes.Int64Value  `tfsdk:"image_id"`
 	Name        basetypes.StringValue `tfsdk:"name"`
-	Size        basetypes.StringValue `tfsdk:"size"`
+	Size        basetypes.Int64Value  `tfsdk:"size"`
 	Status      basetypes.StringValue `tfsdk:"status"`
 	UpdatedAt   basetypes.StringValue `tfsdk:"updated_at"`
 	VolumeType  basetypes.StringValue `tfsdk:"volume_type"`
@@ -745,7 +760,7 @@ func (v CoreVolumesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, 
 	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["image_id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
-	attrTypes["size"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["size"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["status"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["updated_at"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["volume_type"] = basetypes.StringType{}.TerraformType(ctx)
@@ -913,7 +928,7 @@ func (v CoreVolumesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVa
 		"id":          basetypes.Int64Type{},
 		"image_id":    basetypes.Int64Type{},
 		"name":        basetypes.StringType{},
-		"size":        basetypes.StringType{},
+		"size":        basetypes.Int64Type{},
 		"status":      basetypes.StringType{},
 		"updated_at":  basetypes.StringType{},
 		"volume_type": basetypes.StringType{},
@@ -1033,7 +1048,7 @@ func (v CoreVolumesValue) AttributeTypes(ctx context.Context) map[string]attr.Ty
 		"id":          basetypes.Int64Type{},
 		"image_id":    basetypes.Int64Type{},
 		"name":        basetypes.StringType{},
-		"size":        basetypes.StringType{},
+		"size":        basetypes.Int64Type{},
 		"status":      basetypes.StringType{},
 		"updated_at":  basetypes.StringType{},
 		"volume_type": basetypes.StringType{},

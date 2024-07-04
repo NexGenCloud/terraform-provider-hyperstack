@@ -3,13 +3,13 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/virtual_machine"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_virtual_machine_sg_rule"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/NexGenCloud/hyperstack-sdk-go/lib/virtual_machine"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_virtual_machine_sg_rule"
 )
 
 var _ resource.Resource = &ResourceCoreVirtualMachineSgRule{}
@@ -103,7 +103,7 @@ func (r *ResourceCoreVirtualMachineSgRule) Create(
 
 	if result.JSON200 == nil {
 		resp.Diagnostics.AddError(
-			"Wrong API json response",
+			"Wrong API json response asd",
 			fmt.Sprintf("Status: %s, body: %s", result.Status(), string(result.Body)),
 		)
 		return

@@ -162,7 +162,13 @@ func (r *ResourceCoreVolume) Create(
 		3*time.Second,
 		300*time.Second,
 		func(ctx context.Context) (bool, error) {
-			result, err := r.client.ListVolumesWithResponse(ctx)
+			result, err := r.client.ListVolumesWithResponse(ctx, func() *volume.ListVolumesParams {
+				return &volume.ListVolumesParams{
+					Page:     nil,
+					PageSize: nil,
+					Search:   nil,
+				}
+			}())
 			if err != nil {
 				return false, err
 			}
@@ -231,7 +237,13 @@ func (r *ResourceCoreVolume) Read(
 	id := int(dataOld.Id.ValueInt64())
 
 	// Perform a Read operation to get all volumes
-	searchResult, err := r.client.ListVolumesWithResponse(ctx)
+	searchResult, err := r.client.ListVolumesWithResponse(ctx, func() *volume.ListVolumesParams {
+		return &volume.ListVolumesParams{
+			Page:     nil,
+			PageSize: nil,
+			Search:   nil,
+		}
+	}())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -288,7 +300,13 @@ func (r *ResourceCoreVolume) Delete(ctx context.Context, req resource.DeleteRequ
 	id := int(data.Id.ValueInt64())
 
 	// Perform a Read operation to get all volumes
-	result, err := r.client.ListVolumesWithResponse(ctx)
+	result, err := r.client.ListVolumesWithResponse(ctx, func() *volume.ListVolumesParams {
+		return &volume.ListVolumesParams{
+			Page:     nil,
+			PageSize: nil,
+			Search:   nil,
+		}
+	}())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -353,7 +371,13 @@ func (r *ResourceCoreVolume) Delete(ctx context.Context, req resource.DeleteRequ
 		3*time.Second,
 		120*time.Second,
 		func(ctx context.Context) (bool, error) {
-			result, err := r.client.ListVolumesWithResponse(ctx)
+			result, err := r.client.ListVolumesWithResponse(ctx, func() *volume.ListVolumesParams {
+				return &volume.ListVolumesParams{
+					Page:     nil,
+					PageSize: nil,
+					Search:   nil,
+				}
+			}())
 			if err != nil {
 				return false, err
 			}
@@ -445,7 +469,7 @@ func (r *ResourceCoreVolume) ApiToModel(
 func (r *ResourceCoreVolume) MapEnvironment(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data volume.EnvironmentFieldsForVolume,
+	data volume.EnvironmentFieldsforVolume,
 ) resource_core_volume.EnvironmentValue {
 	model, diagnostic := resource_core_volume.NewEnvironmentValue(
 		resource_core_volume.EnvironmentValue{}.AttributeTypes(ctx),

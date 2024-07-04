@@ -63,7 +63,7 @@ func (d *DataSourceAuthUserMePermissions) Read(ctx context.Context, req datasour
 		return
 	}
 
-	result, err := d.client.ListCurrentUserPermissionsWithResponse(ctx)
+	result, err := d.client.ListMyUserPermissionsWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error",

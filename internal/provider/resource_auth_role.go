@@ -3,15 +3,15 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/rbac_role"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_auth_role"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"github.com/NexGenCloud/hyperstack-sdk-go/lib/rbac_role"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_auth_role"
 )
 
 var _ resource.Resource = &ResourceAuthRole{}
@@ -129,7 +129,7 @@ func (r *ResourceAuthRole) Read(
 		return
 	}
 
-	result, err := r.client.GetARBACRoleDetailWithResponse(ctx, int(data.Id.ValueInt64()))
+	result, err := r.client.RetrieveRBACRoleDetailsWithResponse(ctx, int(data.Id.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -180,8 +180,8 @@ func (r *ResourceAuthRole) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	result, err := r.client.UpdateARBACRoleWithResponse(ctx, id, func() rbac_role.UpdateARBACRoleJSONRequestBody {
-		return rbac_role.UpdateARBACRoleJSONRequestBody{
+	result, err := r.client.UpdateRBACRoleWithResponse(ctx, id, func() rbac_role.UpdateRBACRoleJSONRequestBody {
+		return rbac_role.UpdateRBACRoleJSONRequestBody{
 			Description: data.Description.ValueString(),
 			Name:        data.Name.ValueString(),
 			Policies: func() *[]int {
@@ -238,7 +238,7 @@ func (r *ResourceAuthRole) Delete(ctx context.Context, req resource.DeleteReques
 
 	id := int(data.Id.ValueInt64())
 
-	result, err := r.client.DeleteARBACRoleWithResponse(ctx, id)
+	result, err := r.client.DeleteRBACRoleWithResponse(ctx, id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
