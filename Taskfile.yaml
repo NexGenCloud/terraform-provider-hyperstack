@@ -122,6 +122,7 @@ tasks:
         auth_me
         auth_organization
         auth_roles
+        core_clusters
         core_dashboard
         core_environment
         core_environments

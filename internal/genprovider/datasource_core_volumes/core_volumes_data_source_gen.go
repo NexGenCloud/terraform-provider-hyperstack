@@ -21,6 +21,31 @@ func CoreVolumesDataSourceSchema(ctx context.Context) schema.Schema {
 			"core_volumes": schema.SetNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
+						"attachment": schema.SingleNestedAttribute{
+							Attributes: map[string]schema.Attribute{
+								"created_at": schema.StringAttribute{
+									Computed: true,
+								},
+								"id": schema.Int64Attribute{
+									Computed: true,
+								},
+								"instance_id": schema.Int64Attribute{
+									Computed: true,
+								},
+								"status": schema.StringAttribute{
+									Computed: true,
+								},
+								"volume_id": schema.Int64Attribute{
+									Computed: true,
+								},
+							},
+							CustomType: AttachmentType{
+								ObjectType: types.ObjectType{
+									AttrTypes: AttachmentValue{}.AttributeTypes(ctx),
+								},
+							},
+							Computed: true,
+						},
 						"bootable": schema.BoolAttribute{
 							Computed: true,
 						},
@@ -124,6 +149,24 @@ func (t CoreVolumesType) ValueFromObject(ctx context.Context, in basetypes.Objec
 
 	attributes := in.Attributes()
 
+	attachmentAttribute, ok := attributes["attachment"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`attachment is missing from object`)
+
+		return nil, diags
+	}
+
+	attachmentVal, ok := attachmentAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`attachment expected to be basetypes.ObjectValue, was: %T`, attachmentAttribute))
+	}
+
 	bootableAttribute, ok := attributes["bootable"]
 
 	if !ok {
@@ -345,6 +388,7 @@ func (t CoreVolumesType) ValueFromObject(ctx context.Context, in basetypes.Objec
 	}
 
 	return CoreVolumesValue{
+		Attachment:  attachmentVal,
 		Bootable:    bootableVal,
 		CallbackUrl: callbackUrlVal,
 		CreatedAt:   createdAtVal,
@@ -424,6 +468,24 @@ func NewCoreVolumesValue(attributeTypes map[string]attr.Type, attributes map[str
 		return NewCoreVolumesValueUnknown(), diags
 	}
 
+	attachmentAttribute, ok := attributes["attachment"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`attachment is missing from object`)
+
+		return NewCoreVolumesValueUnknown(), diags
+	}
+
+	attachmentVal, ok := attachmentAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`attachment expected to be basetypes.ObjectValue, was: %T`, attachmentAttribute))
+	}
+
 	bootableAttribute, ok := attributes["bootable"]
 
 	if !ok {
@@ -645,6 +707,7 @@ func NewCoreVolumesValue(attributeTypes map[string]attr.Type, attributes map[str
 	}
 
 	return CoreVolumesValue{
+		Attachment:  attachmentVal,
 		Bootable:    bootableVal,
 		CallbackUrl: callbackUrlVal,
 		CreatedAt:   createdAtVal,
@@ -729,6 +792,7 @@ func (t CoreVolumesType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = CoreVolumesValue{}
 
 type CoreVolumesValue struct {
+	Attachment  basetypes.ObjectValue `tfsdk:"attachment"`
 	Bootable    basetypes.BoolValue   `tfsdk:"bootable"`
 	CallbackUrl basetypes.StringValue `tfsdk:"callback_url"`
 	CreatedAt   basetypes.StringValue `tfsdk:"created_at"`
@@ -745,11 +809,14 @@ type CoreVolumesValue struct {
 }
 
 func (v CoreVolumesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 12)
+	attrTypes := make(map[string]tftypes.Type, 13)
 
 	var val tftypes.Value
 	var err error
 
+	attrTypes["attachment"] = basetypes.ObjectType{
+		AttrTypes: AttachmentValue{}.AttributeTypes(ctx),
+	}.TerraformType(ctx)
 	attrTypes["bootable"] = basetypes.BoolType{}.TerraformType(ctx)
 	attrTypes["callback_url"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["created_at"] = basetypes.StringType{}.TerraformType(ctx)
@@ -769,7 +836,15 @@ func (v CoreVolumesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, 
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 12)
+		vals := make(map[string]tftypes.Value, 13)
+
+		val, err = v.Attachment.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["attachment"] = val
 
 		val, err = v.Bootable.ToTerraformValue(ctx)
 
@@ -896,6 +971,27 @@ func (v CoreVolumesValue) String() string {
 func (v CoreVolumesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	var attachment basetypes.ObjectValue
+
+	if v.Attachment.IsNull() {
+		attachment = types.ObjectNull(
+			AttachmentValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if v.Attachment.IsUnknown() {
+		attachment = types.ObjectUnknown(
+			AttachmentValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if !v.Attachment.IsNull() && !v.Attachment.IsUnknown() {
+		attachment = types.ObjectValueMust(
+			AttachmentValue{}.AttributeTypes(ctx),
+			v.Attachment.Attributes(),
+		)
+	}
+
 	var environment basetypes.ObjectValue
 
 	if v.Environment.IsNull() {
@@ -918,6 +1014,9 @@ func (v CoreVolumesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVa
 	}
 
 	attributeTypes := map[string]attr.Type{
+		"attachment": basetypes.ObjectType{
+			AttrTypes: AttachmentValue{}.AttributeTypes(ctx),
+		},
 		"bootable":     basetypes.BoolType{},
 		"callback_url": basetypes.StringType{},
 		"created_at":   basetypes.StringType{},
@@ -945,6 +1044,7 @@ func (v CoreVolumesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVa
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
+			"attachment":   attachment,
 			"bootable":     v.Bootable,
 			"callback_url": v.CallbackUrl,
 			"created_at":   v.CreatedAt,
@@ -975,6 +1075,10 @@ func (v CoreVolumesValue) Equal(o attr.Value) bool {
 
 	if v.state != attr.ValueStateKnown {
 		return true
+	}
+
+	if !v.Attachment.Equal(other.Attachment) {
+		return false
 	}
 
 	if !v.Bootable.Equal(other.Bootable) {
@@ -1038,6 +1142,9 @@ func (v CoreVolumesValue) Type(ctx context.Context) attr.Type {
 
 func (v CoreVolumesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
+		"attachment": basetypes.ObjectType{
+			AttrTypes: AttachmentValue{}.AttributeTypes(ctx),
+		},
 		"bootable":     basetypes.BoolType{},
 		"callback_url": basetypes.StringType{},
 		"created_at":   basetypes.StringType{},
@@ -1052,6 +1159,550 @@ func (v CoreVolumesValue) AttributeTypes(ctx context.Context) map[string]attr.Ty
 		"status":      basetypes.StringType{},
 		"updated_at":  basetypes.StringType{},
 		"volume_type": basetypes.StringType{},
+	}
+}
+
+var _ basetypes.ObjectTypable = AttachmentType{}
+
+type AttachmentType struct {
+	basetypes.ObjectType
+}
+
+func (t AttachmentType) Equal(o attr.Type) bool {
+	other, ok := o.(AttachmentType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t AttachmentType) String() string {
+	return "AttachmentType"
+}
+
+func (t AttachmentType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	createdAtAttribute, ok := attributes["created_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`created_at is missing from object`)
+
+		return nil, diags
+	}
+
+	createdAtVal, ok := createdAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return nil, diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	instanceIdAttribute, ok := attributes["instance_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`instance_id is missing from object`)
+
+		return nil, diags
+	}
+
+	instanceIdVal, ok := instanceIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`instance_id expected to be basetypes.Int64Value, was: %T`, instanceIdAttribute))
+	}
+
+	statusAttribute, ok := attributes["status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`status is missing from object`)
+
+		return nil, diags
+	}
+
+	statusVal, ok := statusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
+	}
+
+	volumeIdAttribute, ok := attributes["volume_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`volume_id is missing from object`)
+
+		return nil, diags
+	}
+
+	volumeIdVal, ok := volumeIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`volume_id expected to be basetypes.Int64Value, was: %T`, volumeIdAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return AttachmentValue{
+		CreatedAt:  createdAtVal,
+		Id:         idVal,
+		InstanceId: instanceIdVal,
+		Status:     statusVal,
+		VolumeId:   volumeIdVal,
+		state:      attr.ValueStateKnown,
+	}, diags
+}
+
+func NewAttachmentValueNull() AttachmentValue {
+	return AttachmentValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewAttachmentValueUnknown() AttachmentValue {
+	return AttachmentValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewAttachmentValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (AttachmentValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing AttachmentValue Attribute Value",
+				"While creating a AttachmentValue value, a missing attribute value was detected. "+
+					"A AttachmentValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("AttachmentValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid AttachmentValue Attribute Type",
+				"While creating a AttachmentValue value, an invalid attribute value was detected. "+
+					"A AttachmentValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("AttachmentValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("AttachmentValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra AttachmentValue Attribute Value",
+				"While creating a AttachmentValue value, an extra attribute value was detected. "+
+					"A AttachmentValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra AttachmentValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewAttachmentValueUnknown(), diags
+	}
+
+	createdAtAttribute, ok := attributes["created_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`created_at is missing from object`)
+
+		return NewAttachmentValueUnknown(), diags
+	}
+
+	createdAtVal, ok := createdAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return NewAttachmentValueUnknown(), diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	instanceIdAttribute, ok := attributes["instance_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`instance_id is missing from object`)
+
+		return NewAttachmentValueUnknown(), diags
+	}
+
+	instanceIdVal, ok := instanceIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`instance_id expected to be basetypes.Int64Value, was: %T`, instanceIdAttribute))
+	}
+
+	statusAttribute, ok := attributes["status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`status is missing from object`)
+
+		return NewAttachmentValueUnknown(), diags
+	}
+
+	statusVal, ok := statusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
+	}
+
+	volumeIdAttribute, ok := attributes["volume_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`volume_id is missing from object`)
+
+		return NewAttachmentValueUnknown(), diags
+	}
+
+	volumeIdVal, ok := volumeIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`volume_id expected to be basetypes.Int64Value, was: %T`, volumeIdAttribute))
+	}
+
+	if diags.HasError() {
+		return NewAttachmentValueUnknown(), diags
+	}
+
+	return AttachmentValue{
+		CreatedAt:  createdAtVal,
+		Id:         idVal,
+		InstanceId: instanceIdVal,
+		Status:     statusVal,
+		VolumeId:   volumeIdVal,
+		state:      attr.ValueStateKnown,
+	}, diags
+}
+
+func NewAttachmentValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) AttachmentValue {
+	object, diags := NewAttachmentValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewAttachmentValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t AttachmentType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewAttachmentValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewAttachmentValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewAttachmentValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewAttachmentValueMust(AttachmentValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t AttachmentType) ValueType(ctx context.Context) attr.Value {
+	return AttachmentValue{}
+}
+
+var _ basetypes.ObjectValuable = AttachmentValue{}
+
+type AttachmentValue struct {
+	CreatedAt  basetypes.StringValue `tfsdk:"created_at"`
+	Id         basetypes.Int64Value  `tfsdk:"id"`
+	InstanceId basetypes.Int64Value  `tfsdk:"instance_id"`
+	Status     basetypes.StringValue `tfsdk:"status"`
+	VolumeId   basetypes.Int64Value  `tfsdk:"volume_id"`
+	state      attr.ValueState
+}
+
+func (v AttachmentValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 5)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["created_at"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["instance_id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["status"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["volume_id"] = basetypes.Int64Type{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 5)
+
+		val, err = v.CreatedAt.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["created_at"] = val
+
+		val, err = v.Id.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["id"] = val
+
+		val, err = v.InstanceId.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["instance_id"] = val
+
+		val, err = v.Status.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["status"] = val
+
+		val, err = v.VolumeId.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["volume_id"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v AttachmentValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v AttachmentValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v AttachmentValue) String() string {
+	return "AttachmentValue"
+}
+
+func (v AttachmentValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributeTypes := map[string]attr.Type{
+		"created_at":  basetypes.StringType{},
+		"id":          basetypes.Int64Type{},
+		"instance_id": basetypes.Int64Type{},
+		"status":      basetypes.StringType{},
+		"volume_id":   basetypes.Int64Type{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"created_at":  v.CreatedAt,
+			"id":          v.Id,
+			"instance_id": v.InstanceId,
+			"status":      v.Status,
+			"volume_id":   v.VolumeId,
+		})
+
+	return objVal, diags
+}
+
+func (v AttachmentValue) Equal(o attr.Value) bool {
+	other, ok := o.(AttachmentValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.CreatedAt.Equal(other.CreatedAt) {
+		return false
+	}
+
+	if !v.Id.Equal(other.Id) {
+		return false
+	}
+
+	if !v.InstanceId.Equal(other.InstanceId) {
+		return false
+	}
+
+	if !v.Status.Equal(other.Status) {
+		return false
+	}
+
+	if !v.VolumeId.Equal(other.VolumeId) {
+		return false
+	}
+
+	return true
+}
+
+func (v AttachmentValue) Type(ctx context.Context) attr.Type {
+	return AttachmentType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v AttachmentValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"created_at":  basetypes.StringType{},
+		"id":          basetypes.Int64Type{},
+		"instance_id": basetypes.Int64Type{},
+		"status":      basetypes.StringType{},
+		"volume_id":   basetypes.Int64Type{},
 	}
 }
 
