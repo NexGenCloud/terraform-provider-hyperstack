@@ -113,6 +113,16 @@ data_sources:
       path: /core/virtual-machines
       method: GET
 
+  core_clusters:
+    read:
+      path: /core/clusters
+      method: GET
+
+  core_clusters_versions:
+    read:
+      path: /core/clusters/versions
+      method: GET
+
 resources:
   core_virtual_machine_sg_rule:
     read:
