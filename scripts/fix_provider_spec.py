@@ -183,6 +183,30 @@ def fix_provider_spec(spec_file: str) -> None:
       for attr in row["schema"]["attributes"]:
         attr_set_modifier(attr, "RequiresReplace")
 
+    if row["name"] == "core_cluster":
+      for attr in row["schema"]["attributes"]:
+        immutable_params = [
+          "name",
+          "environment_name",
+          "kubernetes_version",
+          "node_count",
+          "keypair_name",
+          "enable_public_ip",
+        ]
+        if attr["name"] in immutable_params:
+          attr_set_modifier(attr, "RequiresReplace")
+        computed_params = [
+          "id",
+          "created_at",
+          "api_address",
+          "kube_config",
+          "status",
+          "status_reason",
+          "node_addresses",
+        ]
+        if attr["name"] in computed_params:
+          attr_update_behavior(attr, "computed")
+
     if row["name"] == "core_volume":
       for attr in row["schema"]["attributes"]:
         immutable_params = [

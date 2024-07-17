@@ -139,6 +139,10 @@ def attr_fix_components(data: AttrType) -> None:
     "type": "integer",
   }
 
+  schemas["ClusterFields"]["properties"]["kube_config"] = {
+    "type": "string"
+  }
+
   # Fix digit-prefixed keys
   props = schemas["NewConfigurationsResponse"]["properties"]
   for p in list(props.keys()):

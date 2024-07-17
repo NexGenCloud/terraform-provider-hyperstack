@@ -177,3 +177,11 @@ resources:
     create:
       path: /core/volumes
       method: POST
+
+  core_cluster:
+    read:
+      path: /core/clusters/{id}
+      method: GET
+    create:
+      path: /core/clusters
+      method: POST
