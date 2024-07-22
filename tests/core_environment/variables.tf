@@ -1,4 +1,4 @@
-variable "hyperstack_region" {
+variable "region" {
   type    = string
 }
 

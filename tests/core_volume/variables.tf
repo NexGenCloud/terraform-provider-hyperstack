@@ -1,8 +1,8 @@
-variable "hyperstack_region" {
+variable "region" {
   type    = string
 }
 
-variable "artifacts_directory" {
+variable "artifacts_dir" {
   type = string
 }
 

@@ -26,7 +26,7 @@ builds:
       - -s -w -X "{{.Env.PROVIDER_PACKAGE}}/internal/provider.EnvPrefix={{.Env.ENV_PREFIX}}"
       - -s -w -X "{{.Env.PROVIDER_PACKAGE}}/internal/provider.ApiAddress={{.Env.API_ADDRESS}}"
     goos:
-      - freebsd
+      #- freebsd
       - windows
       - linux
       - darwin
