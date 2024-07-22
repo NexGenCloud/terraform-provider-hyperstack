@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"strconv"
 	"time"
 )
 
@@ -109,13 +110,11 @@ func (r *ResourceCoreCluster) Create(
 
 	clusterModel := callResult
 
-	// CREATE_COMPLETE
-	// DELETING
 	id := *clusterModel.Id
 	err = r.WaitForResult(
 		ctx,
 		3*time.Second,
-		600*time.Second,
+		900*time.Second,
 		func(ctx context.Context) (bool, error) {
 			result, err := r.client.GettingClusterDetailWithResponse(ctx, id)
 			if err != nil {
@@ -202,11 +201,12 @@ func (r *ResourceCoreCluster) Read(
 	}
 
 	data := r.ApiToModel(ctx, &resp.Diagnostics, callResult)
-	r.MergeData(&dataOld, &dataOld)
+	r.MergeData(&data, &dataOld)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-// TODO: deduplicate
+// WaitForResult TODO: deduplicate
 func (r *ResourceCoreCluster) WaitForResult(
 	ctx context.Context,
 	pollInterval,
@@ -244,21 +244,17 @@ func (r *ResourceCoreCluster) WaitForResult(
 
 func (r *ResourceCoreCluster) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var dataOld resource_core_cluster.CoreClusterModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &dataOld)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &dataOld)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	var data resource_core_cluster.CoreClusterModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.AddError(
-		"Update not supported for clusters",
-		"",
-	)
 	r.MergeData(&data, &dataOld)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -314,7 +310,17 @@ func (r *ResourceCoreCluster) Delete(ctx context.Context, req resource.DeleteReq
 }
 
 func (r *ResourceCoreCluster) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	id, err := strconv.ParseFloat(req.ID, 64)
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Wrong ID specified",
+			req.ID,
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
 }
 
 func (r *ResourceCoreCluster) MergeData(

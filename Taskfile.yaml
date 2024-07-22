@@ -4,16 +4,16 @@ silent: true
 
 vars:
   NAME: "terraform-provider-hyperstack"
-  DIR_BUILD: "{{.ROOT_DIR}}/build"
-  DIR_EXAMPLES: "{{.ROOT_DIR}}/examples"
-  DIR_TESTS: "{{.ROOT_DIR}}/tests"
-  DIR_ARTIFACTS: "{{.ROOT_DIR}}/artifacts"
-  DIR_DIST: "{{.ROOT_DIR}}/dist"
-  DIR_PROVIDER_MIRROR: "{{.DIR_ARTIFACTS}}/provider-mirror"
-  DIR_PROVIDER: "{{.ROOT_DIR}}/internal/provider"
-  DIR_GENPROVIDER: "{{.ROOT_DIR}}/internal/genprovider"
-  API_SPEC_PATH: "{{.DIR_ARTIFACTS}}/api.json"
-  PROVIDER_SPEC_PATH: "{{.DIR_ARTIFACTS}}/provider-spec.json"
+  DIR_BUILD: "{{ .ROOT_DIR }}/build"
+  DIR_EXAMPLES: "{{ .ROOT_DIR }}/examples"
+  DIR_TESTS: "{{ .ROOT_DIR }}/tests"
+  DIR_ARTIFACTS: "{{ .ROOT_DIR }}/artifacts"
+  DIR_DIST: "{{ .ROOT_DIR }}/dist"
+  DIR_PROVIDER_MIRROR: "{{ .DIR_ARTIFACTS }}/provider-mirror"
+  DIR_PROVIDER: "{{ .ROOT_DIR }}/internal/provider"
+  DIR_GENPROVIDER: "{{ .ROOT_DIR }}/internal/genprovider"
+  API_SPEC_PATH: "{{ .DIR_ARTIFACTS }}/api.json"
+  PROVIDER_SPEC_PATH: "{{ .DIR_ARTIFACTS }}/provider-spec.json"
   HYPERSTACK_API_ADDRESS: "https://infrahub-api.nexgencloud.com/v1"
 
 env:
@@ -24,7 +24,7 @@ env:
   TF_CLOUD_ORG: nexgencloud
 
   HYPERSTACK_API_KEY: ~
-  HYPERSTACK_API_ADDRESS: "{{.HYPERSTACK_API_ADDRESS}}"
+  HYPERSTACK_API_ADDRESS: "{{ .HYPERSTACK_API_ADDRESS }}"
   HYPERSTACK_API_SPEC_ADDRESS: "https://infrahub-api-doc.nexgencloud.com/api.json"
 
 
@@ -37,7 +37,7 @@ tasks:
       - |
         docker build \
           -f Dockerfile \
-          -t "{{.NAME}}" \
+          -t "{{ .NAME }}" \
           --target runtime \
           .
 
@@ -56,30 +56,30 @@ tasks:
       SILENT: |-
         {{.SILENT | default "false"}}
     env:
-      API_ADDRESS: "{{.HYPERSTACK_API_ADDRESS}}"
-      PROVIDER_NAME: "{{.TF_PROVIDER_NAME}}"
-      PROVIDER_ADDRESS: "{{.TF_PROVIDER_REPO}}/{{.TF_PROVIDER_NAME}}"
+      API_ADDRESS: "{{ .HYPERSTACK_API_ADDRESS }}"
+      PROVIDER_NAME: "{{ .TF_PROVIDER_NAME }}"
+      PROVIDER_ADDRESS: "{{ .TF_PROVIDER_REPO }}/{{ .TF_PROVIDER_NAME }}"
       ENV_PREFIX: "HYPERSTACK_"
       PROVIDER_PACKAGE: "github.com/NexGenCloud/terraform-provider-hyperstack"
     cmds:
       # language=bash
       - |
         echo -n "Building provider... "
-        if [[ "{{.SILENT}}" != "true" ]]; then
+        if [[ "{{ .SILENT }}" != "true" ]]; then
           echo ""
         fi
       # language=bash
       - |
-        if [[ "{{.SILENT}}" == "true" ]]; then
+        if [[ "{{ .SILENT }}" == "true" ]]; then
           exec &> /dev/null
         fi
         goreleaser check
-        TMP_BIN_PATH="{{.DIR_ARTIFACTS}}/provider"
+        TMP_BIN_PATH="{{ .DIR_ARTIFACTS }}/provider"
         goreleaser build --snapshot --clean --single-target -o "${TMP_BIN_PATH}"
         
-        METADATA="$(cat "{{.DIR_DIST}}/metadata.json")"
+        METADATA="$(cat "{{ .DIR_DIST }}/metadata.json")"
         VERSION="$(echo "${METADATA}" | jq -r '.version' | cut -d'-' -f1)"
-        PROVIDER_MIRROR_DIR="{{.DIR_PROVIDER_MIRROR}}/${PROVIDER_ADDRESS}/${VERSION}/{{.ARCH}}"
+        PROVIDER_MIRROR_DIR="{{ .DIR_PROVIDER_MIRROR }}/${PROVIDER_ADDRESS}/${VERSION}/{{ .ARCH }}"
         PROJECT_NAME="$(echo "${METADATA}" | jq -r '.project_name')"
         PROVIDER_FILENAME="${PROJECT_NAME}_v${VERSION}"
         mkdir -p "${PROVIDER_MIRROR_DIR}"
@@ -97,97 +97,67 @@ tasks:
   test:
     desc: |
       Tests the provider
-    dotenv: [ '.env' ]
+    dir: "{{ .DIR_TESTS }}"
     env:
-      TF_CLI_CONFIG_FILE: "{{.DIR_TESTS}}/provider-mirror.tfrc"
-      # https://developer.hashicorp.com/terraform/cli/config/environment-variables
-      TF_LOG: DEBUG
-      TF_VAR_name_prefix: "test-"
+      ARTIFACTS_DIR: "{{ .DIR_ARTIFACTS }}/tests2"
     vars:
-      RUN_BUILD:  |-
-        {{.RUN_BUILD | default "true"}}
-      RUN_INIT:  |-
-        {{.RUN_INIT | default "true"}}
-      RUN_CREATE_PLAN:  |-
-        {{.RUN_CREATE_PLAN | default "true"}}
-      RUN_CREATE_APPLY:  |-
-        {{.RUN_CREATE_APPLY | default "true"}}
-      RUN_DESTROY_PLAN:  |-
-        {{.RUN_DESTROY_PLAN | default "true"}}
-      RUN_DESTROY_APPLY:  |-
-        {{.RUN_DESTROY_APPLY | default "true"}}
+      TESTS:
+        # language=bash
+        sh: cd "{{ .DIR_TESTS }}" && ls -d */terragrunt.hcl | cut -f1 -d'/'
       TEST_NAME: |-
         {{.TEST_NAME | default ""}}
-      TESTS: |-
-        auth_me
-        auth_organization
-        auth_roles
-        core_clusters
-        core_dashboard
-        core_environment
-        core_environments
-        core_firewall_protocols
-        core_flavors
-        core_gpus
-        core_images
-        core_keypairs
-        core_regions
-        core_stocks
-        core_vm
-        core_vms
-        core_volume
-        core_volume_types
-        core_volumes
+      RUN_DESTROY: '{{ .RUN_DESTROY | default "true" }}'
+    cmds:
+      - for: { var: TESTS, as: TEST }
+        task: test-run
+        vars:
+          TEST: '{{ .TEST }}'
+          RUN_DESTROY: '{{ .RUN_DESTROY }}'
+          # language=gotemplate
+          SKIP: |
+            {{/* We simply check if current test should be run */}}
+            {{ ternary "true" "false"
+                (and (not (eq .TEST_NAME "")) (not (eq .TEST_NAME .TEST)))
+            }}
+#
+
+  test-run:
+    desc: |
+      Runs specific module test
+    internal: true
+    dir: "{{ .DIR_TESTS }}/{{ .TEST }}"
+    dotenv: [ '{{ .ROOT_DIR }}/.env' ]
+    vars:
+      SKIP: '{{ .SKIP | default "false" }}'
+      RUN_DESTROY: '{{ .RUN_DESTROY | default "true" }}'
+    env:
+      ARTIFACTS_DIR: '{{ .DIR_ARTIFACTS }}/tests'
+      TERRAGRUNT_LOG_LEVEL: "warn"
+      #TERRAGRUNT_DEBUG: "1"
+      TERRAGRUNT_NO_AUTO_INIT: "true"
+      TERRAGRUNT_NON_INTERACTIVE: "true"
+      TERRAGRUNT_PARALLELISM: "1"
     cmds:
       # language=bash
       - |
-        for module in {{join " " (splitArgs .TESTS)}}; do
-          if [[ "{{.TEST_NAME}}" != "" && "{{.TEST_NAME}}" != "${module}" ]]; then
-            continue
-          fi
+        # Skip the test if needed
+        [ '{{ trim .SKIP }}' == "true" ] && exit 0
         
-          echo "Testing ${module}..."
-          ARTIFACTS_DIR="{{.DIR_ARTIFACTS}}/tests/${module}"
-          MODULE_DIR="{{.DIR_TESTS}}/${module}"
-          cd "${MODULE_DIR}"
+        echo "-------------------"
+        echo "Testing {{ .TEST }}"
+        echo "-------------------"
 
-          mkdir -p "${ARTIFACTS_DIR}/files"
-          export TF_DATA_DIR="${ARTIFACTS_DIR}/.terraform"
-          export TF_VAR_artifacts_directory="${ARTIFACTS_DIR}/files"
-          
-          # https://developer.hashicorp.com/terraform/language/settings/backends/configuration#file
-          # https://developer.hashicorp.com/terraform/language/settings/backends/configuration
-          # https://developer.hashicorp.com/terraform/language/settings/backends/local
-          BACKEND_FILE="${ARTIFACTS_DIR}/backend.tfvars"
-          echo "path=\"${ARTIFACTS_DIR}/terraform.tfstate\"" > "${BACKEND_FILE}"
-          
-          if [[ "{{.RUN_INIT}}" == "true" ]]; then
-            # Remove lock file due to possible checksum change
-            rm -f "${MODULE_DIR}/.terraform.lock.hcl"
-            # TODO: store output and show only on error
-            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_init.log" \
-              terraform init -input=false -migrate-state -backend-config="${BACKEND_FILE}"
-          fi
-          
-          TFPLAN="${ARTIFACTS_DIR}/tfplan"
-          [[ "{{.RUN_CREATE_PLAN}}" == "true" ]] && \
-            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_create_plan.log" \
-            terraform plan -out "${TFPLAN}"
-          [[ "{{.RUN_CREATE_APPLY}}" == "true" ]] && \
-            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_create_apply.log" \
-            terraform apply "${TFPLAN}"
-          [[ "{{.RUN_DESTROY_PLAN}}" == "true" ]] && \
-            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_destroy_plan.log" \
-            terraform plan -out "${TFPLAN}" -destroy
-          [[ "{{.RUN_DESTROY_APPLY}}" == "true" ]] && \
-            TF_LOG_PATH="${ARTIFACTS_DIR}/tf_destroy_apply.log" \
-            terraform apply "${TFPLAN}"
-          cd - > /dev/null
-        done
+        LOG_SUFFIX=apply terragrunt run-all apply
+
+        if [[ "{{ .RUN_DESTROY }}" == "true" ]]; then
+          LOG_SUFFIX=destroy terragrunt run-all destroy
+        fi
 
   test-unit:
     desc: |
       Tests the provider
+      
+      TODO: outdated
     dotenv: [ '.env' ]
     cmds:
       - task: build
@@ -204,7 +174,7 @@ tasks:
     cmds:
       # language=bash
       - |
-        curl -X GET "${HYPERSTACK_API_ADDRESS}/{{.NAME}}" \
+        curl -X GET "${HYPERSTACK_API_ADDRESS}/{{ .NAME }}" \
           -H "accept: application/json" \
           -H "api_key: ${HYPERSTACK_API_KEY}"
 
@@ -214,17 +184,17 @@ tasks:
     dotenv: [ '.env' ]
     vars:
       SCRIPTS_DIR: "scripts"
-      SORT_SCHEMAS: "{{.SCRIPTS_DIR}}/sort_schemas.py"
-      FIX_API_SPEC: "{{.SCRIPTS_DIR}}/fix_api_spec.py"
+      SORT_SCHEMAS: "{{ .SCRIPTS_DIR }}/sort_schemas.py"
+      FIX_API_SPEC: "{{ .SCRIPTS_DIR }}/fix_api_spec.py"
     cmds:
       # language=bash
       - |
         echo -n "Pulling the latest OpenAPI spec... "
-        curl -s "${HYPERSTACK_API_SPEC_ADDRESS}" > "{{.API_SPEC_PATH}}"
+        curl -s "${HYPERSTACK_API_SPEC_ADDRESS}" > "{{ .API_SPEC_PATH }}"
         echo "done"
         echo -n "Fixing api spec... "
-        python3.11 "{{.SORT_SCHEMAS}}" "{{.API_SPEC_PATH}}"
-        python3.11 "{{.FIX_API_SPEC}}" "{{.API_SPEC_PATH}}"
+        python3.11 "{{ .SORT_SCHEMAS }}" "{{ .API_SPEC_PATH }}"
+        python3.11 "{{ .FIX_API_SPEC }}" "{{ .API_SPEC_PATH }}"
         echo "done"
 
   build-provider-spec:
@@ -233,36 +203,36 @@ tasks:
     vars:
       TF_DATA_SOURCES:
         # language=bash
-        sh: cat "{{.DIR_BUILD}}/generator-config.yml" | yq e -o=c ".data_sources | keys | .[]"
+        sh: cat "{{ .DIR_BUILD }}/generator-config.yml" | yq e -o=c ".data_sources | keys | .[]"
       SCRIPTS_DIR: "scripts"
-      FIX_PROVIDER_SPEC: "{{.SCRIPTS_DIR}}/fix_provider_spec.py"
+      FIX_PROVIDER_SPEC: "{{ .SCRIPTS_DIR }}/fix_provider_spec.py"
     cmds:
       # language=bash
       - |
         tfplugingen-openapi generate \
-          --config "{{.DIR_BUILD}}/generator-config.yml" \
-          --output "{{.PROVIDER_SPEC_PATH}}" \
-          "{{.API_SPEC_PATH}}"
-        python3.11 "{{.FIX_PROVIDER_SPEC}}" "{{.PROVIDER_SPEC_PATH}}"
+          --config "{{ .DIR_BUILD }}/generator-config.yml" \
+          --output "{{ .PROVIDER_SPEC_PATH }}" \
+          "{{ .API_SPEC_PATH }}"
+        python3.11 "{{ .FIX_PROVIDER_SPEC }}" "{{ .PROVIDER_SPEC_PATH }}"
       # language=bash
       - |
-        rm -Rf "{{.DIR_GENPROVIDER}}"
-        mkdir -p "{{.DIR_GENPROVIDER}}"
+        rm -Rf "{{ .DIR_GENPROVIDER }}"
+        mkdir -p "{{ .DIR_GENPROVIDER }}"
         tfplugingen-framework generate data-sources \
-          --input "{{.DIR_ARTIFACTS}}/provider-spec.json" \
-          --output "{{.DIR_GENPROVIDER}}"
+          --input "{{ .DIR_ARTIFACTS }}/provider-spec.json" \
+          --output "{{ .DIR_GENPROVIDER }}"
         tfplugingen-framework generate resources \
-          --input "{{.DIR_ARTIFACTS}}/provider-spec.json" \
-          --output "{{.DIR_GENPROVIDER}}"
+          --input "{{ .DIR_ARTIFACTS }}/provider-spec.json" \
+          --output "{{ .DIR_GENPROVIDER }}"
       # language=bash
       - |
-        rm -Rf "{{.DIR_PROVIDER}}/data_source"
-        mkdir -p "{{.DIR_PROVIDER}}/data_source"
+        rm -Rf "{{ .DIR_PROVIDER }}/data_source"
+        mkdir -p "{{ .DIR_PROVIDER }}/data_source"
         for row in {{join " " (splitArgs .TF_DATA_SOURCES)}}; do
           tfplugingen-framework scaffold data-source \
             --name "${row}" \
             --force \
-            --output-dir "{{.DIR_PROVIDER}}/data_source"
+            --output-dir "{{ .DIR_PROVIDER }}/data_source"
         done
 
   provider-create:
@@ -296,27 +266,27 @@ tasks:
       UNLOCK_GPG_AGENT: true
 
       # TODO: rework
-      BIN_NAME: "{{.NAME}}_v{{.TF_PROVIDER_VERSION}}"
-      ZIP_NAME: "{{.BIN_NAME}}_{{.ARCH}}.zip"
-      SHA_NAME: "{{.BIN_NAME}}_SHA256SUMS"
-      PLATFORM_JSON: "{{.DIR_BINPROVIDER}}/platform.json"
-      VERSION_JSON: "{{.DIR_BINPROVIDER}}/version.json"
+      BIN_NAME: "{{ .NAME }}_v{{ .TF_PROVIDER_VERSION }}"
+      ZIP_NAME: "{{ .BIN_NAME }}_{{ .ARCH }}.zip"
+      SHA_NAME: "{{ .BIN_NAME }}_SHA256SUMS"
+      PLATFORM_JSON: "{{ .DIR_BINPROVIDER }}/platform.json"
+      VERSION_JSON: "{{ .DIR_BINPROVIDER }}/version.json"
 
       TF_PROVIDER_VERSION: "0.1.0"
       TF_PROVIDER_NAME: "hyperstack"
       TF_PROVIDER_PATH: |-
-        registry.terraform.io/nexgencloud/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}
-      TF_PROVIDER_DIR: "{{.DIR_BINPROVIDER}}/{{.TF_PROVIDER_PATH}}"
-      TF_PROVIDER_BINARY: "{{.TF_PROVIDER_DIR}}/{{.NAME}}_v{{.TF_PROVIDER_VERSION}}"
+        registry.terraform.io/nexgencloud/{{ .TF_PROVIDER_NAME }}/{{ .TF_PROVIDER_VERSION }}/{{ .ARCH }}
+      TF_PROVIDER_DIR: "{{ .DIR_BINPROVIDER }}/{{ .TF_PROVIDER_PATH }}"
+      TF_PROVIDER_BINARY: "{{ .TF_PROVIDER_DIR }}/{{ .NAME }}_v{{ .TF_PROVIDER_VERSION }}"
     # TODO: rework
     dotenv: ['../../.env']
     # TODO: rework
-    dir: "{{.DIR_BINPROVIDER}}"
+    dir: "{{ .DIR_BINPROVIDER }}"
     cmds:
       # language=bash
       - |
         # Unlock GPG Agent
-        if [[ "{{.UNLOCK_GPG_AGENT}}" == "true" ]]; then
+        if [[ "{{ .UNLOCK_GPG_AGENT }}" == "true" ]]; then
           gpg --output /dev/null --detach-sign .gitignore
         fi
         
@@ -326,40 +296,40 @@ tasks:
       - task: build
       # https://developer.hashicorp.com/terraform/registry/providers/publishing#manually-preparing-a-release
       # language=bash
-      - echo "Uploading provider {{.NAME}} version v{{.TF_PROVIDER_VERSION}}:"
+      - echo "Uploading provider {{ .NAME }} version v{{ .TF_PROVIDER_VERSION }}:"
       # language=bash
       - |
         echo -n "- deleting existing release... "
         rm -f \
-          "{{.BIN_NAME}}" \
-          "{{.SHA_NAME}}" \
-          "{{.SHA_NAME}}.sig"
+          "{{ .BIN_NAME }}" \
+          "{{ .SHA_NAME }}" \
+          "{{ .SHA_NAME }}.sig"
         curl -s \
           --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
           --header "Content-Type: application/vnd.api+json" \
           --request DELETE \
-          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/{{.TF_PROVIDER_NAME}}/versions/{{.TF_PROVIDER_VERSION}} \
+          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/{{ .TF_PROVIDER_NAME }}/versions/{{ .TF_PROVIDER_VERSION }} \
             > /dev/null
         echo "done"
       # language=bash
       - |
         echo -n "- creating and signing archive... "
-        cp "{{.NAME}}" "{{.BIN_NAME}}"
-        zip -q "{{.ZIP_NAME}}" "{{.BIN_NAME}}"
-        shasum -a 256 "{{.ZIP_NAME}}" > "{{.SHA_NAME}}"
+        cp "{{ .NAME }}" "{{ .BIN_NAME }}"
+        zip -q "{{ .ZIP_NAME }}" "{{ .BIN_NAME }}"
+        shasum -a 256 "{{ .ZIP_NAME }}" > "{{ .SHA_NAME }}"
         gpg \
-          --output "{{.SHA_NAME}}.sig" \
-          --detach-sign "{{.SHA_NAME}}"
+          --output "{{ .SHA_NAME }}.sig" \
+          --detach-sign "{{ .SHA_NAME }}"
         echo "done"
       # language=bash
       - |
         echo -n "- creating a new cloud release... "
-        cat <<EOF > "{{.VERSION_JSON}}"
+        cat <<EOF > "{{ .VERSION_JSON }}"
         {
           "data": {
             "type": "registry-provider-versions",
             "attributes": {
-              "version": "{{.TF_PROVIDER_VERSION}}",
+              "version": "{{ .TF_PROVIDER_VERSION }}",
               "key-id": "${TF_CLOUD_KEY_ID}",
               "protocols": ["5.0"]
             }
@@ -370,38 +340,38 @@ tasks:
           --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
           --header "Content-Type: application/vnd.api+json" \
           --request POST \
-          --data "@{{.VERSION_JSON}}" \
-          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/{{.TF_PROVIDER_NAME}}/versions \
-            > "{{.DIR_BINPROVIDER}}/create_result.json"
+          --data "@{{ .VERSION_JSON }}" \
+          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/{{ .TF_PROVIDER_NAME }}/versions \
+            > "{{ .DIR_BINPROVIDER }}/create_result.json"
         echo "done"
       # language=bash
       - |
         echo -n "- uploading SHA256SUMS... "
         curl -s \
           -T \
-          "{{.SHA_NAME}}" \
-          "$(cat "{{.DIR_BINPROVIDER}}/create_result.json" | jq -r '.data.links."shasums-upload"')"
+          "{{ .SHA_NAME }}" \
+          "$(cat "{{ .DIR_BINPROVIDER }}/create_result.json" | jq -r '.data.links."shasums-upload"')"
         echo "done"
       # language=bash
       - |
         echo -n "- uploading SHA256SUMS.sig... "
         curl -s \
           -T \
-          "{{.SHA_NAME}}.sig" \
-          "$(cat "{{.DIR_BINPROVIDER}}/create_result.json" | jq -r '.data.links."shasums-sig-upload"')"
+          "{{ .SHA_NAME }}.sig" \
+          "$(cat "{{ .DIR_BINPROVIDER }}/create_result.json" | jq -r '.data.links."shasums-sig-upload"')"
         echo "done"
       # language=bash
       - |
         echo -n "- uploading release... "
-        cat <<EOF > "{{.PLATFORM_JSON}}"
+        cat <<EOF > "{{ .PLATFORM_JSON }}"
         {
           "data": {
             "type": "registry-provider-version-platforms",
             "attributes": {
               "os": "$(go env GOOS)",
               "arch": "$(go env GOARCH)",
-              "shasum": "$(shasum -a 256 "{{.ZIP_NAME}}" | cut -d' ' -f1)",
-              "filename": "{{.ZIP_NAME}}"
+              "shasum": "$(shasum -a 256 "{{ .ZIP_NAME }}" | cut -d' ' -f1)",
+              "filename": "{{ .ZIP_NAME }}"
             }
           }
         }
@@ -410,24 +380,24 @@ tasks:
           --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
           --header "Content-Type: application/vnd.api+json" \
           --request POST \
-          --data "@{{.PLATFORM_JSON}}" \
-          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/{{.TF_PROVIDER_NAME}}/versions/{{.TF_PROVIDER_VERSION}}/platforms \
-            > "{{.DIR_BINPROVIDER}}/publish_result.json"
+          --data "@{{ .PLATFORM_JSON }}" \
+          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/{{ .TF_PROVIDER_NAME }}/versions/{{ .TF_PROVIDER_VERSION }}/platforms \
+            > "{{ .DIR_BINPROVIDER }}/publish_result.json"
         curl -s \
           -T \
-          "{{.ZIP_NAME}}" \
-          "$(cat "{{.DIR_BINPROVIDER}}/publish_result.json" | jq -r '.data.links."provider-binary-upload"')"
+          "{{ .ZIP_NAME }}" \
+          "$(cat "{{ .DIR_BINPROVIDER }}/publish_result.json" | jq -r '.data.links."provider-binary-upload"')"
         echo "done"
       # language=bash
       - |
         cat <<EOF
-        Release is ready v{{.TF_PROVIDER_VERSION}}:
+        Release is ready v{{ .TF_PROVIDER_VERSION }}:
 
         terraform {
           required_providers {
             hyperstack = {
-              source = "app.terraform.io/${TF_CLOUD_ORG}/{{.TF_PROVIDER_NAME}}"
-              version = "{{.TF_PROVIDER_VERSION}}"
+              source = "app.terraform.io/${TF_CLOUD_ORG}/{{ .TF_PROVIDER_NAME }}"
+              version = "{{ .TF_PROVIDER_VERSION }}"
             }
           }
         }
@@ -437,18 +407,18 @@ tasks:
     desc: |
       Publishes new provider version
     dotenv: ['../../.env']
-    dir: "{{.DIR_BINPROVIDER}}"
+    dir: "{{ .DIR_BINPROVIDER }}"
     vars:
-      BIN_NAME: "{{.NAME}}_v{{.TF_PROVIDER_VERSION}}"
-      ZIP_NAME: "{{.BIN_NAME}}_{{.ARCH}}.zip"
-      SHA_NAME: "{{.BIN_NAME}}_SHA256SUMS"
-      PLATFORM_JSON: "{{.DIR_BINPROVIDER}}/platform.json"
-      VERSION_JSON: "{{.DIR_BINPROVIDER}}/version.json"
+      BIN_NAME: "{{ .NAME }}_v{{ .TF_PROVIDER_VERSION }}"
+      ZIP_NAME: "{{ .BIN_NAME }}_{{ .ARCH }}.zip"
+      SHA_NAME: "{{ .BIN_NAME }}_SHA256SUMS"
+      PLATFORM_JSON: "{{ .DIR_BINPROVIDER }}/platform.json"
+      VERSION_JSON: "{{ .DIR_BINPROVIDER }}/version.json"
 
       TF_PROVIDER_VERSION: "0.1.0"
       TF_PROVIDER_NAME: "hyperstack"
       TF_PROVIDER_PATH: |-
-        registry.terraform.io/nexgencloud/{{.TF_PROVIDER_NAME}}/{{.TF_PROVIDER_VERSION}}/{{.ARCH}}
-      TF_PROVIDER_DIR: "{{.DIR_BINPROVIDER}}/{{.TF_PROVIDER_PATH}}"
-      TF_PROVIDER_BINARY: "{{.TF_PROVIDER_DIR}}/{{.NAME}}_v{{.TF_PROVIDER_VERSION}}"
+        registry.terraform.io/nexgencloud/{{ .TF_PROVIDER_NAME }}/{{ .TF_PROVIDER_VERSION }}/{{ .ARCH }}
+      TF_PROVIDER_DIR: "{{ .DIR_BINPROVIDER }}/{{ .TF_PROVIDER_PATH }}"
+      TF_PROVIDER_BINARY: "{{ .TF_PROVIDER_DIR }}/{{ .NAME }}_v{{ .TF_PROVIDER_VERSION }}"
     cmds:

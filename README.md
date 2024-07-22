@@ -6,6 +6,8 @@ This project is a Terraform provider for Hyperstack. It uses the Hyperstack SDK 
 
 Before you start, make sure you have the following tools installed:
 
+- [Terraform 1.5](https://developer.hashicorp.com/terraform/install) - [tfenv](https://github.com/tfutils/tfenv) is suggested
+- [Terragrunt](https://terragrunt.gruntwork.io/) - [tgswitch](https://tgswitch.warrensbox.com/) is suggested
 - [Go 1.22](https://golang.org/dl/)
 - [Task 3.25](https://taskfile.dev/installation/): A task runner for executing project tasks.
 - [jq 1.6](https://jqlang.github.io/jq/download/): A command-line JSON processor.
