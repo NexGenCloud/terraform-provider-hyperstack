@@ -75,6 +75,7 @@ tasks:
         fi
         goreleaser check
         TMP_BIN_PATH="{{.DIR_ARTIFACTS}}/provider"
+        mkdir -p "{{.DIR_ARTIFACTS}}"
         goreleaser build --snapshot --clean --single-target -o "${TMP_BIN_PATH}"
         
         METADATA="$(cat "{{.DIR_DIST}}/metadata.json")"
