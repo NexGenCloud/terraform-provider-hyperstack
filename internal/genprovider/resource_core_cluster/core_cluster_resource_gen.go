@@ -71,10 +71,6 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"node_addresses": schema.ListAttribute{
-				ElementType: types.StringType,
-				Computed:    true,
-			},
 			"node_count": schema.Int64Attribute{
 				Required: true,
 				PlanModifiers: []planmodifier.Int64{
@@ -140,7 +136,6 @@ type CoreClusterModel struct {
 	KubernetesVersion types.String    `tfsdk:"kubernetes_version"`
 	MasterFlavorName  types.String    `tfsdk:"master_flavor_name"`
 	Name              types.String    `tfsdk:"name"`
-	NodeAddresses     types.List      `tfsdk:"node_addresses"`
 	NodeCount         types.Int64     `tfsdk:"node_count"`
 	NodeFlavor        NodeFlavorValue `tfsdk:"node_flavor"`
 	NodeFlavorName    types.String    `tfsdk:"node_flavor_name"`

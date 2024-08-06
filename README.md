@@ -11,12 +11,16 @@ Before you start, make sure you have the following tools installed:
 - [Go 1.22](https://golang.org/dl/)
 - [Task 3.25](https://taskfile.dev/installation/): A task runner for executing project tasks.
 - [jq 1.6](https://jqlang.github.io/jq/download/): A command-line JSON processor.
-- [yq v4](https://github.com/mikefarah/yq/): A command-line YAML processor.
+- [yq v4.44](https://github.com/mikefarah/yq/): A command-line YAML processor.
 - GPG and gpg-agent
 - Python 3.11
 - [canonicaljson](https://pypi.org/project/canonicaljson/) pip module
+  - You can run installation via pip:
+  ````bash
+  python3 -m pip install -r requirements.txt
+  ````
 
-There are also CLI dependencies that are installed vith Go:
+There are also CLI dependencies that are installed with Go:
 
 - [GoReleaser](https://goreleaser.com/)
   ````bash

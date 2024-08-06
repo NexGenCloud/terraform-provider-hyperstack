@@ -8,8 +8,9 @@ vars:
   DIR_EXAMPLES: "{{ .ROOT_DIR }}/examples"
   DIR_TESTS: "{{ .ROOT_DIR }}/tests"
   DIR_ARTIFACTS: "{{ .ROOT_DIR }}/artifacts"
+  DIR_ARTIFACTS_PROVIDER: "{{ .DIR_ARTIFACTS }}/provider-mirror"
+  DIR_ARTIFACTS_TESTS: "{{ .DIR_ARTIFACTS }}/tests"
   DIR_DIST: "{{ .ROOT_DIR }}/dist"
-  DIR_PROVIDER_MIRROR: "{{ .DIR_ARTIFACTS }}/provider-mirror"
   DIR_PROVIDER: "{{ .ROOT_DIR }}/internal/provider"
   DIR_GENPROVIDER: "{{ .ROOT_DIR }}/internal/genprovider"
   API_SPEC_PATH: "{{ .DIR_ARTIFACTS }}/api.json"
@@ -47,6 +48,8 @@ tasks:
       
       Build & publish docs:
       https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-release-publish
+    deps:
+      - build-cleanup
     vars:
       TF_PROVIDER_NAME: "hyperstack"
       TF_PROVIDER_REPO: "registry.terraform.io/nexgencloud"
@@ -79,7 +82,7 @@ tasks:
         
         METADATA="$(cat "{{ .DIR_DIST }}/metadata.json")"
         VERSION="$(echo "${METADATA}" | jq -r '.version' | cut -d'-' -f1)"
-        PROVIDER_MIRROR_DIR="{{ .DIR_PROVIDER_MIRROR }}/${PROVIDER_ADDRESS}/${VERSION}/{{ .ARCH }}"
+        PROVIDER_MIRROR_DIR="{{ .DIR_ARTIFACTS_PROVIDER }}/${PROVIDER_ADDRESS}/${VERSION}/{{ .ARCH }}"
         PROJECT_NAME="$(echo "${METADATA}" | jq -r '.project_name')"
         PROVIDER_FILENAME="${PROJECT_NAME}_v${VERSION}"
         mkdir -p "${PROVIDER_MIRROR_DIR}"
@@ -87,10 +90,22 @@ tasks:
       # language=bash
       - echo "done"
 
+  build-cleanup:
+    desc: |
+      Removes stale provider artifacts
+    internal: true
+    cmds:
+      # language=bash Removes stale provider references from tests artifacts
+      - find "{{ .DIR_ARTIFACTS_TESTS }}" -name ".terraform" -exec rm -Rf {} \;
+      # language=bash Removes stale provider reference
+      - rm -Rf "{{ .DIR_ARTIFACTS_PROVIDER }}"
+
   gen:
     desc: |
       Generates schemas
     cmds:
+      # language=bash
+      - mkdir -p '{{ .DIR_ARTIFACTS }}'
       - task: build-api-spec
       - task: build-provider-spec
 
@@ -99,7 +114,7 @@ tasks:
       Tests the provider
     dir: "{{ .DIR_TESTS }}"
     env:
-      ARTIFACTS_DIR: "{{ .DIR_ARTIFACTS }}/tests2"
+      ARTIFACTS_DIR: "{{ .DIR_ARTIFACTS_TESTS }}"
     vars:
       TESTS:
         # language=bash
@@ -117,9 +132,9 @@ tasks:
           SKIP: |
             {{/* We simply check if current test should be run */}}
             {{ ternary "true" "false"
-                (and (not (eq .TEST_NAME "")) (not (eq .TEST_NAME .TEST)))
+            (and (not (eq .TEST_NAME "")) (not (eq .TEST_NAME .TEST)))
             }}
-#
+  #
 
   test-run:
     desc: |
@@ -131,10 +146,10 @@ tasks:
       SKIP: '{{ .SKIP | default "false" }}'
       RUN_DESTROY: '{{ .RUN_DESTROY | default "true" }}'
     env:
-      ARTIFACTS_DIR: '{{ .DIR_ARTIFACTS }}/tests'
+      ARTIFACTS_DIR: '{{ .DIR_ARTIFACTS_TESTS }}'
       TERRAGRUNT_LOG_LEVEL: "warn"
       #TERRAGRUNT_DEBUG: "1"
-      TERRAGRUNT_NO_AUTO_INIT: "true"
+      TERRAGRUNT_NO_AUTO_INIT: "false"
       TERRAGRUNT_NON_INTERACTIVE: "true"
       TERRAGRUNT_PARALLELISM: "1"
     cmds:
@@ -146,6 +161,9 @@ tasks:
         echo "-------------------"
         echo "Testing {{ .TEST }}"
         echo "-------------------"
+        
+        # PURE DEBUG LINE, KEEPING FOR FUTURE REFERENCE ON IMPORTING
+        # cd cluster && terragrunt import module.cluster.hyperstack_core_cluster.this 148 && exit 1
 
         LOG_SUFFIX=apply terragrunt run-all apply
 

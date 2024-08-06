@@ -6,11 +6,11 @@ import (
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/clusters"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_cluster"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"strconv"
 	"time"
 )
@@ -70,9 +70,13 @@ func (r *ResourceCoreCluster) Create(
 		return
 	}
 
+	tflog.Info(ctx, "Create cluster: Running POST /core/clusters", map[string]interface{}{
+		"name": dataOld.Name.ValueString(),
+	})
 	result, err := r.client.CreateClusterWithResponse(ctx, func() clusters.CreateClusterJSONRequestBody {
 		return clusters.CreateClusterJSONRequestBody{
-			EnablePublicIp:    dataOld.EnablePublicIp.ValueBoolPointer(),
+			// TODO: currently not available during create
+			//EnablePublicIp:    dataOld.EnablePublicIp.ValueBoolPointer(),
 			EnvironmentName:   dataOld.EnvironmentName.ValueString(),
 			ImageName:         dataOld.ImageName.ValueString(),
 			KeypairName:       dataOld.KeypairName.ValueString(),
@@ -111,11 +115,18 @@ func (r *ResourceCoreCluster) Create(
 	clusterModel := callResult
 
 	id := *clusterModel.Id
+	tflog.Info(ctx, "Create cluster: return result", map[string]interface{}{
+		"id":     fmt.Sprintf("%v", id),
+		"status": *clusterModel.Status,
+	})
 	err = r.WaitForResult(
 		ctx,
 		3*time.Second,
 		900*time.Second,
 		func(ctx context.Context) (bool, error) {
+			tflog.Debug(ctx, "Create cluster: waiting for status change: calling GET /core/clusters/:id", map[string]interface{}{
+				"id": fmt.Sprintf("%v", id),
+			})
 			result, err := r.client.GettingClusterDetailWithResponse(ctx, id)
 			if err != nil {
 				return false, err
@@ -126,14 +137,37 @@ func (r *ResourceCoreCluster) Create(
 			}
 
 			status := *result.JSON200.Cluster.Status
+			tflog.Debug(ctx, "Create cluster: GET /core/clusters/:id result", map[string]interface{}{
+				"id":     fmt.Sprintf("%v", id),
+				"status": status,
+				"status_reason": func() string {
+					if result.JSON200.Cluster.StatusReason == nil {
+						return ""
+					}
+					return *result.JSON200.Cluster.StatusReason
+				}(),
+			})
 			if status == "CREATING" {
 				return false, nil
+			}
+
+			// TODO: remove this check after API is functional
+			if status == "CREATE_COMPLETE" {
+				tflog.Warn(ctx, "Create cluster: status is CREATE_COMPLETE but kubeconfig is empty!")
+				kubeConfig := result.JSON200.Cluster.KubeConfig
+				if kubeConfig == nil {
+					return false, nil
+				}
 			}
 
 			clusterModel = result.JSON200.Cluster
 			return true, nil
 		},
 	)
+	tflog.Debug(ctx, "Create cluster: status", map[string]interface{}{
+		"id":     fmt.Sprintf("%v", id),
+		"status": clusterModel.Status,
+	})
 
 	// TODO: doesn't save resource info in state
 	if err != nil {
@@ -145,7 +179,7 @@ func (r *ResourceCoreCluster) Create(
 	}
 
 	// TODO: doesn't save resource info in state
-	if *clusterModel.Status == "ERROR" {
+	if *clusterModel.Status != "CREATE_COMPLETE" {
 		resp.Diagnostics.AddError(
 			"Failed creating instance: status %s",
 			*clusterModel.Status,
@@ -153,7 +187,7 @@ func (r *ResourceCoreCluster) Create(
 		return
 	}
 
-	data := r.ApiToModel(ctx, &resp.Diagnostics, callResult)
+	data := r.ApiToModel(ctx, &resp.Diagnostics, clusterModel)
 	r.MergeData(&data, &dataOld)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -268,6 +302,9 @@ func (r *ResourceCoreCluster) Delete(ctx context.Context, req resource.DeleteReq
 
 	id := int(data.Id.ValueInt64())
 
+	tflog.Info(ctx, "Delete cluster: Running DELETE /core/clusters/:id", map[string]interface{}{
+		"name": fmt.Sprintf("%v", id),
+	})
 	result, err := r.client.DeleteAClusterWithResponse(ctx, id)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -295,7 +332,25 @@ func (r *ResourceCoreCluster) Delete(ctx context.Context, req resource.DeleteReq
 				return false, err
 			}
 
-			return result.JSON404 != nil, nil
+			if result.JSON404 != nil {
+				return true, nil
+			}
+
+			if result.JSON200 != nil {
+				status := *result.JSON200.Cluster.Status
+				tflog.Debug(ctx, "Delete cluster: GET /core/clusters/:id result", map[string]interface{}{
+					"id":     fmt.Sprintf("%v", id),
+					"status": status,
+					"status_reason": func() string {
+						if result.JSON200.Cluster.StatusReason == nil {
+							return ""
+						}
+						return *result.JSON200.Cluster.StatusReason
+					}(),
+				})
+			}
+
+			return false, nil
 		},
 	)
 	if err != nil {
@@ -360,7 +415,6 @@ func (r *ResourceCoreCluster) ApiToModel(
 		KubernetesVersion: types.StringPointerValue(response.KubernetesVersion),
 		MasterFlavorName:  types.StringNull(),
 		Name:              types.StringPointerValue(response.Name),
-		NodeAddresses:     r.MapNodeAddresses(ctx, diags, *response.NodeAddresses),
 		NodeCount: func() types.Int64 {
 			if response.NodeCount == nil {
 				return types.Int64Null()
@@ -372,24 +426,4 @@ func (r *ResourceCoreCluster) ApiToModel(
 		Status:         types.StringPointerValue(response.Status),
 		StatusReason:   types.StringPointerValue(response.StatusReason),
 	}
-}
-
-func (r *ResourceCoreCluster) MapNodeAddresses(
-	ctx context.Context,
-	diags *diag.Diagnostics,
-	data []string,
-) types.List {
-	model, diagnostic := types.ListValue(
-		types.StringType,
-		func() []attr.Value {
-			labels := make([]attr.Value, 0)
-			for _, row := range data {
-				model := types.StringValue(row)
-				labels = append(labels, model)
-			}
-			return labels
-		}(),
-	)
-	diags.Append(diagnostic...)
-	return model
 }
