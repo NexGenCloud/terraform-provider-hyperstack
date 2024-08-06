@@ -207,6 +207,12 @@ def fix_provider_spec(spec_file: str) -> None:
         if attr["name"] in computed_params:
           attr_update_behavior(attr, "computed")
 
+      # TODO: remove when docs are fixed
+      remove_params = [
+        "node_addresses",
+      ]
+      row["schema"]["attributes"] = [x for x in row["schema"]["attributes"] if x["name"] not in remove_params]
+
     if row["name"] == "core_volume":
       for attr in row["schema"]["attributes"]:
         immutable_params = [

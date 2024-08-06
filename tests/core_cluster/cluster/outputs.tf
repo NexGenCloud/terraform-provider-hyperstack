@@ -38,10 +38,6 @@ output "node_count" {
   value = module.cluster.node_count
 }
 
-output "node_addresses" {
-  value = module.cluster.node_addresses
-}
-
 output "keypair_name" {
   value = module.cluster.keypair_name
 }

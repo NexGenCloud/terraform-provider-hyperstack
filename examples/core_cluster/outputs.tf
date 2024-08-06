@@ -38,10 +38,6 @@ output "node_count" {
   value = hyperstack_core_cluster.this.node_count
 }
 
-output "node_addresses" {
-  value = hyperstack_core_cluster.this.node_addresses
-}
-
 output "keypair_name" {
   value = hyperstack_core_cluster.this.keypair_name
 }
