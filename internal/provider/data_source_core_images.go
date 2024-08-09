@@ -232,8 +232,8 @@ func (d *DataSourceCoreImages) MapLabels(
 				model, diagnostic := datasource_core_images.NewLabelsValue(
 					datasource_core_images.LabelsValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
-						"id":   types.Int64Value(int64(*row.Id)),
-						"name": types.StringValue(*row.Label),
+						"id":    types.Int64Value(int64(*row.Id)),
+						"label": types.StringValue(*row.Label),
 					},
 				)
 				diags.Append(diagnostic...)

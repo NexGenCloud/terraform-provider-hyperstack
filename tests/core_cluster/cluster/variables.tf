@@ -10,6 +10,7 @@ variable "name_prefix" {
   type = string
 }
 
+#noinspection TFIncorrectVariableType
 variable "clusters" {
   type = map(object({
     master_flavor = optional(object({
@@ -30,7 +31,7 @@ variable "clusters" {
     })
 
     image_type = optional(string, "Ubuntu")
-    image_version = optional(string, "Server 20.04 LTS")
+    image_version = optional(string, "Server 22.04 LTS")
   }))
 
   default = {
@@ -41,19 +42,21 @@ variable "clusters" {
         cpu_count = 8
       }
     }
-#     "a100x1_2" = {
-#       node_count = 2
-#       node_flavor = {
-#         gpu_name = "A100-80G-PCIe"
-#         gpu_count = 1
-#       }
-#     }
-#     "h100x1_2" = {
-#       node_count = 2
-#       node_flavor = {
-#         gpu_name = "H100-80G-PCIe"
-#         gpu_count = 1
-#       }
-#     }
+    "a100x1_2" = {
+      node_count = 2
+      node_flavor = {
+        gpu_name = "A100-80G-PCIe"
+        gpu_count = 1
+      }
+      image_version = optional(string, "Server 22.04 LTS R535 CUDA 12.2")
+    }
+    "h100x1_2" = {
+      node_count = 2
+      node_flavor = {
+        gpu_name = "H100-80G-PCIe"
+        gpu_count = 1
+      }
+      image_version = optional(string, "Server 22.04 LTS R535 CUDA 12.2")
+    }
   }
 }
