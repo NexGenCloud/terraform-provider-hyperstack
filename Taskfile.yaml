@@ -96,7 +96,9 @@ tasks:
     internal: true
     cmds:
       # language=bash Removes stale provider references from tests artifacts
-      - find "{{ .DIR_ARTIFACTS_TESTS }}" -name ".terraform" -exec rm -Rf {} \;
+      - |
+        mkdir -p "{{ .DIR_ARTIFACTS_TESTS }}"
+        find "{{ .DIR_ARTIFACTS_TESTS }}" -name ".terraform" -exec rm -Rf {} \;
       # language=bash Removes stale provider reference
       - rm -Rf "{{ .DIR_ARTIFACTS_PROVIDER }}"
 
