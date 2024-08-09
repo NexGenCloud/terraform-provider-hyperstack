@@ -10,12 +10,12 @@ variable "name_prefix" {
   type    = string
 }
 
-variable "instance_gpu" {
+variable "instance_gpu_name" {
   type    = string
   default = ""
 }
 
-variable "instance_cpus" {
+variable "instance_cpu_count" {
   type    = number
   default = 4
 }

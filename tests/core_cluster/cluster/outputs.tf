@@ -1,53 +1,20 @@
-output "id" {
-  value = module.cluster.id
-}
-
-output "name" {
-  value = module.cluster.name
-}
-
-output "environment_name" {
-  value = module.cluster.environment_name
-}
-
-output "kubernetes_version" {
-  value = module.cluster.kubernetes_version
-}
-
-output "api_address" {
-  value = module.cluster.api_address
-}
-
-output "kube_config" {
-  value = module.cluster.kube_config
-}
-
-output "kube_config_file" {
-  value = module.cluster.kube_config_file
-}
-
-output "status" {
-  value = module.cluster.status
-}
-
-output "status_reason" {
-  value = module.cluster.status_reason
-}
-
-output "node_count" {
-  value = module.cluster.node_count
-}
-
-output "keypair_name" {
-  value = module.cluster.keypair_name
-}
-
-output "enable_public_ip" {
-  value = module.cluster.enable_public_ip
-}
-
-output "created_at" {
-  value = module.cluster.created_at
+output "clusters" {
+  value = {
+    for k, v in module.cluster : k => {
+      id                 = v.id
+      name               = v.name
+      environment_name   = v.environment_name
+      kubernetes_version = v.kubernetes_version
+      api_address        = v.api_address
+      kube_config        = v.kube_config
+      kube_config_file   = v.kube_config_file
+      status             = v.status
+      status_reason      = v.status_reason
+      node_count         = v.node_count
+      keypair_name       = v.keypair_name
+      created_at         = v.created_at
+    }
+  }
 }
 
 output "clusters_versions" {

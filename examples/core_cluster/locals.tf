@@ -1,8 +1,8 @@
 locals {
   name = var.name
 
-  master_flavor_name = module.flavor_master.name
-  node_flavor_name   = module.flavor_node.name
+  master_flavor_name = var.master_flavor
+  node_flavor_name   = var.node_flavor
   image_name         = module.image.name
 
   kubeconfig_in = yamldecode(base64decode(hyperstack_core_cluster.this.kube_config))

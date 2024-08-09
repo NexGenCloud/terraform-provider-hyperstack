@@ -3,7 +3,12 @@ locals {
   flavor = coalescelist(flatten([
     for flavor in local.flavors : coalesce([
         for f in flavor.flavors : f
-        if f.cpu == var.flavor_cpus && f.gpu == var.flavor_gpu && f.region_name == var.flavor_region
+        if true
+          && (var.name == null || f.name == var.name)
+          && (var.cpu_count == null || f.cpu == var.cpu_count)
+          && (var.gpu_name == null || f.gpu == var.gpu_name)
+          && (var.gpu_count == null || f.gpu_count == var.gpu_count)
+          && (f.region_name == var.region)
       ])
     ]))[0]
 }
