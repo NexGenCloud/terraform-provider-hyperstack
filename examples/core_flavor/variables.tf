@@ -1,11 +1,23 @@
-variable "flavor_region" {
+variable "region" {
   type = string
 }
 
-variable "flavor_gpu" {
-  type = string
+variable "name" {
+  type    = string
+  default = null
 }
 
-variable "flavor_cpus" {
-  type = number
+variable "gpu_name" {
+  type    = string
+  default = null
+}
+
+variable "gpu_count" {
+  type    = number
+  default = null
+}
+
+variable "cpu_count" {
+  type    = number
+  default = null
 }

@@ -7,8 +7,6 @@ resource "hyperstack_core_cluster" "this" {
 
   kubernetes_version = var.kubernetes_version
   image_name         = local.image_name
-  master_flavor_name = local.master_flavor_name
-  node_flavor_name   = local.node_flavor_name
-
-  enable_public_ip = var.enable_public_ip
+  master_flavor_name = var.master_flavor
+  node_flavor_name   = var.node_flavor
 }
