@@ -3,6 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/clusters"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_cluster"
@@ -11,8 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"strconv"
-	"time"
 )
 
 var _ resource.Resource = &ResourceCoreCluster{}
@@ -401,7 +402,7 @@ func (r *ResourceCoreCluster) ApiToModel(
 			}
 			return types.StringValue(response.CreatedAt.String())
 		}(),
-		EnablePublicIp:  types.BoolPointerValue(response.EnablePublicIp),
+		// EnablePublicIp:  types.BoolPointerValue(response.EnablePublicIp),
 		EnvironmentName: types.StringPointerValue(response.EnvironmentName),
 		Id: func() types.Int64 {
 			if response.Id == nil {
