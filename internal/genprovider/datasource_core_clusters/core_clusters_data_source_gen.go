@@ -27,9 +27,6 @@ func CoreClustersDataSourceSchema(ctx context.Context) schema.Schema {
 						"created_at": schema.StringAttribute{
 							Computed: true,
 						},
-						"enable_public_ip": schema.BoolAttribute{
-							Computed: true,
-						},
 						"environment_name": schema.StringAttribute{
 							Computed: true,
 						},
@@ -47,10 +44,6 @@ func CoreClustersDataSourceSchema(ctx context.Context) schema.Schema {
 						},
 						"name": schema.StringAttribute{
 							Computed: true,
-						},
-						"node_addresses": schema.ListAttribute{
-							ElementType: types.StringType,
-							Computed:    true,
 						},
 						"node_count": schema.Int64Attribute{
 							Computed: true,
@@ -173,24 +166,6 @@ func (t CoreClustersType) ValueFromObject(ctx context.Context, in basetypes.Obje
 			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
 	}
 
-	enablePublicIpAttribute, ok := attributes["enable_public_ip"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`enable_public_ip is missing from object`)
-
-		return nil, diags
-	}
-
-	enablePublicIpVal, ok := enablePublicIpAttribute.(basetypes.BoolValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`enable_public_ip expected to be basetypes.BoolValue, was: %T`, enablePublicIpAttribute))
-	}
-
 	environmentNameAttribute, ok := attributes["environment_name"]
 
 	if !ok {
@@ -299,24 +274,6 @@ func (t CoreClustersType) ValueFromObject(ctx context.Context, in basetypes.Obje
 			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
 	}
 
-	nodeAddressesAttribute, ok := attributes["node_addresses"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`node_addresses is missing from object`)
-
-		return nil, diags
-	}
-
-	nodeAddressesVal, ok := nodeAddressesAttribute.(basetypes.ListValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`node_addresses expected to be basetypes.ListValue, was: %T`, nodeAddressesAttribute))
-	}
-
 	nodeCountAttribute, ok := attributes["node_count"]
 
 	if !ok {
@@ -396,14 +353,12 @@ func (t CoreClustersType) ValueFromObject(ctx context.Context, in basetypes.Obje
 	return CoreClustersValue{
 		ApiAddress:        apiAddressVal,
 		CreatedAt:         createdAtVal,
-		EnablePublicIp:    enablePublicIpVal,
 		EnvironmentName:   environmentNameVal,
 		Id:                idVal,
 		KeypairName:       keypairNameVal,
 		KubeConfig:        kubeConfigVal,
 		KubernetesVersion: kubernetesVersionVal,
 		Name:              nameVal,
-		NodeAddresses:     nodeAddressesVal,
 		NodeCount:         nodeCountVal,
 		NodeFlavor:        nodeFlavorVal,
 		Status:            statusVal,
@@ -511,24 +466,6 @@ func NewCoreClustersValue(attributeTypes map[string]attr.Type, attributes map[st
 			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
 	}
 
-	enablePublicIpAttribute, ok := attributes["enable_public_ip"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`enable_public_ip is missing from object`)
-
-		return NewCoreClustersValueUnknown(), diags
-	}
-
-	enablePublicIpVal, ok := enablePublicIpAttribute.(basetypes.BoolValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`enable_public_ip expected to be basetypes.BoolValue, was: %T`, enablePublicIpAttribute))
-	}
-
 	environmentNameAttribute, ok := attributes["environment_name"]
 
 	if !ok {
@@ -637,24 +574,6 @@ func NewCoreClustersValue(attributeTypes map[string]attr.Type, attributes map[st
 			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
 	}
 
-	nodeAddressesAttribute, ok := attributes["node_addresses"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`node_addresses is missing from object`)
-
-		return NewCoreClustersValueUnknown(), diags
-	}
-
-	nodeAddressesVal, ok := nodeAddressesAttribute.(basetypes.ListValue)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`node_addresses expected to be basetypes.ListValue, was: %T`, nodeAddressesAttribute))
-	}
-
 	nodeCountAttribute, ok := attributes["node_count"]
 
 	if !ok {
@@ -734,14 +653,12 @@ func NewCoreClustersValue(attributeTypes map[string]attr.Type, attributes map[st
 	return CoreClustersValue{
 		ApiAddress:        apiAddressVal,
 		CreatedAt:         createdAtVal,
-		EnablePublicIp:    enablePublicIpVal,
 		EnvironmentName:   environmentNameVal,
 		Id:                idVal,
 		KeypairName:       keypairNameVal,
 		KubeConfig:        kubeConfigVal,
 		KubernetesVersion: kubernetesVersionVal,
 		Name:              nameVal,
-		NodeAddresses:     nodeAddressesVal,
 		NodeCount:         nodeCountVal,
 		NodeFlavor:        nodeFlavorVal,
 		Status:            statusVal,
@@ -820,14 +737,12 @@ var _ basetypes.ObjectValuable = CoreClustersValue{}
 type CoreClustersValue struct {
 	ApiAddress        basetypes.StringValue `tfsdk:"api_address"`
 	CreatedAt         basetypes.StringValue `tfsdk:"created_at"`
-	EnablePublicIp    basetypes.BoolValue   `tfsdk:"enable_public_ip"`
 	EnvironmentName   basetypes.StringValue `tfsdk:"environment_name"`
 	Id                basetypes.Int64Value  `tfsdk:"id"`
 	KeypairName       basetypes.StringValue `tfsdk:"keypair_name"`
 	KubeConfig        basetypes.StringValue `tfsdk:"kube_config"`
 	KubernetesVersion basetypes.StringValue `tfsdk:"kubernetes_version"`
 	Name              basetypes.StringValue `tfsdk:"name"`
-	NodeAddresses     basetypes.ListValue   `tfsdk:"node_addresses"`
 	NodeCount         basetypes.Int64Value  `tfsdk:"node_count"`
 	NodeFlavor        basetypes.ObjectValue `tfsdk:"node_flavor"`
 	Status            basetypes.StringValue `tfsdk:"status"`
@@ -836,23 +751,19 @@ type CoreClustersValue struct {
 }
 
 func (v CoreClustersValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 14)
+	attrTypes := make(map[string]tftypes.Type, 12)
 
 	var val tftypes.Value
 	var err error
 
 	attrTypes["api_address"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["created_at"] = basetypes.StringType{}.TerraformType(ctx)
-	attrTypes["enable_public_ip"] = basetypes.BoolType{}.TerraformType(ctx)
 	attrTypes["environment_name"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["keypair_name"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["kube_config"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["kubernetes_version"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
-	attrTypes["node_addresses"] = basetypes.ListType{
-		ElemType: types.StringType,
-	}.TerraformType(ctx)
 	attrTypes["node_count"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["node_flavor"] = basetypes.ObjectType{
 		AttrTypes: NodeFlavorValue{}.AttributeTypes(ctx),
@@ -864,7 +775,7 @@ func (v CoreClustersValue) ToTerraformValue(ctx context.Context) (tftypes.Value,
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 14)
+		vals := make(map[string]tftypes.Value, 12)
 
 		val, err = v.ApiAddress.ToTerraformValue(ctx)
 
@@ -881,14 +792,6 @@ func (v CoreClustersValue) ToTerraformValue(ctx context.Context) (tftypes.Value,
 		}
 
 		vals["created_at"] = val
-
-		val, err = v.EnablePublicIp.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["enable_public_ip"] = val
 
 		val, err = v.EnvironmentName.ToTerraformValue(ctx)
 
@@ -937,14 +840,6 @@ func (v CoreClustersValue) ToTerraformValue(ctx context.Context) (tftypes.Value,
 		}
 
 		vals["name"] = val
-
-		val, err = v.NodeAddresses.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["node_addresses"] = val
 
 		val, err = v.NodeCount.ToTerraformValue(ctx)
 
@@ -1028,47 +923,16 @@ func (v CoreClustersValue) ToObjectValue(ctx context.Context) (basetypes.ObjectV
 		)
 	}
 
-	nodeAddressesVal, d := types.ListValue(types.StringType, v.NodeAddresses.Elements())
-
-	diags.Append(d...)
-
-	if d.HasError() {
-		return types.ObjectUnknown(map[string]attr.Type{
-			"api_address":        basetypes.StringType{},
-			"created_at":         basetypes.StringType{},
-			"enable_public_ip":   basetypes.BoolType{},
-			"environment_name":   basetypes.StringType{},
-			"id":                 basetypes.Int64Type{},
-			"keypair_name":       basetypes.StringType{},
-			"kube_config":        basetypes.StringType{},
-			"kubernetes_version": basetypes.StringType{},
-			"name":               basetypes.StringType{},
-			"node_addresses": basetypes.ListType{
-				ElemType: types.StringType,
-			},
-			"node_count": basetypes.Int64Type{},
-			"node_flavor": basetypes.ObjectType{
-				AttrTypes: NodeFlavorValue{}.AttributeTypes(ctx),
-			},
-			"status":        basetypes.StringType{},
-			"status_reason": basetypes.StringType{},
-		}), diags
-	}
-
 	attributeTypes := map[string]attr.Type{
 		"api_address":        basetypes.StringType{},
 		"created_at":         basetypes.StringType{},
-		"enable_public_ip":   basetypes.BoolType{},
 		"environment_name":   basetypes.StringType{},
 		"id":                 basetypes.Int64Type{},
 		"keypair_name":       basetypes.StringType{},
 		"kube_config":        basetypes.StringType{},
 		"kubernetes_version": basetypes.StringType{},
 		"name":               basetypes.StringType{},
-		"node_addresses": basetypes.ListType{
-			ElemType: types.StringType,
-		},
-		"node_count": basetypes.Int64Type{},
+		"node_count":         basetypes.Int64Type{},
 		"node_flavor": basetypes.ObjectType{
 			AttrTypes: NodeFlavorValue{}.AttributeTypes(ctx),
 		},
@@ -1089,14 +953,12 @@ func (v CoreClustersValue) ToObjectValue(ctx context.Context) (basetypes.ObjectV
 		map[string]attr.Value{
 			"api_address":        v.ApiAddress,
 			"created_at":         v.CreatedAt,
-			"enable_public_ip":   v.EnablePublicIp,
 			"environment_name":   v.EnvironmentName,
 			"id":                 v.Id,
 			"keypair_name":       v.KeypairName,
 			"kube_config":        v.KubeConfig,
 			"kubernetes_version": v.KubernetesVersion,
 			"name":               v.Name,
-			"node_addresses":     nodeAddressesVal,
 			"node_count":         v.NodeCount,
 			"node_flavor":        nodeFlavor,
 			"status":             v.Status,
@@ -1129,10 +991,6 @@ func (v CoreClustersValue) Equal(o attr.Value) bool {
 		return false
 	}
 
-	if !v.EnablePublicIp.Equal(other.EnablePublicIp) {
-		return false
-	}
-
 	if !v.EnvironmentName.Equal(other.EnvironmentName) {
 		return false
 	}
@@ -1154,10 +1012,6 @@ func (v CoreClustersValue) Equal(o attr.Value) bool {
 	}
 
 	if !v.Name.Equal(other.Name) {
-		return false
-	}
-
-	if !v.NodeAddresses.Equal(other.NodeAddresses) {
 		return false
 	}
 
@@ -1192,17 +1046,13 @@ func (v CoreClustersValue) AttributeTypes(ctx context.Context) map[string]attr.T
 	return map[string]attr.Type{
 		"api_address":        basetypes.StringType{},
 		"created_at":         basetypes.StringType{},
-		"enable_public_ip":   basetypes.BoolType{},
 		"environment_name":   basetypes.StringType{},
 		"id":                 basetypes.Int64Type{},
 		"keypair_name":       basetypes.StringType{},
 		"kube_config":        basetypes.StringType{},
 		"kubernetes_version": basetypes.StringType{},
 		"name":               basetypes.StringType{},
-		"node_addresses": basetypes.ListType{
-			ElemType: types.StringType,
-		},
-		"node_count": basetypes.Int64Type{},
+		"node_count":         basetypes.Int64Type{},
 		"node_flavor": basetypes.ObjectType{
 			AttrTypes: NodeFlavorValue{}.AttributeTypes(ctx),
 		},

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -27,13 +26,6 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"created_at": schema.StringAttribute{
 				Computed: true,
-			},
-			"enable_public_ip": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.RequiresReplace(),
-				},
 			},
 			"environment_name": schema.StringAttribute{
 				Required: true,
@@ -127,7 +119,6 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 type CoreClusterModel struct {
 	ApiAddress        types.String    `tfsdk:"api_address"`
 	CreatedAt         types.String    `tfsdk:"created_at"`
-	EnablePublicIp    types.Bool      `tfsdk:"enable_public_ip"`
 	EnvironmentName   types.String    `tfsdk:"environment_name"`
 	Id                types.Int64     `tfsdk:"id"`
 	ImageName         types.String    `tfsdk:"image_name"`

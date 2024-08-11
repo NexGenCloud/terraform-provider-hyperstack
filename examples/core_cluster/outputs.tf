@@ -42,9 +42,9 @@ output "keypair_name" {
   value = hyperstack_core_cluster.this.keypair_name
 }
 
-output "enable_public_ip" {
-  value = hyperstack_core_cluster.this.enable_public_ip
-}
+# output "enable_public_ip" {
+#   value = hyperstack_core_cluster.this.enable_public_ip
+# }
 
 output "created_at" {
   value = hyperstack_core_cluster.this.created_at
