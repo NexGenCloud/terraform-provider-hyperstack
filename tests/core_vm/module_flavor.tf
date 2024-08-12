@@ -1,7 +1,11 @@
 module "flavor" {
   source = "../../examples/core_flavor"
 
+  for_each = var.vms
+
   region    = var.region
-  gpu_name  = var.instance_gpu_name
-  cpu_count = var.instance_cpu_count
+  name      = each.value.flavor.name
+  gpu_name  = each.value.flavor.gpu_name
+  gpu_count = each.value.flavor.gpu_count
+  cpu_count = each.value.flavor.cpu_count
 }

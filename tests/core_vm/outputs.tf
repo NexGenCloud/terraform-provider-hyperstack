@@ -1,59 +1,21 @@
-output "id" {
-  value = module.vm.vm.id
-}
-
-output "name" {
-  value = module.vm.vm.name
-}
-
-output "status" {
-  value = module.vm.vm.status
-}
-
-output "environment" {
-  value = module.vm.vm.environment
-}
-
-output "image" {
-  value = module.vm.vm.image
-}
-
-output "flavor" {
-  value = module.vm.vm.flavor
-}
-
-output "keypair" {
-  value = module.vm.vm.keypair
-}
-
-output "volume_attachments" {
-  value = module.vm.vm.volume_attachments
-}
-
-output "security_rules" {
-  value = module.vm.vm.security_rules
-}
-
-output "power_state" {
-  value = module.vm.vm.power_state
-}
-
-output "vm_state" {
-  value = module.vm.vm.vm_state
-}
-
-output "fixed_ip" {
-  value = module.vm.vm.fixed_ip
-}
-
-output "floating_ip" {
-  value = module.vm.vm.floating_ip
-}
-
-output "floating_ip_status" {
-  value = module.vm.vm.floating_ip_status
-}
-
-output "created_at" {
-  value = module.vm.vm.created_at
+output "vms" {
+  value = {
+    for k, v in module.vms : k => {
+      id                  = v.vm.id
+      name                = v.vm.name
+      status              = v.vm.status
+      environment         = v.vm.environment
+      image               = v.vm.image
+      flavor              = v.vm.flavor
+      keypair             = v.vm.keypair
+      volume_attachments  = v.vm.volume_attachments
+      security_rules      = v.vm.security_rules
+      power_state         = v.vm.power_state
+      vm_state            = v.vm.vm_state
+      fixed_ip            = v.vm.fixed_ip
+      floating_ip         = v.vm.floating_ip
+      floating_ip_status  = v.vm.floating_ip_status
+      created_at          = v.vm.created_at
+    }
+  }
 }
