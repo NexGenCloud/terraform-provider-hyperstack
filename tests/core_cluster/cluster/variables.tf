@@ -63,7 +63,7 @@ variable "clusters" {
       image_version = "Server 22.04 LTS R535 CUDA 12.2"
     }
     "l40-2" = {
-      enabled    = false
+      enabled    = true
       validation = {
         gpu = true
       }
@@ -75,7 +75,7 @@ variable "clusters" {
       image_version = "Server 22.04 LTS R535 CUDA 12.2"
     }
     "a100x1-2" = {
-      enabled    = false
+      enabled    = true
       validation = {
         gpu = true
       }
@@ -87,7 +87,7 @@ variable "clusters" {
       image_version = "Server 22.04 LTS R535 CUDA 12.2"
     }
     "h100x1-2" = {
-      enabled    = false
+      enabled    = true
       validation = {
         gpu = true
       }
