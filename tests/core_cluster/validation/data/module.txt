@@ -30,4 +30,4 @@ module "cluster_${c_name}" {
     gpu = ${c_value.validation.gpu}
   }
 }
-%{~ endfor }
+%{ endfor }
