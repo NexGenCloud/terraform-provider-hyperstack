@@ -9,7 +9,7 @@ locals {
 inputs = {
   region = get_env("HYPERSTACK_REGION")
   artifacts_dir = local.artifacts_dir
-  name_prefix   = "test-"
+  name_prefix   = "tf-"
 }
 
 terraform {
@@ -47,6 +47,17 @@ terraform {
     arguments = [
       "-upgrade",
       "-migrate-state",
+    ]
+  }
+
+  extra_arguments "apply_parallel" {
+    commands = [
+      "apply",
+      "destroy",
+    ]
+
+    arguments = [
+      "-parallelism=50",
     ]
   }
 

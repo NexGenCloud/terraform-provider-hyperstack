@@ -1,7 +1,7 @@
 module "cluster" {
   source = "../../../examples/core_cluster"
 
-  for_each = var.clusters
+  for_each = local.clusters
 
   region             = var.region
   artifacts_dir      = "${var.artifacts_dir}/${each.key}"

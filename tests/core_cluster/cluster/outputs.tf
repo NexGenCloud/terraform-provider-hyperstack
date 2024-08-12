@@ -13,8 +13,17 @@ output "clusters" {
       node_count         = v.node_count
       keypair_name       = v.keypair_name
       created_at         = v.created_at
+
+      artifacts_dir         = v.artifacts_dir
+      load_balancer_address = v.load_balancer_address
+
+      validation = var.clusters[k].validation
     }
   }
+}
+
+output "name" {
+  value = local.name
 }
 
 output "clusters_versions" {

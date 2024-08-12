@@ -1,7 +1,7 @@
 module "flavor_master" {
   source = "../../../examples/core_flavor"
 
-  for_each = var.clusters
+  for_each = local.clusters
 
   region    = var.region
   name      = each.value.master_flavor.name
@@ -13,7 +13,7 @@ module "flavor_master" {
 module "flavor_node" {
   source = "../../../examples/core_flavor"
 
-  for_each = var.clusters
+  for_each = local.clusters
 
   region    = var.region
   name      = each.value.node_flavor.name

@@ -1,10 +1,10 @@
 resource "helm_release" "nginx" {
-  name       = "${local.name}-nginx"
+  name      = "${var.name}-nginx"
+  namespace = kubernetes_namespace.this.id
+
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "nginx"
   version    = "18.1.6"
-
-  namespace = kubernetes_namespace.this.id
 
   values = [
     <<EOF

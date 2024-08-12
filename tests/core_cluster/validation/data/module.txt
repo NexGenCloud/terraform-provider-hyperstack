@@ -1,0 +1,33 @@
+%{ for c_name, c_value in clusters ~}
+provider "kubernetes" {
+  alias       = "${c_name}"
+  config_path = "${c_value.kube_config_file}"
+  insecure    = true
+}
+
+provider "helm" {
+  alias = "${c_name}"
+  kubernetes {
+    config_path = "${c_value.kube_config_file}"
+    insecure    = true
+  }
+}
+
+module "cluster_${c_name}" {
+  source = "./module_validation"
+
+  providers = {
+    kubernetes = kubernetes.${c_name}
+    helm       = helm.${c_name}
+  }
+
+  name                  = "${c_name}"
+  cluster_name          = "${c_value.name}"
+  artifacts_dir         = "${c_value.artifacts_dir}"
+  kube_config_file      = "${c_value.kube_config_file}"
+  load_balancer_address = "${c_value.load_balancer_address}"
+  validation            = {
+    gpu = ${c_value.validation.gpu}
+  }
+}
+%{~ endfor }

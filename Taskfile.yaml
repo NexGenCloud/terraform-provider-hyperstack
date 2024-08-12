@@ -165,7 +165,7 @@ tasks:
         echo "-------------------"
         
         # PURE DEBUG LINE, KEEPING FOR FUTURE REFERENCE ON IMPORTING
-        # cd cluster && terragrunt import module.cluster.hyperstack_core_cluster.this 148 && exit 1
+        # cd cluster && terragrunt import module.cluster[\"a6000-2\"].hyperstack_core_cluster.this 138; exit 1
 
         LOG_SUFFIX=apply terragrunt run-all apply
 
