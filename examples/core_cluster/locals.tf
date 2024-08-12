@@ -24,4 +24,8 @@ locals {
       })
     ]
   })
+
+  # Extract the IP address using a regular expression that captures text between https:// and :6443
+  # TODO: this should come from api
+  load_balancer_address = regex("https?://([0-9\\.]+):6443", hyperstack_core_cluster.this.api_address)[0]
 }

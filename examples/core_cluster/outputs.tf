@@ -42,10 +42,14 @@ output "keypair_name" {
   value = hyperstack_core_cluster.this.keypair_name
 }
 
-# output "enable_public_ip" {
-#   value = hyperstack_core_cluster.this.enable_public_ip
-# }
-
 output "created_at" {
   value = hyperstack_core_cluster.this.created_at
+}
+
+output "artifacts_dir" {
+  value = var.artifacts_dir
+}
+
+output "load_balancer_address" {
+  value = local.load_balancer_address
 }

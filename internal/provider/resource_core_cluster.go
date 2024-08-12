@@ -123,7 +123,8 @@ func (r *ResourceCoreCluster) Create(
 	err = r.WaitForResult(
 		ctx,
 		3*time.Second,
-		900*time.Second,
+		// 30 mins
+		30*60*time.Second,
 		func(ctx context.Context) (bool, error) {
 			tflog.Debug(ctx, "Create cluster: waiting for status change: calling GET /core/clusters/:id", map[string]interface{}{
 				"id": fmt.Sprintf("%v", id),
