@@ -1,7 +1,7 @@
 module "flavor" {
   source = "../../examples/core_flavor"
 
-  for_each = var.vms
+  for_each = local.vms_types
 
   region    = var.region
   name      = each.value.flavor.name

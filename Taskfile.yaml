@@ -190,13 +190,17 @@ tasks:
       Runs simple API request
     dotenv: [ '.env' ]
     vars:
-      NAME: "debug/me"
+      NAME: "core/flavors"
+      CALLS: "100"
+      BATCHES: "20"
+      #NAME: "auth/me"
     cmds:
       # language=bash
       - |
-        curl -X GET "${HYPERSTACK_API_ADDRESS}/{{ .NAME }}" \
-          -H "accept: application/json" \
-          -H "api_key: ${HYPERSTACK_API_KEY}"
+        printf %s\\n {0..{{ .CALLS }}} | xargs -n 1 -I {} -P "{{ .BATCHES }}" \
+          sh -c 'curl -s -X GET "'"${HYPERSTACK_API_ADDRESS}"'/{{ .NAME }}" \
+            -H "accept: application/json" \
+            -H "api_key: '"${HYPERSTACK_API_KEY}"'" || exit 255'
 
   build-api-spec:
     desc: |
