@@ -17,12 +17,18 @@ vars:
   PROVIDER_SPEC_PATH: "{{ .DIR_ARTIFACTS }}/provider-spec.json"
   HYPERSTACK_API_ADDRESS: "https://infrahub-api.nexgencloud.com/v1"
 
+  TF_CLOUD_ORG: "nexgencloud"
+  TF_PROVIDER_NAME: "hyperstack"
+  TF_PROVIDER_REPO: "registry.terraform.io/{{ .TF_CLOUD_ORG }}"
+  # TODO: keep in sync with goreleaser
+  TF_PROVIDER_VERSION: "0.0.0"
+
+
 env:
   GPG_FINGERPRINT: ~
 
   TF_CLOUD_TOKEN: ~
   TF_CLOUD_KEY_ID: ~
-  TF_CLOUD_ORG: nexgencloud
 
   HYPERSTACK_API_KEY: ~
   HYPERSTACK_API_ADDRESS: "{{ .HYPERSTACK_API_ADDRESS }}"
@@ -50,14 +56,15 @@ tasks:
       https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-release-publish
     deps:
       - build-cleanup
+    dotenv: [ '{{ .ROOT_DIR }}/.env' ]
     vars:
-      TF_PROVIDER_NAME: "hyperstack"
-      TF_PROVIDER_REPO: "registry.terraform.io/nexgencloud"
       ARCH:
         # language=bash
         sh: echo "$(go env GOOS)_$(go env GOARCH)"
       SILENT: |-
         {{.SILENT | default "false"}}
+      RELEASE: |-
+        {{.RELEASE | default "false"}}
     env:
       API_ADDRESS: "{{ .HYPERSTACK_API_ADDRESS }}"
       PROVIDER_NAME: "{{ .TF_PROVIDER_NAME }}"
@@ -78,15 +85,22 @@ tasks:
         fi
         goreleaser check
         TMP_BIN_PATH="{{ .DIR_ARTIFACTS }}/provider"
-        goreleaser build --snapshot --clean --single-target -o "${TMP_BIN_PATH}"
+        if [[ "{{ .RELEASE }}" == "true" ]]; then
+          goreleaser release --clean \
+            --skip=announce,publish,validate
+            #--skip=announce,publish
+        else
+          # Only do local build
+          goreleaser build --clean --snapshot --single-target -o "${TMP_BIN_PATH}"
         
-        METADATA="$(cat "{{ .DIR_DIST }}/metadata.json")"
-        VERSION="$(echo "${METADATA}" | jq -r '.version' | cut -d'-' -f1)"
-        PROVIDER_MIRROR_DIR="{{ .DIR_ARTIFACTS_PROVIDER }}/${PROVIDER_ADDRESS}/${VERSION}/{{ .ARCH }}"
-        PROJECT_NAME="$(echo "${METADATA}" | jq -r '.project_name')"
-        PROVIDER_FILENAME="${PROJECT_NAME}_v${VERSION}"
-        mkdir -p "${PROVIDER_MIRROR_DIR}"
-        mv "${TMP_BIN_PATH}" "${PROVIDER_MIRROR_DIR}/${PROVIDER_FILENAME}"
+          METADATA="$(cat "{{ .DIR_DIST }}/metadata.json")"
+          VERSION="$(echo "${METADATA}" | jq -r '.version' | cut -d'-' -f1)"
+          PROVIDER_MIRROR_DIR="{{ .DIR_ARTIFACTS_PROVIDER }}/${PROVIDER_ADDRESS}/${VERSION}/{{ .ARCH }}"
+          PROJECT_NAME="$(echo "${METADATA}" | jq -r '.project_name')"
+          PROVIDER_FILENAME="${PROJECT_NAME}_v${VERSION}"
+          mkdir -p "${PROVIDER_MIRROR_DIR}"
+          mv "${TMP_BIN_PATH}" "${PROVIDER_MIRROR_DIR}/${PROVIDER_FILENAME}"
+        fi
       # language=bash
       - echo "done"
 
@@ -136,7 +150,6 @@ tasks:
             {{ ternary "true" "false"
             (and (not (eq .TEST_NAME "")) (not (eq .TEST_NAME .TEST)))
             }}
-  #
 
   test-run:
     desc: |
@@ -205,7 +218,7 @@ tasks:
   build-api-spec:
     desc: |
       Pulls the latest api.json from the server
-    dotenv: [ '.env' ]
+    dotenv: [ '{{ .ROOT_DIR }}/.env' ]
     vars:
       SCRIPTS_DIR: "scripts"
       SORT_SCHEMAS: "{{ .SCRIPTS_DIR }}/sort_schemas.py"
@@ -259,190 +272,226 @@ tasks:
             --output-dir "{{ .DIR_PROVIDER }}/data_source"
         done
 
-  provider-create:
-    desc: |
-      Creates provider in terraform cloud
-    dotenv: ['.env']
-    cmds:
-      # https://developer.hashicorp.com/terraform/cloud-docs/registry/publish-providers
-      # language=bash
-      - |
-        curl \
-          --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
-          --header "Content-Type: application/vnd.api+json" \
-          --request POST \
-          --data @provider.json \
-          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers
-        curl \
-          --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
-          --header "Content-Type: application/vnd.api+json" \
-          --request POST \
-          --data @key.json \
-          https://app.terraform.io/api/registry/private/v2/gpg-keys
-
   release:
     desc: |
       Releases the provider
       
       Build & publish docs:
       https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-release-publish
+      https://developer.hashicorp.com/terraform/cloud-docs/api-docs/private-registry/providers#get-a-provider
+    dotenv: [ '{{ .ROOT_DIR }}/.env' ]
     vars:
+      # Whenever a GPG call should be made to simplify local batching
       UNLOCK_GPG_AGENT: true
 
-      # TODO: rework
-      BIN_NAME: "{{ .NAME }}_v{{ .TF_PROVIDER_VERSION }}"
-      ZIP_NAME: "{{ .BIN_NAME }}_{{ .ARCH }}.zip"
-      SHA_NAME: "{{ .BIN_NAME }}_SHA256SUMS"
-      PLATFORM_JSON: "{{ .DIR_BINPROVIDER }}/platform.json"
-      VERSION_JSON: "{{ .DIR_BINPROVIDER }}/version.json"
+      # Provider spec
+      PROVIDER_JSON: "{{ .DIR_ARTIFACTS }}/provider.json"
+      PROVIDER_RESULT_JSON: "{{ .DIR_ARTIFACTS }}/provider_result.json"
 
-      TF_PROVIDER_VERSION: "0.1.0"
-      TF_PROVIDER_NAME: "hyperstack"
-      TF_PROVIDER_PATH: |-
-        registry.terraform.io/nexgencloud/{{ .TF_PROVIDER_NAME }}/{{ .TF_PROVIDER_VERSION }}/{{ .ARCH }}
-      TF_PROVIDER_DIR: "{{ .DIR_BINPROVIDER }}/{{ .TF_PROVIDER_PATH }}"
-      TF_PROVIDER_BINARY: "{{ .TF_PROVIDER_DIR }}/{{ .NAME }}_v{{ .TF_PROVIDER_VERSION }}"
-    # TODO: rework
-    dotenv: ['../../.env']
-    # TODO: rework
-    dir: "{{ .DIR_BINPROVIDER }}"
-    cmds:
-      # language=bash
-      - |
-        # Unlock GPG Agent
-        if [[ "{{ .UNLOCK_GPG_AGENT }}" == "true" ]]; then
-          gpg --output /dev/null --detach-sign .gitignore
-        fi
-        
-        # TODO: rework
-        echo Not implemented
-        exit 1
+      # Version spec
+      VERSION_JSON: "{{ .DIR_ARTIFACTS }}/version.json"
+      VERSION_RESULT_JSON: "{{ .DIR_ARTIFACTS }}/version_result.json"
+
+      # Key spec
+      KEY_JSON: "{{ .DIR_ARTIFACTS }}/key.json"
+      KEY_RESULT_JSON: "{{ .DIR_ARTIFACTS }}/key_result.json"
+
+      PLATFORM_JSON: "{{ .DIR_ARTIFACTS }}/platform.json"
+      PLATFORM_RESULT_JSON: "{{ .DIR_ARTIFACTS }}/platform_result.json"
+    deps:
       - task: build
+        vars:
+          SILENT: true
+          RELEASE: true
+    cmds:
+      # language=bash Unlock GPG Agent
+      - |
+        if [[ "{{ .UNLOCK_GPG_AGENT }}" == "true" ]]; then
+          echo -n "Unlocking GPG agent... "
+          gpg --output /dev/null --detach-sign "{{ .ROOT_DIR }}/.gitignore"
+          echo "done"
+        fi
       # https://developer.hashicorp.com/terraform/registry/providers/publishing#manually-preparing-a-release
       # language=bash
-      - echo "Uploading provider {{ .NAME }} version v{{ .TF_PROVIDER_VERSION }}:"
-      # language=bash
       - |
+        META="$(cat "{{ .DIR_DIST }}/metadata.json")"
+        NAME="$(echo "${META}" | jq -r .project_name)"
+        VERSION="$(echo "${META}" | jq -r .version)"
+        PROVIDER_URL="https://app.terraform.io/api/v2/organizations/{{ .TF_CLOUD_ORG }}/registry-providers/private/{{ .TF_CLOUD_ORG }}/{{ .TF_PROVIDER_NAME }}"
+        
+        crl() {
+          curl \
+            --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
+            --header "Content-Type: application/vnd.api+json" \
+            "$@"
+        }
+        
+        echo "Uploading provider {{ .TF_PROVIDER_NAME }} version ${VERSION}:"
+        
+        echo -n "- checking provider status... "
+        STATUS="$(crl -s -o /dev/null -w "%{http_code}" ${PROVIDER_URL})"
+        if [[ "${STATUS}" == "200" ]]; then
+          echo "exists"
+        elif [[ "${STATUS}" == "404" ]]; then
+          echo "doesn't exist"
+          
+          echo -n "- creating provider ${NAME}... "
+          cat <<EOF > "{{ .PROVIDER_JSON }}"
+        {
+          "data": {
+            "type": "registry-providers",
+            "attributes": {
+              "name": "{{ .TF_PROVIDER_NAME }}",
+              "namespace": "{{ .TF_CLOUD_ORG }}",
+              "registry-name": "private"
+            }
+          }
+        }
+        EOF
+          crl -s \
+            --request POST \
+            --data "@{{ .PROVIDER_JSON }}" \
+            "https://app.terraform.io/api/v2/organizations/{{ .TF_CLOUD_ORG }}/registry-providers" \
+              > "{{ .PROVIDER_RESULT_JSON }}"
+          echo "done"
+        else
+          echo "error code ${STATUS}"
+          exit 1
+        fi
+        
+        echo -n "- checking key status... "
+        STATUS="$(crl -s -o /dev/null -w "%{http_code}" https://app.terraform.io/api/registry/private/v2/gpg-keys/{{ .TF_CLOUD_ORG }}/${TF_CLOUD_KEY_ID})"
+        if [[ "${STATUS}" == "200" ]]; then
+          echo "exists"
+        elif [[ "${STATUS}" == "404" ]]; then
+          echo "doesn't exist"
+          
+          echo -n "- creating key ${TF_CLOUD_KEY_ID}... "
+          cat <<EOF > "{{ .KEY_JSON }}"
+        {
+          "data": {
+            "type": "gpg-keys",
+            "attributes": {
+              "namespace": "{{ .TF_CLOUD_ORG }}",
+              "ascii-armor": "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nREPLACE_WITH_KEY\n-----END PGP PUBLIC KEY BLOCK-----\n"
+            }
+          }
+        }
+        EOF
+          gpg_key=$(gpg --export --armor ${TF_CLOUD_KEY_ID})
+          jq --arg key "$gpg_key" '.data.attributes["ascii-armor"] = $key' "{{ .KEY_JSON }}" > "{{ .KEY_JSON }}.tmp"
+          mv "{{ .KEY_JSON }}.tmp" "{{ .KEY_JSON }}"
+          crl -s \
+            --request POST \
+            --data "@{{ .KEY_JSON }}" \
+            "https://app.terraform.io/api/registry/private/v2/gpg-keys" \
+              > "{{ .KEY_RESULT_JSON }}"
+          echo "done"
+        else
+          echo "error code ${STATUS}"
+          exit 1
+        fi
+
         echo -n "- deleting existing release... "
-        rm -f \
-          "{{ .BIN_NAME }}" \
-          "{{ .SHA_NAME }}" \
-          "{{ .SHA_NAME }}.sig"
-        curl -s \
+        STATUS="$(curl -s -o /dev/null -w "%{http_code}" \
           --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
           --header "Content-Type: application/vnd.api+json" \
           --request DELETE \
-          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/{{ .TF_PROVIDER_NAME }}/versions/{{ .TF_PROVIDER_VERSION }} \
-            > /dev/null
-        echo "done"
-      # language=bash
-      - |
-        echo -n "- creating and signing archive... "
-        cp "{{ .NAME }}" "{{ .BIN_NAME }}"
-        zip -q "{{ .ZIP_NAME }}" "{{ .BIN_NAME }}"
-        shasum -a 256 "{{ .ZIP_NAME }}" > "{{ .SHA_NAME }}"
-        gpg \
-          --output "{{ .SHA_NAME }}.sig" \
-          --detach-sign "{{ .SHA_NAME }}"
-        echo "done"
-      # language=bash
-      - |
+          "${PROVIDER_URL}/versions/${VERSION}")"
+        if [[ "${STATUS}" == "404" ]]; then
+          echo "already deleted"
+        elif [[ "${STATUS}" == "204" ]]; then
+          echo "done"
+        else
+          echo "error code ${STATUS}"
+          exit 1
+        fi
+
         echo -n "- creating a new cloud release... "
         cat <<EOF > "{{ .VERSION_JSON }}"
         {
           "data": {
             "type": "registry-provider-versions",
             "attributes": {
-              "version": "{{ .TF_PROVIDER_VERSION }}",
+              "version": "${VERSION}",
               "key-id": "${TF_CLOUD_KEY_ID}",
               "protocols": ["5.0"]
             }
           }
         }
         EOF
-        curl -s \
-          --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
-          --header "Content-Type: application/vnd.api+json" \
+        crl -s \
           --request POST \
           --data "@{{ .VERSION_JSON }}" \
-          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/{{ .TF_PROVIDER_NAME }}/versions \
-            > "{{ .DIR_BINPROVIDER }}/create_result.json"
-        echo "done"
-      # language=bash
-      - |
+          "${PROVIDER_URL}/versions" \
+            > "{{ .VERSION_RESULT_JSON }}"
+        res="$(cat "{{ .VERSION_RESULT_JSON }}" | jq -r .success)"
+        if [[ "${res}" == "true" ]] || [[ "${res}" == "null" ]]; then
+          echo "done"
+        else
+          echo "error: $(cat "{{ .VERSION_RESULT_JSON }}" | jq -r .errors)"
+          exit 1
+        fi
+        
         echo -n "- uploading SHA256SUMS... "
-        curl -s \
+        curl \
           -T \
-          "{{ .SHA_NAME }}" \
-          "$(cat "{{ .DIR_BINPROVIDER }}/create_result.json" | jq -r '.data.links."shasums-upload"')"
+          "{{ .DIR_DIST }}/${NAME}_v${VERSION}_SHA256SUMS" \
+          "$(cat "{{ .VERSION_RESULT_JSON }}" | jq -r '.data.links."shasums-upload"')"
         echo "done"
-      # language=bash
-      - |
+        
         echo -n "- uploading SHA256SUMS.sig... "
         curl -s \
           -T \
-          "{{ .SHA_NAME }}.sig" \
-          "$(cat "{{ .DIR_BINPROVIDER }}/create_result.json" | jq -r '.data.links."shasums-sig-upload"')"
+          "{{ .DIR_DIST }}/${NAME}_v${VERSION}_SHA256SUMS.sig" \
+          "$(cat "{{ .VERSION_RESULT_JSON }}" | jq -r '.data.links."shasums-sig-upload"')"
         echo "done"
-      # language=bash
-      - |
-        echo -n "- uploading release... "
-        cat <<EOF > "{{ .PLATFORM_JSON }}"
+        
+        upload() {
+          ZIP_FILE="${NAME}_${VERSION}_${1}_${2}.zip"
+          ZIP_NAME="{{ .DIR_DIST }}/${ZIP_FILE}"
+          echo -n "- uploading release ${1}-${2}... "
+          cat <<EOF > "{{ .PLATFORM_JSON }}_${1}_${2}"
         {
           "data": {
             "type": "registry-provider-version-platforms",
             "attributes": {
-              "os": "$(go env GOOS)",
-              "arch": "$(go env GOARCH)",
-              "shasum": "$(shasum -a 256 "{{ .ZIP_NAME }}" | cut -d' ' -f1)",
-              "filename": "{{ .ZIP_NAME }}"
+              "os": "${1}",
+              "arch": "${2}",
+              "shasum": "$(shasum -a 256 "${ZIP_NAME}" | cut -d' ' -f1)",
+              "filename": "${ZIP_FILE}"
             }
           }
         }
         EOF
-        curl -s \
-          --header "Authorization: Bearer ${TF_CLOUD_TOKEN}" \
-          --header "Content-Type: application/vnd.api+json" \
-          --request POST \
-          --data "@{{ .PLATFORM_JSON }}" \
-          https://app.terraform.io/api/v2/organizations/${TF_CLOUD_ORG}/registry-providers/private/${TF_CLOUD_ORG}/{{ .TF_PROVIDER_NAME }}/versions/{{ .TF_PROVIDER_VERSION }}/platforms \
-            > "{{ .DIR_BINPROVIDER }}/publish_result.json"
-        curl -s \
-          -T \
-          "{{ .ZIP_NAME }}" \
-          "$(cat "{{ .DIR_BINPROVIDER }}/publish_result.json" | jq -r '.data.links."provider-binary-upload"')"
-        echo "done"
-      # language=bash
-      - |
+          crl -s \
+            --request POST \
+            --data "@{{ .PLATFORM_JSON }}_${1}_${2}" \
+            ${PROVIDER_URL}/versions/${VERSION}/platforms \
+              > "{{ .PLATFORM_RESULT_JSON }}_${1}_${2}"
+          curl -s \
+            -T \
+            "${ZIP_NAME}" \
+            "$(cat "{{ .PLATFORM_RESULT_JSON }}_${1}_${2}" | jq -r '.data.links."provider-binary-upload"')"
+          echo "done"
+        }
+        
+        upload "darwin" "amd64"
+        upload "darwin" "arm64"
+        upload "linux" "386"
+        upload "linux" "amd64"
+        upload "linux" "arm"
+        upload "linux" "arm64"
+        
         cat <<EOF
-        Release is ready v{{ .TF_PROVIDER_VERSION }}:
+        Release is ready v${VERSION}:
 
         terraform {
           required_providers {
             hyperstack = {
-              source = "app.terraform.io/${TF_CLOUD_ORG}/{{ .TF_PROVIDER_NAME }}"
-              version = "{{ .TF_PROVIDER_VERSION }}"
+              source = "app.terraform.io/{{ .TF_CLOUD_ORG }}/{{ .TF_PROVIDER_NAME }}"
+              version = "${VERSION}"
             }
           }
         }
         EOF
-
-  provider-publish:
-    desc: |
-      Publishes new provider version
-    dotenv: ['../../.env']
-    dir: "{{ .DIR_BINPROVIDER }}"
-    vars:
-      BIN_NAME: "{{ .NAME }}_v{{ .TF_PROVIDER_VERSION }}"
-      ZIP_NAME: "{{ .BIN_NAME }}_{{ .ARCH }}.zip"
-      SHA_NAME: "{{ .BIN_NAME }}_SHA256SUMS"
-      PLATFORM_JSON: "{{ .DIR_BINPROVIDER }}/platform.json"
-      VERSION_JSON: "{{ .DIR_BINPROVIDER }}/version.json"
-
-      TF_PROVIDER_VERSION: "0.1.0"
-      TF_PROVIDER_NAME: "hyperstack"
-      TF_PROVIDER_PATH: |-
-        registry.terraform.io/nexgencloud/{{ .TF_PROVIDER_NAME }}/{{ .TF_PROVIDER_VERSION }}/{{ .ARCH }}
-      TF_PROVIDER_DIR: "{{ .DIR_BINPROVIDER }}/{{ .TF_PROVIDER_PATH }}"
-      TF_PROVIDER_BINARY: "{{ .TF_PROVIDER_DIR }}/{{ .NAME }}_v{{ .TF_PROVIDER_VERSION }}"
-    cmds:

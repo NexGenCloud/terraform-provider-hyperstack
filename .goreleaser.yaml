@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
-version: 1
+version: 2
 
 dist: "./dist"
 
@@ -26,8 +26,7 @@ builds:
       - -s -w -X "{{.Env.PROVIDER_PACKAGE}}/internal/provider.EnvPrefix={{.Env.ENV_PREFIX}}"
       - -s -w -X "{{.Env.PROVIDER_PACKAGE}}/internal/provider.ApiAddress={{.Env.API_ADDRESS}}"
     goos:
-      #- freebsd
-      - windows
+      #- windows
       - linux
       - darwin
     goarch:
@@ -48,7 +47,7 @@ checksum:
   extra_files:
     - glob: 'terraform-registry-manifest.json'
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
-  name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
+  name_template: '{{ .ProjectName }}_v{{ .Version }}_SHA256SUMS'
   algorithm: sha256
 
 signs:
@@ -69,4 +68,4 @@ release:
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
 
 changelog:
-  skip: true
+  disable: true
