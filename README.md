@@ -24,7 +24,7 @@ There are also CLI dependencies that are installed with Go:
 
 - [GoReleaser](https://goreleaser.com/)
   ````bash
-  go install github.com/goreleaser/goreleaser@latest
+  go install github.com/goreleaser/goreleaser/v2@latest
   ````
 - [OpenAPI Provider Spec Generator](https://developer.hashicorp.com/terraform/plugin/code-generation/openapi-generator): generates provider spec using OpenAPI definition
   ````bash

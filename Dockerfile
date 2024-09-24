@@ -9,7 +9,7 @@ RUN apt update \
       yq
 
 RUN go install github.com/go-task/task/v3/cmd/task@latest
-RUN go install github.com/goreleaser/goreleaser@latest
+RUN go install github.com/goreleaser/goreleaser/v2@latest
 RUN go install github.com/hashicorp/terraform-plugin-codegen-openapi/cmd/tfplugingen-openapi@latest
 RUN go install github.com/hashicorp/terraform-plugin-codegen-framework/cmd/tfplugingen-framework@latest
 
