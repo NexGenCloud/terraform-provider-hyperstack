@@ -1,4 +1,4 @@
-FROM golang:1.22 as runtime
+FROM golang:1.23 as runtime
 
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
