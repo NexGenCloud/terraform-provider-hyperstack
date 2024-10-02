@@ -1,6 +1,6 @@
 module github.com/NexGenCloud/terraform-provider-hyperstack
 
-go 1.22
+go 1.23
 
 require (
 	github.com/NexGenCloud/hyperstack-sdk-go v0.2.0
