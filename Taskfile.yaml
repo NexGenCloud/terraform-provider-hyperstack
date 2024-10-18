@@ -21,11 +21,12 @@ vars:
   TF_PROVIDER_NAME: "hyperstack"
   TF_PROVIDER_REPO: "registry.terraform.io/{{ .TF_CLOUD_ORG }}"
   # TODO: keep in sync with goreleaser
-  TF_PROVIDER_VERSION: "0.1.0"
+  TF_PROVIDER_VERSION: "0.2.0"
 
 
 env:
   GPG_FINGERPRINT: ~
+  GPG_PASSPHRASE: ~
 
   TF_CLOUD_TOKEN: ~
   TF_CLOUD_KEY_ID: ~
@@ -87,7 +88,8 @@ tasks:
         TMP_BIN_PATH="{{ .DIR_ARTIFACTS }}/provider"
         if [[ "{{ .RELEASE }}" == "true" ]]; then
           goreleaser release --clean \
-            --skip=announce,publish,validate
+            --skip=announce,validate
+            # --skip=announce,publish,validate
             #--skip=announce,publish
         else
           # Only do local build
@@ -301,7 +303,7 @@ tasks:
     deps:
       - task: build
         vars:
-          SILENT: true
+          SILENT: false
           RELEASE: true
     cmds:
       # language=bash Unlock GPG Agent
