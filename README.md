@@ -1,86 +1,128 @@
-# terraform-provider-hyperstack
+# Hyperstack Terraform Provider (ALPHA)
 
-This project is a Terraform provider for Hyperstack. It uses the Hyperstack SDK to interact with the Hyperstack API and manage resources. The provider is written in Go and uses the Terraform Plugin SDK for compatibility with Terraform.
+Hyperstack provides a Terraform provider that enables infrastructure-as-code management of your cloud resources. Similar to other major cloud providers, you can use familiar Terraform workflows to provision and manage your infrastructure on Hyperstack, including virtual machines, Kubernetes clusters, and network resources.
 
-## Getting Started
+This repository contains the source code for the Hyperstack Terraform provider. The provider is currently in **alpha** and is under active development. All features are subject to change and is provided as-is with no guarantees.
 
-Before you start, make sure you have the following tools installed:
+We welcome contributions from the community to help improve the provider and add new features. Please refer to the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information on how to contribute.
 
-- [Terraform 1.5](https://developer.hashicorp.com/terraform/install) - [tfenv](https://github.com/tfutils/tfenv) is suggested
-- [Terragrunt](https://terragrunt.gruntwork.io/) - [tgswitch](https://tgswitch.warrensbox.com/) is suggested
-- [Go 1.23](https://golang.org/dl/)
-- [Task 3.25](https://taskfile.dev/installation/): A task runner for executing project tasks.
-- [jq 1.6](https://jqlang.github.io/jq/download/): A command-line JSON processor.
-- [yq v4.44](https://github.com/mikefarah/yq/): A command-line YAML processor.
-- GPG and gpg-agent
-- Python 3.11
-- [canonicaljson](https://pypi.org/project/canonicaljson/) pip module
-  - You can run installation via pip:
-  ````bash
-  python3 -m pip install -r requirements.txt
-  ````
+## Prerequisites
 
-There are also CLI dependencies that are installed with Go:
+Before you begin using the Hyperstack Terraform provider, ensure you have completed the following steps:
 
-- [GoReleaser](https://goreleaser.com/)
-  ````bash
-  go install github.com/goreleaser/goreleaser/v2@latest
-  ````
-- [OpenAPI Provider Spec Generator](https://developer.hashicorp.com/terraform/plugin/code-generation/openapi-generator): generates provider spec using OpenAPI definition
-  ````bash
-  go install github.com/hashicorp/terraform-plugin-codegen-openapi/cmd/tfplugingen-openapi@latest
-  ````
-- [Framework Code Generator](https://developer.hashicorp.com/terraform/plugin/code-generation/framework-generator): generates Golang schemas using provider spec
-  ````bash
-  go install github.com/hashicorp/terraform-plugin-codegen-framework/cmd/tfplugingen-framework@latest
-  ````
-
-## Building the Provider
-
-The provider uses a `Taskfile.yaml` for task management. To build the provider, run the following command:
+1. Install Terraform by following the official [HashiCorp documentation](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
+2. Create a new API key or copy your existing API key. For additional information on accessing your API key, see [Hyperstack API Keys Documentation](https://infrahub-doc.nexgencloud.com/docs/api-reference/getting-started-api/authentication/).
+3. Set up your environment variables with your API key:
 
 ```bash
-task build
+export HYPERSTACK_API_KEY=your-api-key-here
 ```
 
-This will compile the provider and output the binary in the `artifacts/provider` directory.
+## Usage
 
-## Generating Schemas
+To use the Hyperstack Terraform provider, add the following code to your Terraform configuration:
 
-The provider uses the OpenAPI generator to generate schemas. To generate the schemas, run the following command:
-
-```bash
-task gen
+```hcl
+terraform {
+  required_providers {
+    hyperstack = {
+      source  = "NexGenCloud/hyperstack"
+      version = "0.2.0-alpha"
+    }
+  }
+}
 ```
 
-This will pull the latest API specification from the server, generate the schemas, and output them in the `artifacts/provider-spec.json` file.
+## Creating your first Hyperstack VM
 
-## Testing the Provider
+To create your first Hyperstack VM, add the following code to your Terraform configuration:
 
-To test the provider, run the following command:
+```hcl
+terraform {
+  required_providers {
+    hyperstack = {
+      source = "app.terraform.io/nexgencloud/hyperstack"
+      version = "0.2.0"
+    }
+    tls = {
+      source = "hashicorp/tls"
+      version = "4.0.5"
+    }
+  }
+}
+provider "hyperstack" {}
+provider "tls" {}
 
-```bash
-task test-examples
+# Create an environment
+resource "hyperstack_core_environment" "canada" {
+  name   = "terraform-environment"
+  region = "CANADA-1"
+}
+
+# Generate a keypair for SSH access
+resource "tls_private_key" "ed25519" {
+  algorithm = "ED25519"
+}
+
+# Create a keypair resource
+resource "hyperstack_core_keypair" "ed25519" {
+  name        = "terraform-keypair"
+  environment = hyperstack_core_environment.canada.name
+  public_key  = tls_private_key.ed25519.public_key_openssh
+}
+
+# Save the private key content
+resource "local_sensitive_file" "ssh" {
+  filename = "./llm-inference-benchmarking-keypair.pem"
+  content  = tls_private_key.ed25519.private_key_openssh
+}
+
+# Create a virtual machine
+resource "hyperstack_core_virtual_machine" "example-vm" {
+  name               = "terraform-example"
+  environment_name   = hyperstack_core_environment.canada.name
+  key_name           = hyperstack_core_keypair.ed25519.name
+  image_name         = "Ubuntu Server 22.04 LTS R535 CUDA 12.2 with Docker"
+  flavor_name        = "n1-cpu-small"
+  user_data          = ""
+  assign_floating_ip = true
+}
+
+# Allow port 22 to SSH into this machine
+resource "hyperstack_core_virtual_machine_sg_rule" "ssh_access" {
+  virtual_machine_id = hyperstack_core_virtual_machine.example-vm.id
+  direction        = "ingress"
+  ethertype        = "IPv4"
+  port_range_min   = 22
+  port_range_max   = 22
+  protocol         = "tcp"
+  remote_ip_prefix = "0.0.0.0/0"
+}
+
+# Output
+output "ssh_private_key" {
+  description = "SSH private key of the e2e test"
+  value       = tls_private_key.ed25519.private_key_openssh
+  sensitive   = true
+}
+
+output "ssh_public_key" {
+  description = "SSH public key of the e2e test"
+  value       = tls_private_key.ed25519.public_key_openssh
+}
+
+output "vm_floating_ip" {
+  description = "The floating IP for the basic test VM"
+  value       = hyperstack_core_virtual_machine.example-vm.floating_ip
+}
 ```
 
-This will build the provider and run the tests.
+You can now run `terraform plan` and `terraform apply` to create your first Hyperstack VM. If you do not see the outputs, you may need to run `terraform apply` again.
 
-## Publishing the Provider
+Warning: this will incur charges on your Hyperstack account.
 
-To publish a new version of the provider, run the following command:
+If you do not have a Hyperstack account, you can sign up for a free account at [Hyperstack](https://nexgencloud.com/).
 
-```bash
-task provider-publish
-```
+## License
 
-This will build the provider, create a new release, and upload it to the Terraform registry.
-
-## Documentation
-
-For more information about the features of the Hyperstack API, visit the [Hyperstack Documentation](https://infrahub-doc.nexgencloud.com/docs/features/).
-
-For more information about the OpenAPI generator used in this project, visit the [HashiCorp Developer Guide](https://developer.hashicorp.com/terraform/plugin/code-generation/openapi-generator).
-
-## Contributing
-
-Contributions to this project are welcome. Please make sure to test your changes before submitting a pull request.
+All rights reserved. This repository is properity of NexGenCloud.
