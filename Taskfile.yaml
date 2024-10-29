@@ -232,8 +232,8 @@ tasks:
         curl -s "${HYPERSTACK_API_SPEC_ADDRESS}" > "{{ .API_SPEC_PATH }}"
         echo "done"
         echo -n "Fixing api spec... "
-        python3.11 "{{ .SORT_SCHEMAS }}" "{{ .API_SPEC_PATH }}"
-        python3.11 "{{ .FIX_API_SPEC }}" "{{ .API_SPEC_PATH }}"
+        python "{{ .SORT_SCHEMAS }}" "{{ .API_SPEC_PATH }}"
+        python "{{ .FIX_API_SPEC }}" "{{ .API_SPEC_PATH }}"
         echo "done"
 
   build-provider-spec:
@@ -252,7 +252,7 @@ tasks:
           --config "{{ .DIR_BUILD }}/generator-config.yml" \
           --output "{{ .PROVIDER_SPEC_PATH }}" \
           "{{ .API_SPEC_PATH }}"
-        python3.11 "{{ .FIX_PROVIDER_SPEC }}" "{{ .PROVIDER_SPEC_PATH }}"
+        python "{{ .FIX_PROVIDER_SPEC }}" "{{ .PROVIDER_SPEC_PATH }}"
       # language=bash
       - |
         rm -Rf "{{ .DIR_GENPROVIDER }}"
