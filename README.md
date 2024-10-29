@@ -1,4 +1,6 @@
-# Hyperstack Terraform Provider (ALPHA)
+# Hyperstack Terraform Provider (Alpha)
+
+Documentation: https://registry.terraform.io/providers/NexGenCloud/hyperstack/latest/docs
 
 Hyperstack provides a Terraform provider that enables infrastructure-as-code management of your cloud resources. Similar to other major cloud providers, you can use familiar Terraform workflows to provision and manage your infrastructure on Hyperstack, including virtual machines, Kubernetes clusters, and network resources.
 
@@ -123,6 +125,8 @@ Warning: this will incur charges on your Hyperstack account.
 
 If you do not have a Hyperstack account, you can sign up for a free account at [Hyperstack](https://nexgencloud.com/).
 
+Please refer to the [Hyperstack Terraform Provider Documentation](https://infrahub-doc.nexgencloud.com/docs/libraries/terraform) for more examples.
+
 ## License
 
-All rights reserved. This repository is properity of NexGenCloud.
+This project is licensed under MIT license - see the [LICENSE](LICENSE) file for details.

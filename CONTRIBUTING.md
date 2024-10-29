@@ -97,16 +97,6 @@ task test-examples
 
 This will build the provider and run the tests.
 
-### Publishing the Provider
-
-To publish a new version of the provider, run the following command:
-
-```bash
-task provider-publish
-```
-
-This will build the provider, create a new release, and upload it to the Terraform registry.
-
 ### Documentation
 
 For more information about the features of the Hyperstack API, visit the [Hyperstack Documentation](https://infrahub-doc.nexgencloud.com/docs/features/).
