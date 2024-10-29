@@ -1,3 +1,5 @@
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs --provider-name=NexGenCloud/terraform-provider-hyperstack --providers-schema=artifacts/provider-spec.json
+
 package main
 
 import (

@@ -21,7 +21,7 @@ vars:
   TF_PROVIDER_NAME: "hyperstack"
   TF_PROVIDER_REPO: "registry.terraform.io/{{ .TF_CLOUD_ORG }}"
   # TODO: keep in sync with goreleaser
-  TF_PROVIDER_VERSION: "0.2.0"
+  TF_PROVIDER_VERSION: "0.2.1"
 
 
 env:
@@ -273,6 +273,20 @@ tasks:
             --force \
             --output-dir "{{ .DIR_PROVIDER }}/data_source"
         done
+
+  build-docs:
+    desc: |
+      Builds the docs
+    cmds:
+      # language=bash
+      # TODO: Generate schema.json using Terraform scaffolding code
+      # terraform providers schema -json > ../terraform-provider-hyperstack/terraform_schema.json
+      - |
+        tfplugindocs --provider-name=terraform-provider-hyperstack \
+        --providers-schema=./schema.json \
+        --examples-dir=examples --rendered-provider-name="Hyperstack terraform provider" \
+        --rendered-website-dir=docs
+ 
 
   release:
     desc: |
