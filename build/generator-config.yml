@@ -1,0 +1,187 @@
+provider:
+  name: hyperstack
+  #schema_ref: '#/components/schemas/hyperstack_provider_schema'
+
+data_sources:
+  core_dashboard:
+    read:
+      path: /core/dashboard
+      method: GET
+
+  core_stocks:
+    read:
+      path: /core/stocks
+      method: GET
+
+  core_firewall_protocols:
+    read:
+      path: /core/sg-rules-protocols
+      method: GET
+
+  core_flavors:
+    read:
+      path: /core/flavors
+      method: GET
+
+  core_images:
+    read:
+      path: /core/images
+      method: GET
+
+  core_regions:
+    read:
+      path: /core/regions
+      method: GET
+
+  core_gpus:
+    read:
+      path: /core/gpus
+      method: GET
+
+  core_environment:
+    read:
+      path: /core/environments/{id}
+      method: GET
+
+  core_environments:
+    read:
+      path: /core/environments
+      method: GET
+
+  core_volumes:
+    read:
+      path: /core/volumes
+      method: GET
+
+  core_volume_types:
+    read:
+      path: /core/volume-types
+      method: GET
+
+  auth_me:
+    read:
+      path: /auth/me
+      method: GET
+
+  auth_user_permissions:
+    read:
+      path: /auth/users/{id}/permissions
+      method: GET
+
+  auth_user_me_permissions:
+    read:
+      path: /auth/users/me/permissions
+      method: GET
+
+  auth_organization:
+    read:
+      path: /auth/organizations
+      method: GET
+
+  auth_roles:
+    read:
+      path: /auth/roles
+      method: GET
+
+  auth_role:
+    read:
+      path: /auth/roles/{id}
+      method: GET
+
+  auth_policies:
+    read:
+      path: /auth/policies
+      method: GET
+
+  auth_permissions:
+    read:
+      path: /auth/permissions
+      method: GET
+
+  core_keypair:
+    read:
+      path: /core/keypairs
+      method: GET
+
+  core_keypairs:
+    read:
+      path: /core/keypairs
+      method: GET
+
+  core_virtual_machines:
+    read:
+      path: /core/virtual-machines
+      method: GET
+
+  core_clusters:
+    read:
+      path: /core/clusters
+      method: GET
+
+  core_clusters_versions:
+    read:
+      path: /core/clusters/versions
+      method: GET
+
+resources:
+  core_virtual_machine_sg_rule:
+    read:
+      path: /core/virtual-machines/{virtual_machine_id}/sg-rules
+      method: GET
+    create:
+      path: /core/virtual-machines/{virtual_machine_id}/sg-rules
+      method: POST
+    delete:
+      path: /core/virtual-machines/{virtual_machine_id}/sg-rules/{id}
+      method: DELETE
+
+  core_environment:
+    read:
+      path: /core/environments/{id}
+      method: GET
+    create:
+      path: /core/environments
+      method: POST
+
+  auth_role:
+    read:
+      path: /auth/roles/{id}
+      method: GET
+    create:
+      path: /auth/roles
+      method: POST
+
+  core_keypair:
+    read:
+      path: /core/keypairs
+      method: GET
+    create:
+      path: /core/keypairs
+      method: POST
+    update:
+      path: /core/keypair/{id}
+      method: PUT
+
+  core_virtual_machine:
+    read:
+      path: /core/virtual-machines/{id}
+      method: GET
+    create:
+      path: /core/virtual-machines
+      method: POST
+
+  core_volume:
+    read:
+      path: /core/volumes/{id}
+      method: GET
+    create:
+      path: /core/volumes
+      method: POST
+
+  core_cluster:
+    read:
+      path: /core/clusters/{id}
+      method: GET
+    create:
+      path: /core/clusters
+      method: POST
