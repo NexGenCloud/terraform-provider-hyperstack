@@ -99,7 +99,7 @@ To test the provider, run the following command.
 Make sure to set the following environment variables:
 
 - `HYPERSTACK_API_KEY`: Your Hyperstack API key
-- `HYPERSTACK_API_REGION`: Your Hyperstack region (e.g. CANADA-1)
+- `HYPERSTACK_REGION`: Your Hyperstack region (e.g. CANADA-1)
 
 ```bash
 task test
