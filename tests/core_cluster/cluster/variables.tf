@@ -47,7 +47,7 @@ variable "clusters" {
       node_count = 2
       node_flavor = {
         gpu_name  = ""
-        cpu_count = 8
+        cpu_count = 2
       }
     }
     "a6000-2" = {
@@ -61,42 +61,5 @@ variable "clusters" {
         gpu_count = 1
       }
       image_version = "Server 22.04 LTS R535 CUDA 12.2"
-    }
-    "l40-2" = {
-      enabled    = true
-      validation = {
-        gpu = true
-      }
-      node_count = 2
-      node_flavor = {
-        gpu_name  = "L40"
-        gpu_count = 1
-      }
-      image_version = "Server 22.04 LTS R535 CUDA 12.2"
-    }
-    "a100x1-2" = {
-      enabled    = true
-      validation = {
-        gpu = true
-      }
-      node_count = 2
-      node_flavor = {
-        gpu_name  = "A100-80G-PCIe"
-        gpu_count = 1
-      }
-      image_version = "Server 22.04 LTS R535 CUDA 12.2"
-    }
-    "h100x1-2" = {
-      enabled    = true
-      validation = {
-        gpu = true
-      }
-      node_count = 2
-      node_flavor = {
-        gpu_name  = "H100-80G-PCIe"
-        gpu_count = 1
-      }
-      image_version = "Server 22.04 LTS R535 CUDA 12.2"
-    }
   }
 }
