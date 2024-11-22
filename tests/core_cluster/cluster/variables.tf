@@ -39,15 +39,14 @@ variable "clusters" {
     image_type = optional(string, "Ubuntu")
     image_version = optional(string, "Server 22.04 LTS R535 CUDA 12.2")
   }))
-
   default = {
     "cpu-2" = {
       enabled    = true
       validation = {}
-      node_count = 2
+      node_count = 1
       node_flavor = {
         gpu_name  = ""
-        cpu_count = 2
+        cpu_count = 4
       }
     }
     "a6000-2" = {
@@ -61,5 +60,6 @@ variable "clusters" {
         gpu_count = 1
       }
       image_version = "Server 22.04 LTS R535 CUDA 12.2"
+    }
   }
 }

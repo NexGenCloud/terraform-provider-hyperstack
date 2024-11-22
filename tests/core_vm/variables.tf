@@ -29,11 +29,11 @@ variable "vms" {
   }))
 
   default = {
-    "cpu2-2" = {
+    "cpu4-4" = {
       enabled    = true
       flavor = {
         gpu_name  = ""
-        cpu_count = 2
+        cpu_count = 4
       }
       count = 2
     }
