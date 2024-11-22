@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/volume"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_volumes"
@@ -11,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"io/ioutil"
 )
 
 var _ datasource.DataSource = &DataSourceCoreVolumes{}
@@ -141,7 +142,7 @@ func (d *DataSourceCoreVolumes) MapVolumes(
 						"environment":  environment,
 						"description":  types.StringPointerValue(row.Description),
 						"volume_type":  types.StringPointerValue(row.VolumeType),
-						"size":         types.StringValue(fmt.Sprint(*row.Size)),
+						"size":         types.Int64Value(int64(*row.Size)),
 						"status":       types.StringPointerValue(row.Status),
 						"bootable":     types.BoolPointerValue(row.Bootable),
 						"image_id":     types.Int64Value(int64(*row.ImageId)),
