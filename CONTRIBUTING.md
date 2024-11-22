@@ -75,6 +75,9 @@ The provider uses a `Taskfile.yaml` for task management. To build the provider, 
 
 ```bash
 task build
+
+# to run a test individually, see example below
+# task TEST=core_vm test-run
 ```
 
 This will compile the provider and output the binary in the `artifacts/provider` directory.
@@ -103,6 +106,11 @@ task test
 ```
 
 This will build the provider and run the tests.
+
+Please note:
+
+1. The tests will create and destroy many resources in your Hyperstack account.
+2. The Kubernetes API is still in beta so it might be unstable. Therefore, you might need to re-run the tests if they fail during the Kubernetes tests.
 
 ### Documentation
 
