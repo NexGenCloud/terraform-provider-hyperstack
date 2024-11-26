@@ -409,6 +409,12 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 						},
 						"volume": schema.SingleNestedAttribute{
 							Attributes: map[string]schema.Attribute{
+								"bootable": schema.BoolAttribute{
+									Computed: true,
+									PlanModifiers: []planmodifier.Bool{
+										boolplanmodifier.RequiresReplace(),
+									},
+								},
 								"description": schema.StringAttribute{
 									Computed: true,
 									PlanModifiers: []planmodifier.String{
@@ -4143,6 +4149,24 @@ func (t VolumeType) ValueFromObject(ctx context.Context, in basetypes.ObjectValu
 
 	attributes := in.Attributes()
 
+	bootableAttribute, ok := attributes["bootable"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`bootable is missing from object`)
+
+		return nil, diags
+	}
+
+	bootableVal, ok := bootableAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`bootable expected to be basetypes.BoolValue, was: %T`, bootableAttribute))
+	}
+
 	descriptionAttribute, ok := attributes["description"]
 
 	if !ok {
@@ -4238,6 +4262,7 @@ func (t VolumeType) ValueFromObject(ctx context.Context, in basetypes.ObjectValu
 	}
 
 	return VolumeValue{
+		Bootable:    bootableVal,
 		Description: descriptionVal,
 		Id:          idVal,
 		Name:        nameVal,
@@ -4310,6 +4335,24 @@ func NewVolumeValue(attributeTypes map[string]attr.Type, attributes map[string]a
 		return NewVolumeValueUnknown(), diags
 	}
 
+	bootableAttribute, ok := attributes["bootable"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`bootable is missing from object`)
+
+		return NewVolumeValueUnknown(), diags
+	}
+
+	bootableVal, ok := bootableAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`bootable expected to be basetypes.BoolValue, was: %T`, bootableAttribute))
+	}
+
 	descriptionAttribute, ok := attributes["description"]
 
 	if !ok {
@@ -4405,6 +4448,7 @@ func NewVolumeValue(attributeTypes map[string]attr.Type, attributes map[string]a
 	}
 
 	return VolumeValue{
+		Bootable:    bootableVal,
 		Description: descriptionVal,
 		Id:          idVal,
 		Name:        nameVal,
@@ -4482,6 +4526,7 @@ func (t VolumeType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = VolumeValue{}
 
 type VolumeValue struct {
+	Bootable    basetypes.BoolValue   `tfsdk:"bootable"`
 	Description basetypes.StringValue `tfsdk:"description"`
 	Id          basetypes.Int64Value  `tfsdk:"id"`
 	Name        basetypes.StringValue `tfsdk:"name"`
@@ -4491,11 +4536,12 @@ type VolumeValue struct {
 }
 
 func (v VolumeValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 5)
+	attrTypes := make(map[string]tftypes.Type, 6)
 
 	var val tftypes.Value
 	var err error
 
+	attrTypes["bootable"] = basetypes.BoolType{}.TerraformType(ctx)
 	attrTypes["description"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
@@ -4506,7 +4552,15 @@ func (v VolumeValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 5)
+		vals := make(map[string]tftypes.Value, 6)
+
+		val, err = v.Bootable.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["bootable"] = val
 
 		val, err = v.Description.ToTerraformValue(ctx)
 
@@ -4578,6 +4632,7 @@ func (v VolumeValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, 
 	var diags diag.Diagnostics
 
 	attributeTypes := map[string]attr.Type{
+		"bootable":    basetypes.BoolType{},
 		"description": basetypes.StringType{},
 		"id":          basetypes.Int64Type{},
 		"name":        basetypes.StringType{},
@@ -4596,6 +4651,7 @@ func (v VolumeValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, 
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
+			"bootable":    v.Bootable,
 			"description": v.Description,
 			"id":          v.Id,
 			"name":        v.Name,
@@ -4619,6 +4675,10 @@ func (v VolumeValue) Equal(o attr.Value) bool {
 
 	if v.state != attr.ValueStateKnown {
 		return true
+	}
+
+	if !v.Bootable.Equal(other.Bootable) {
+		return false
 	}
 
 	if !v.Description.Equal(other.Description) {
@@ -4654,6 +4714,7 @@ func (v VolumeValue) Type(ctx context.Context) attr.Type {
 
 func (v VolumeValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
+		"bootable":    basetypes.BoolType{},
 		"description": basetypes.StringType{},
 		"id":          basetypes.Int64Type{},
 		"name":        basetypes.StringType{},
