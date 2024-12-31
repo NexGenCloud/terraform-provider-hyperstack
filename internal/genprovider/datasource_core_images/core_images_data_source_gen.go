@@ -96,19 +96,47 @@ func CoreImagesDataSourceSchema(ctx context.Context) schema.Schema {
 				},
 				Computed: true,
 			},
+			"include_public": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Flag to include public images in the response (true/false). Default is true.",
+				MarkdownDescription: "Flag to include public images in the response (true/false). Default is true.",
+			},
+			"page": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Page number for pagination",
+				MarkdownDescription: "Page number for pagination",
+			},
+			"per_page": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Number of Images per page",
+				MarkdownDescription: "Number of Images per page",
+			},
 			"region": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Description:         "Region Name",
 				MarkdownDescription: "Region Name",
 			},
+			"search": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Search query to filter images by name",
+				MarkdownDescription: "Search query to filter images by name",
+			},
 		},
 	}
 }
 
 type CoreImagesModel struct {
-	CoreImages types.Set    `tfsdk:"core_images"`
-	Region     types.String `tfsdk:"region"`
+	CoreImages    types.Set    `tfsdk:"core_images"`
+	IncludePublic types.Bool   `tfsdk:"include_public"`
+	Page          types.Int64  `tfsdk:"page"`
+	PerPage       types.Int64  `tfsdk:"per_page"`
+	Region        types.String `tfsdk:"region"`
+	Search        types.String `tfsdk:"search"`
 }
 
 var _ basetypes.ObjectTypable = CoreImagesType{}

@@ -190,8 +190,8 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			"image_name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The [operating system (OS) image](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/images) name designated for installation on the virtual machine.",
-				MarkdownDescription: "The [operating system (OS) image](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/images) name designated for installation on the virtual machine.",
+				Description:         "The [operating system (OS) image](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/images) name designated for installation on the virtual machine.It also accepts custom, private images, created from [existing snapshots](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/custom-images).",
+				MarkdownDescription: "The [operating system (OS) image](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/images) name designated for installation on the virtual machine.It also accepts custom, private images, created from [existing snapshots](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/custom-images).",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
