@@ -32,5 +32,5 @@ variable "image_version" {
 
 variable "volume_size" {
   type    = number
-  default = 50
+  default = 250
 }
