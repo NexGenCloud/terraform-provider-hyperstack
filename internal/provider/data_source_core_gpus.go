@@ -3,8 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/gpu"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_gpus"
@@ -12,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"io/ioutil"
 )
 
 var _ datasource.DataSource = &DataSourceCoreGpus{}
@@ -172,12 +171,7 @@ func (d *DataSourceCoreGpus) MapGpus(
 							}
 							return types.StringValue(row.CreatedAt.String())
 						}(),
-						"example_metadata": func() attr.Value {
-							if row.ExampleMetadata == nil {
-								return types.StringNull()
-							}
-							return types.StringValue(*row.ExampleMetadata)
-						}(),
+						"example_metadata": types.StringValue(*row.ExampleMetadata),
 						"id":               types.Int64Value(int64(*row.Id)),
 						"name":             types.StringValue(*row.Name),
 						"regions":          regions,
