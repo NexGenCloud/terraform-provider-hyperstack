@@ -21,7 +21,7 @@ vars:
   TF_PROVIDER_NAME: "hyperstack"
   TF_PROVIDER_REPO: "registry.terraform.io/{{ .TF_CLOUD_ORG }}"
   # TODO: keep in sync with goreleaser
-  TF_PROVIDER_VERSION: "0.2.2"
+  TF_PROVIDER_VERSION: "0.2.3"
 
 
 env:
