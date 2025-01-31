@@ -64,7 +64,7 @@ func (d *DataSourceCoreGpus) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	result, err := d.client.ListGPUsWithResponse(ctx)
+	result, err := d.client.ListGpusWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -178,9 +178,9 @@ func (d *DataSourceCoreGpus) MapGpus(
 							}
 							return types.StringValue(*row.ExampleMetadata)
 						}(),
-						"id":               types.Int64Value(int64(*row.Id)),
-						"name":             types.StringValue(*row.Name),
-						"regions":          regions,
+						"id":      types.Int64Value(int64(*row.Id)),
+						"name":    types.StringValue(*row.Name),
+						"regions": regions,
 						"updated_at": func() attr.Value {
 							if row.UpdatedAt == nil {
 								return types.StringNull()

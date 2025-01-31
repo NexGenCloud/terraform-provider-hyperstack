@@ -64,7 +64,7 @@ func (d *DataSourceCoreStocks) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	result, err := d.client.RetrieveGPUStocksWithResponse(ctx)
+	result, err := d.client.RetrieveGpuStocksWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error",
