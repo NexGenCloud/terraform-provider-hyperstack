@@ -63,7 +63,7 @@ func (d *DataSourceAuthRoles) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	result, err := d.client.ListRBACRolesWithResponse(ctx)
+	result, err := d.client.ListRbacRolesWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

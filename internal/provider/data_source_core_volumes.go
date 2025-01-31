@@ -89,7 +89,7 @@ func (d *DataSourceCoreVolumes) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	callResult := result.JSON200.Volumes
+	callResult := result.JSON200.Volume
 	if callResult == nil {
 		resp.Diagnostics.AddWarning(
 			"No user data",

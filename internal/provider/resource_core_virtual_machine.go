@@ -70,8 +70,8 @@ func (r *ResourceCoreVirtualMachine) Create(
 		return
 	}
 
-	result, err := r.client.CreateVirtualMachineWithResponse(ctx, func() virtual_machine.CreateVirtualMachineJSONRequestBody {
-		return virtual_machine.CreateVirtualMachineJSONRequestBody{
+	result, err := r.client.CreateVirtualMachinesWithResponse(ctx, func() virtual_machine.CreateVirtualMachinesJSONRequestBody {
+		return virtual_machine.CreateVirtualMachinesJSONRequestBody{
 			Name:                 dataOld.Name.ValueString(),
 			EnvironmentName:      dataOld.EnvironmentName.ValueString(),
 			ImageName:            dataOld.ImageName.ValueStringPointer(),
