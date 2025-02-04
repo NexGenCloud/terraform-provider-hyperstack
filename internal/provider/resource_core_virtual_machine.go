@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"math/big"
 	"time"
 )
@@ -119,10 +120,11 @@ func (r *ResourceCoreVirtualMachine) Create(
 					}(),
 				}
 			}(),
-			KeyName:          dataOld.KeyName.ValueString(),
-			UserData:         dataOld.UserData.ValueStringPointer(),
-			CallbackUrl:      dataOld.CallbackUrl.ValueStringPointer(),
-			AssignFloatingIp: dataOld.AssignFloatingIp.ValueBoolPointer(),
+			KeyName:                 dataOld.KeyName.ValueString(),
+			UserData:                dataOld.UserData.ValueStringPointer(),
+			CallbackUrl:             dataOld.CallbackUrl.ValueStringPointer(),
+			AssignFloatingIp:        dataOld.AssignFloatingIp.ValueBoolPointer(),
+			EnablePortRandomization: dataOld.EnablePortRandomization.ValueBoolPointer(),
 			// TODO: disable setting here
 			Profile: func() *virtual_machine.ProfileObjectFields {
 				if dataOld.Profile.IsNull() {
@@ -389,6 +391,7 @@ func (r *ResourceCoreVirtualMachine) MergeData(
 ) {
 	// Assign all values that are available only during creation stage
 	data.AssignFloatingIp = dataOld.AssignFloatingIp
+	data.EnablePortRandomization = dataOld.EnablePortRandomization
 	data.CreateBootableVolume = dataOld.CreateBootableVolume
 	data.EnvironmentName = dataOld.EnvironmentName
 	data.FlavorName = dataOld.FlavorName
@@ -468,14 +471,15 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 		Locked: types.BoolPointerValue(response.Locked),
 		Os:     types.StringPointerValue(response.Os),
 		// Doesn't make sense for reads (only used during creation)
-		AssignFloatingIp:     types.BoolNull(),
-		CreateBootableVolume: types.BoolNull(),
-		EnvironmentName:      types.StringNull(),
-		FlavorName:           types.StringNull(),
-		ImageName:            types.StringNull(),
-		KeyName:              types.StringNull(),
-		Profile:              types.ListNull(resource_core_virtual_machine.ProfileType{}),
-		VolumeName:           types.StringNull(),
+		AssignFloatingIp:        types.BoolNull(),
+		EnablePortRandomization: types.BoolNull(),
+		CreateBootableVolume:    types.BoolNull(),
+		EnvironmentName:         types.StringNull(),
+		FlavorName:              types.StringNull(),
+		ImageName:               types.StringNull(),
+		KeyName:                 types.StringNull(),
+		Profile:                 types.ListNull(resource_core_virtual_machine.ProfileType{}),
+		VolumeName:              types.StringNull(),
 		// TODO: not implemented as there is no field in output
 		CallbackUrl: types.StringUnknown(),
 		UserData:    types.StringUnknown(),
@@ -490,15 +494,35 @@ func (r *ResourceCoreVirtualMachine) MapEnvironment(
 	model, diagnostic := resource_core_virtual_machine.NewEnvironmentValue(
 		resource_core_virtual_machine.EnvironmentValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
-			"id":     types.Int64Value(int64(*data.Id)),
-			"name":   types.StringValue(*data.Name),
-			"org_id": types.Int64Value(int64(*data.OrgId)),
-			"region": types.StringValue(*data.Region),
+			"id":       types.Int64Value(int64(*data.Id)),
+			"name":     types.StringValue(*data.Name),
+			"org_id":   types.Int64Value(int64(*data.OrgId)),
+			"region":   types.StringValue(*data.Region),
+			"features": r.MapEnvironmentFeatures(ctx, diags, *data.Features),
 		},
 	)
 	diags.Append(diagnostic...)
 
 	return model
+}
+
+func (r *ResourceCoreVirtualMachine) MapEnvironmentFeatures(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data virtual_machine.EnvironmentFeatures,
+) basetypes.ObjectValue {
+	model, diagnostic := resource_core_virtual_machine.NewFeaturesValue(
+		resource_core_virtual_machine.FeaturesValue{}.AttributeTypes(ctx),
+		map[string]attr.Value{
+			"network_optimised": types.BoolValue(*data.NetworkOptimised),
+		},
+	)
+	diags.Append(diagnostic...)
+
+	ret, diagnostic := model.ToObjectValue(ctx)
+	diags.Append(diagnostic...)
+
+	return ret
 }
 
 func (r *ResourceCoreVirtualMachine) MapImage(

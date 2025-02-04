@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"math/big"
 )
 
@@ -178,6 +179,24 @@ func (d *DataSourceCoreVirtualMachines) MapInstances(
 							}
 							return types.StringValue(*row.FloatingIp)
 						}(),
+						"callback_url": func() attr.Value {
+							if row.CallbackUrl == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.CallbackUrl)
+						}(),
+						"port_randomization": func() attr.Value {
+							if row.PortRandomization == nil {
+								return types.BoolNull()
+							}
+							return types.BoolValue(*row.PortRandomization)
+						}(),
+						"port_randomization_status": func() attr.Value {
+							if row.PortRandomizationStatus == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.PortRandomizationStatus)
+						}(),
 						"floating_ip_status": func() attr.Value {
 							if row.FloatingIpStatus == nil {
 								return types.StringNull()
@@ -223,10 +242,11 @@ func (d *DataSourceCoreVirtualMachines) MapEnvironment(
 	model, diagnostic := datasource_core_virtual_machines.NewEnvironmentValue(
 		datasource_core_virtual_machines.EnvironmentValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
-			"id":     types.Int64Value(int64(*data.Id)),
-			"name":   types.StringValue(*data.Name),
-			"org_id": types.Int64Value(int64(*data.OrgId)),
-			"region": types.StringValue(*data.Region),
+			"id":       types.Int64Value(int64(*data.Id)),
+			"name":     types.StringValue(*data.Name),
+			"org_id":   types.Int64Value(int64(*data.OrgId)),
+			"region":   types.StringValue(*data.Region),
+			"features": d.MapEnvironmentFeatures(ctx, diags, *data.Features),
 		},
 	)
 	diags.Append(diagnostic...)
@@ -235,6 +255,25 @@ func (d *DataSourceCoreVirtualMachines) MapEnvironment(
 	diags.Append(diagnostic...)
 
 	return result
+}
+
+func (d *DataSourceCoreVirtualMachines) MapEnvironmentFeatures(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data virtual_machine.EnvironmentFeatures,
+) basetypes.ObjectValue {
+	model, diagnostic := datasource_core_virtual_machines.NewFeaturesValue(
+		datasource_core_virtual_machines.FeaturesValue{}.AttributeTypes(ctx),
+		map[string]attr.Value{
+			"network_optimised": types.BoolValue(*data.NetworkOptimised),
+		},
+	)
+	diags.Append(diagnostic...)
+
+	ret, diagnostic := model.ToObjectValue(ctx)
+	diags.Append(diagnostic...)
+
+	return ret
 }
 
 func (d *DataSourceCoreVirtualMachines) MapImage(
