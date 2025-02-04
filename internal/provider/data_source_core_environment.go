@@ -6,6 +6,7 @@ import (
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/environment"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_environment"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -120,5 +121,23 @@ func (d *DataSourceCoreEnvironment) ApiToModel(
 			}
 			return types.StringValue(response.CreatedAt.String())
 		}(),
+		Features: d.MapFeatures(ctx, diags, response.Features),
 	}
+}
+
+func (d *DataSourceCoreEnvironment) MapFeatures(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data *environment.EnvironmentFeatures,
+) datasource_core_environment.FeaturesValue {
+	model, diagnostic := datasource_core_environment.NewFeaturesValue(
+		datasource_core_environment.FeaturesValue{}.AttributeTypes(ctx),
+		map[string]attr.Value{
+			"network_optimised": types.BoolValue(*data.NetworkOptimised),
+		},
+	)
+	diags.AddError("test", fmt.Sprintf("%v", model))
+	diags.Append(diagnostic...)
+
+	return model
 }

@@ -55,6 +55,9 @@ func CoreVolumesDataSourceSchema(ctx context.Context) schema.Schema {
 						"name": schema.StringAttribute{
 							Computed: true,
 						},
+						"os_image": schema.StringAttribute{
+							Computed: true,
+						},
 						"size": schema.Int64Attribute{
 							Computed: true,
 						},
@@ -76,13 +79,23 @@ func CoreVolumesDataSourceSchema(ctx context.Context) schema.Schema {
 				},
 				Computed: true,
 			},
-			"page": schema.Int64Attribute{
-				Optional: true,
-				Computed: true,
+			"environment": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Filter Environment ID or Name",
+				MarkdownDescription: "Filter Environment ID or Name",
 			},
-			"page_size": schema.Int64Attribute{
-				Optional: true,
-				Computed: true,
+			"page": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Page Number",
+				MarkdownDescription: "Page Number",
+			},
+			"page_size": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Data Per Page",
+				MarkdownDescription: "Data Per Page",
 			},
 			"search": schema.StringAttribute{
 				Optional: true,
@@ -94,8 +107,9 @@ func CoreVolumesDataSourceSchema(ctx context.Context) schema.Schema {
 
 type CoreVolumesModel struct {
 	CoreVolumes types.Set    `tfsdk:"core_volumes"`
-	Page        types.Int64  `tfsdk:"page"`
-	PageSize    types.Int64  `tfsdk:"page_size"`
+	Environment types.String `tfsdk:"environment"`
+	Page        types.String `tfsdk:"page"`
+	PageSize    types.String `tfsdk:"page_size"`
 	Search      types.String `tfsdk:"search"`
 }
 
@@ -268,6 +282,24 @@ func (t CoreVolumesType) ValueFromObject(ctx context.Context, in basetypes.Objec
 			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
 	}
 
+	osImageAttribute, ok := attributes["os_image"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`os_image is missing from object`)
+
+		return nil, diags
+	}
+
+	osImageVal, ok := osImageAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`os_image expected to be basetypes.StringValue, was: %T`, osImageAttribute))
+	}
+
 	sizeAttribute, ok := attributes["size"]
 
 	if !ok {
@@ -353,6 +385,7 @@ func (t CoreVolumesType) ValueFromObject(ctx context.Context, in basetypes.Objec
 		Id:          idVal,
 		ImageId:     imageIdVal,
 		Name:        nameVal,
+		OsImage:     osImageVal,
 		Size:        sizeVal,
 		Status:      statusVal,
 		UpdatedAt:   updatedAtVal,
@@ -568,6 +601,24 @@ func NewCoreVolumesValue(attributeTypes map[string]attr.Type, attributes map[str
 			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
 	}
 
+	osImageAttribute, ok := attributes["os_image"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`os_image is missing from object`)
+
+		return NewCoreVolumesValueUnknown(), diags
+	}
+
+	osImageVal, ok := osImageAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`os_image expected to be basetypes.StringValue, was: %T`, osImageAttribute))
+	}
+
 	sizeAttribute, ok := attributes["size"]
 
 	if !ok {
@@ -653,6 +704,7 @@ func NewCoreVolumesValue(attributeTypes map[string]attr.Type, attributes map[str
 		Id:          idVal,
 		ImageId:     imageIdVal,
 		Name:        nameVal,
+		OsImage:     osImageVal,
 		Size:        sizeVal,
 		Status:      statusVal,
 		UpdatedAt:   updatedAtVal,
@@ -737,6 +789,7 @@ type CoreVolumesValue struct {
 	Id          basetypes.Int64Value  `tfsdk:"id"`
 	ImageId     basetypes.Int64Value  `tfsdk:"image_id"`
 	Name        basetypes.StringValue `tfsdk:"name"`
+	OsImage     basetypes.StringValue `tfsdk:"os_image"`
 	Size        basetypes.Int64Value  `tfsdk:"size"`
 	Status      basetypes.StringValue `tfsdk:"status"`
 	UpdatedAt   basetypes.StringValue `tfsdk:"updated_at"`
@@ -745,7 +798,7 @@ type CoreVolumesValue struct {
 }
 
 func (v CoreVolumesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 12)
+	attrTypes := make(map[string]tftypes.Type, 13)
 
 	var val tftypes.Value
 	var err error
@@ -760,6 +813,7 @@ func (v CoreVolumesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, 
 	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["image_id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["os_image"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["size"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["status"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["updated_at"] = basetypes.StringType{}.TerraformType(ctx)
@@ -769,7 +823,7 @@ func (v CoreVolumesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, 
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 12)
+		vals := make(map[string]tftypes.Value, 13)
 
 		val, err = v.Bootable.ToTerraformValue(ctx)
 
@@ -834,6 +888,14 @@ func (v CoreVolumesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, 
 		}
 
 		vals["name"] = val
+
+		val, err = v.OsImage.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["os_image"] = val
 
 		val, err = v.Size.ToTerraformValue(ctx)
 
@@ -928,6 +990,7 @@ func (v CoreVolumesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVa
 		"id":          basetypes.Int64Type{},
 		"image_id":    basetypes.Int64Type{},
 		"name":        basetypes.StringType{},
+		"os_image":    basetypes.StringType{},
 		"size":        basetypes.Int64Type{},
 		"status":      basetypes.StringType{},
 		"updated_at":  basetypes.StringType{},
@@ -953,6 +1016,7 @@ func (v CoreVolumesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVa
 			"id":           v.Id,
 			"image_id":     v.ImageId,
 			"name":         v.Name,
+			"os_image":     v.OsImage,
 			"size":         v.Size,
 			"status":       v.Status,
 			"updated_at":   v.UpdatedAt,
@@ -1009,6 +1073,10 @@ func (v CoreVolumesValue) Equal(o attr.Value) bool {
 		return false
 	}
 
+	if !v.OsImage.Equal(other.OsImage) {
+		return false
+	}
+
 	if !v.Size.Equal(other.Size) {
 		return false
 	}
@@ -1048,6 +1116,7 @@ func (v CoreVolumesValue) AttributeTypes(ctx context.Context) map[string]attr.Ty
 		"id":          basetypes.Int64Type{},
 		"image_id":    basetypes.Int64Type{},
 		"name":        basetypes.StringType{},
+		"os_image":    basetypes.StringType{},
 		"size":        basetypes.Int64Type{},
 		"status":      basetypes.StringType{},
 		"updated_at":  basetypes.StringType{},
