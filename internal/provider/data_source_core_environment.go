@@ -136,7 +136,6 @@ func (d *DataSourceCoreEnvironment) MapFeatures(
 			"network_optimised": types.BoolValue(*data.NetworkOptimised),
 		},
 	)
-	diags.AddError("test", fmt.Sprintf("%v", model))
 	diags.Append(diagnostic...)
 
 	return model

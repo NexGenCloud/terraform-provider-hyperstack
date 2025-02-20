@@ -89,7 +89,7 @@ func (d *DataSourceCoreVolumes) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	callResult := result.JSON200.Volume
+	callResult := result.JSON200.Volumes
 	if callResult == nil {
 		resp.Diagnostics.AddWarning(
 			"No user data",
@@ -147,6 +147,7 @@ func (d *DataSourceCoreVolumes) MapVolumes(
 						"bootable":     types.BoolPointerValue(row.Bootable),
 						"image_id":     types.Int64Value(int64(*row.ImageId)),
 						"callback_url": types.StringPointerValue(row.CallbackUrl),
+						"os_image":     types.StringPointerValue(row.OsImage),
 						"created_at": func() attr.Value {
 							if row.CreatedAt == nil {
 								return types.StringNull()

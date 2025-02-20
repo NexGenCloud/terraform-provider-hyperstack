@@ -178,7 +178,7 @@ func (r *ResourceCoreVolume) Create(
 			}
 
 			var volumeResult *volume.VolumeFields
-			for _, row := range *result.JSON200.Volume {
+			for _, row := range *result.JSON200.Volumes {
 				if *row.Id == id {
 					volumeResult = &row
 					break
@@ -261,7 +261,7 @@ func (r *ResourceCoreVolume) Read(
 		return
 	}
 
-	searchCallResult := searchResult.JSON200.Volume
+	searchCallResult := searchResult.JSON200.Volumes
 	if searchCallResult == nil {
 		resp.Diagnostics.AddWarning(
 			"No data in API result",
@@ -324,7 +324,7 @@ func (r *ResourceCoreVolume) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	callResult := result.JSON200.Volume
+	callResult := result.JSON200.Volumes
 	if callResult == nil {
 		resp.Diagnostics.AddWarning(
 			"No data in API result",
@@ -387,7 +387,7 @@ func (r *ResourceCoreVolume) Delete(ctx context.Context, req resource.DeleteRequ
 			}
 
 			var volumeResult *volume.VolumeFields
-			for _, row := range *result.JSON200.Volume {
+			for _, row := range *result.JSON200.Volumes {
 				if *row.Id == id {
 					volumeResult = &row
 					break

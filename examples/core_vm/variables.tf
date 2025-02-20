@@ -51,3 +51,8 @@ variable "create_bootable_volume" {
   type    = bool
   default = null
 }
+
+variable "labels" {
+  type    = list(string)
+  default = null
+}
