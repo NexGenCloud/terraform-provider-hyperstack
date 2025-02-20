@@ -7,5 +7,4 @@ module "vm" {
   flavor_name         = local.flavor_name
   image_name          = local.image_name
   region              = var.region
-
 }

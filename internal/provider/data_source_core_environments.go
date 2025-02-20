@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/environment"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_environment"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_environments"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -122,6 +123,9 @@ func (d *DataSourceCoreEnvironments) MapEnvironments(
 		func() []attr.Value {
 			envs := make([]attr.Value, 0)
 			for _, row := range data {
+				features, diagnostic := d.MapFeatures(ctx, diags, row.Features).ToObjectValue(ctx)
+				diags.Append(diagnostic...)
+
 				model, diagnostic := datasource_core_environments.NewCoreEnvironmentsValue(
 					datasource_core_environments.CoreEnvironmentsValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
@@ -134,6 +138,7 @@ func (d *DataSourceCoreEnvironments) MapEnvironments(
 							}
 							return types.StringValue(row.CreatedAt.String())
 						}(),
+						"features": features,
 					},
 				)
 				diags.Append(diagnostic...)
@@ -143,5 +148,21 @@ func (d *DataSourceCoreEnvironments) MapEnvironments(
 		}(),
 	)
 	diags.Append(diagnostic...)
+	return model
+}
+
+func (d *DataSourceCoreEnvironments) MapFeatures(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data *environment.EnvironmentFeatures,
+) datasource_core_environment.FeaturesValue {
+	model, diagnostic := datasource_core_environment.NewFeaturesValue(
+		datasource_core_environment.FeaturesValue{}.AttributeTypes(ctx),
+		map[string]attr.Value{
+			"network_optimised": types.BoolValue(*data.NetworkOptimised),
+		},
+	)
+	diags.Append(diagnostic...)
+
 	return model
 }

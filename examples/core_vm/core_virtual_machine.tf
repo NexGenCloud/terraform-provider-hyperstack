@@ -14,6 +14,10 @@ resource "hyperstack_core_virtual_machine" "this" {
 
   assign_floating_ip = var.assign_floating_ip
 
+  enable_port_randomization = var.enable_port_randomization
+
   // TODO: Setting this to true results in error state
   create_bootable_volume = var.create_bootable_volume
+
+  labels = var.labels
 }

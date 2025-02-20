@@ -9,9 +9,11 @@ module "vms" {
   flavor_name            = module.flavor[each.value.name].name
   image_name             = module.image[each.value.name].name
   region                 = var.region
-  ingress_ports          = [22, 80, 443]
+  ingress_ports = [22, 80, 443]
   create_bootable_volume = false
-  user_data              = data.cloudinit_config.this.rendered
+  user_data = data.cloudinit_config.this.rendered
   // TODO: Setting this to true results in error state
   assign_floating_ip     = true
+
+  labels = ["test", "terraform"]
 }
