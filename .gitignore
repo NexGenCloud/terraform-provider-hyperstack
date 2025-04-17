@@ -1,6 +1,5 @@
 artifacts/
 dist/
-internal/
 
 *.env
 .DS_Store

@@ -21,8 +21,16 @@ func CoreRegionsDataSourceSchema(ctx context.Context) schema.Schema {
 			"core_regions": schema.SetNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
+						"country": schema.StringAttribute{
+							Computed: true,
+						},
 						"description": schema.StringAttribute{
 							Computed: true,
+						},
+						"green_status": schema.StringAttribute{
+							Computed:            true,
+							Description:         "Green status",
+							MarkdownDescription: "Green status",
 						},
 						"id": schema.Int64Attribute{
 							Computed: true,
@@ -72,6 +80,24 @@ func (t CoreRegionsType) ValueFromObject(ctx context.Context, in basetypes.Objec
 
 	attributes := in.Attributes()
 
+	countryAttribute, ok := attributes["country"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`country is missing from object`)
+
+		return nil, diags
+	}
+
+	countryVal, ok := countryAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`country expected to be basetypes.StringValue, was: %T`, countryAttribute))
+	}
+
 	descriptionAttribute, ok := attributes["description"]
 
 	if !ok {
@@ -88,6 +114,24 @@ func (t CoreRegionsType) ValueFromObject(ctx context.Context, in basetypes.Objec
 		diags.AddError(
 			"Attribute Wrong Type",
 			fmt.Sprintf(`description expected to be basetypes.StringValue, was: %T`, descriptionAttribute))
+	}
+
+	greenStatusAttribute, ok := attributes["green_status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`green_status is missing from object`)
+
+		return nil, diags
+	}
+
+	greenStatusVal, ok := greenStatusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`green_status expected to be basetypes.StringValue, was: %T`, greenStatusAttribute))
 	}
 
 	idAttribute, ok := attributes["id"]
@@ -131,7 +175,9 @@ func (t CoreRegionsType) ValueFromObject(ctx context.Context, in basetypes.Objec
 	}
 
 	return CoreRegionsValue{
+		Country:     countryVal,
 		Description: descriptionVal,
+		GreenStatus: greenStatusVal,
 		Id:          idVal,
 		Name:        nameVal,
 		state:       attr.ValueStateKnown,
@@ -201,6 +247,24 @@ func NewCoreRegionsValue(attributeTypes map[string]attr.Type, attributes map[str
 		return NewCoreRegionsValueUnknown(), diags
 	}
 
+	countryAttribute, ok := attributes["country"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`country is missing from object`)
+
+		return NewCoreRegionsValueUnknown(), diags
+	}
+
+	countryVal, ok := countryAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`country expected to be basetypes.StringValue, was: %T`, countryAttribute))
+	}
+
 	descriptionAttribute, ok := attributes["description"]
 
 	if !ok {
@@ -217,6 +281,24 @@ func NewCoreRegionsValue(attributeTypes map[string]attr.Type, attributes map[str
 		diags.AddError(
 			"Attribute Wrong Type",
 			fmt.Sprintf(`description expected to be basetypes.StringValue, was: %T`, descriptionAttribute))
+	}
+
+	greenStatusAttribute, ok := attributes["green_status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`green_status is missing from object`)
+
+		return NewCoreRegionsValueUnknown(), diags
+	}
+
+	greenStatusVal, ok := greenStatusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`green_status expected to be basetypes.StringValue, was: %T`, greenStatusAttribute))
 	}
 
 	idAttribute, ok := attributes["id"]
@@ -260,7 +342,9 @@ func NewCoreRegionsValue(attributeTypes map[string]attr.Type, attributes map[str
 	}
 
 	return CoreRegionsValue{
+		Country:     countryVal,
 		Description: descriptionVal,
+		GreenStatus: greenStatusVal,
 		Id:          idVal,
 		Name:        nameVal,
 		state:       attr.ValueStateKnown,
@@ -335,19 +419,23 @@ func (t CoreRegionsType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = CoreRegionsValue{}
 
 type CoreRegionsValue struct {
+	Country     basetypes.StringValue `tfsdk:"country"`
 	Description basetypes.StringValue `tfsdk:"description"`
+	GreenStatus basetypes.StringValue `tfsdk:"green_status"`
 	Id          basetypes.Int64Value  `tfsdk:"id"`
 	Name        basetypes.StringValue `tfsdk:"name"`
 	state       attr.ValueState
 }
 
 func (v CoreRegionsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 3)
+	attrTypes := make(map[string]tftypes.Type, 5)
 
 	var val tftypes.Value
 	var err error
 
+	attrTypes["country"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["description"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["green_status"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
 
@@ -355,7 +443,15 @@ func (v CoreRegionsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, 
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 3)
+		vals := make(map[string]tftypes.Value, 5)
+
+		val, err = v.Country.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["country"] = val
 
 		val, err = v.Description.ToTerraformValue(ctx)
 
@@ -364,6 +460,14 @@ func (v CoreRegionsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, 
 		}
 
 		vals["description"] = val
+
+		val, err = v.GreenStatus.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["green_status"] = val
 
 		val, err = v.Id.ToTerraformValue(ctx)
 
@@ -411,9 +515,11 @@ func (v CoreRegionsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVa
 	var diags diag.Diagnostics
 
 	attributeTypes := map[string]attr.Type{
-		"description": basetypes.StringType{},
-		"id":          basetypes.Int64Type{},
-		"name":        basetypes.StringType{},
+		"country":      basetypes.StringType{},
+		"description":  basetypes.StringType{},
+		"green_status": basetypes.StringType{},
+		"id":           basetypes.Int64Type{},
+		"name":         basetypes.StringType{},
 	}
 
 	if v.IsNull() {
@@ -427,9 +533,11 @@ func (v CoreRegionsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVa
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
-			"description": v.Description,
-			"id":          v.Id,
-			"name":        v.Name,
+			"country":      v.Country,
+			"description":  v.Description,
+			"green_status": v.GreenStatus,
+			"id":           v.Id,
+			"name":         v.Name,
 		})
 
 	return objVal, diags
@@ -450,7 +558,15 @@ func (v CoreRegionsValue) Equal(o attr.Value) bool {
 		return true
 	}
 
+	if !v.Country.Equal(other.Country) {
+		return false
+	}
+
 	if !v.Description.Equal(other.Description) {
+		return false
+	}
+
+	if !v.GreenStatus.Equal(other.GreenStatus) {
 		return false
 	}
 
@@ -475,8 +591,10 @@ func (v CoreRegionsValue) Type(ctx context.Context) attr.Type {
 
 func (v CoreRegionsValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"description": basetypes.StringType{},
-		"id":          basetypes.Int64Type{},
-		"name":        basetypes.StringType{},
+		"country":      basetypes.StringType{},
+		"description":  basetypes.StringType{},
+		"green_status": basetypes.StringType{},
+		"id":           basetypes.Int64Type{},
+		"name":         basetypes.StringType{},
 	}
 }
