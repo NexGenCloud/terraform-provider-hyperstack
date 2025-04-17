@@ -164,7 +164,7 @@ resources:
 
   core_virtual_machine:
     read:
-      path: /core/virtual-machines/{id}
+      path: /core/virtual-machines/{vm_id}
       method: GET
     create:
       path: /core/virtual-machines

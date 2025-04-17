@@ -148,17 +148,16 @@ def attr_fix_components(data: AttrType) -> None:
   for p in list(props.keys()):
     props["N%s" % p] = props.pop(p)
 
-  paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"] = paths["/core/virtual-machines/{id}/sg-rules"]
-  del paths["/core/virtual-machines/{id}/sg-rules"]
+  paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"] = paths["/core/virtual-machines/{vm_id}/sg-rules"]
+  del paths["/core/virtual-machines/{vm_id}/sg-rules"]
   paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"]["post"]["parameters"][0]["name"] = "virtual_machine_id"
 
   paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"] = paths[
-    "/core/virtual-machines/{virtual_machine_id}/sg-rules/{sg_rule_id}"]
-  del paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{sg_rule_id}"]
+    "/core/virtual-machines/{vm_id}/sg-rules/{sg_rule_id}"]
+  del paths["/core/virtual-machines/{vm_id}/sg-rules/{sg_rule_id}"]
   paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"]["delete"]["parameters"][0][
     "name"] = "virtual_machine_id"
   paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"]["delete"]["parameters"][1]["name"] = "id"
-
 
 def fix_api_spec(spec_file: str) -> None:
   """
