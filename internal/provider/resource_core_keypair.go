@@ -379,7 +379,7 @@ func (r *ResourceCoreKeypair) ApiToModel(
 			if response.Environment == nil {
 				return types.StringNull()
 			}
-			return types.StringValue(*response.Environment)
+			return types.StringValue(*response.Environment.Name)
 		}(),
 		Fingerprint: func() types.String {
 			if response.Fingerprint == nil {

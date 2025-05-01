@@ -112,6 +112,10 @@ data_sources:
     read:
       path: /core/virtual-machines
       method: GET
+    schema:
+      ignores:
+        - features
+        - flavor.features
 
   core_clusters:
     read:
@@ -164,11 +168,15 @@ resources:
 
   core_virtual_machine:
     read:
-      path: /core/virtual-machines/{id}
+      path: /core/virtual-machines/{vm_id}
       method: GET
     create:
       path: /core/virtual-machines
       method: POST
+    schema:
+      ignores:
+        - features
+        - flavor.features
 
   core_volume:
     read:

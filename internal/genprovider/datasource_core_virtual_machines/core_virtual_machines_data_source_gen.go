@@ -34,6 +34,9 @@ func CoreVirtualMachinesDataSourceSchema(ctx context.Context) schema.Schema {
 							Attributes: map[string]schema.Attribute{
 								"features": schema.SingleNestedAttribute{
 									Attributes: map[string]schema.Attribute{
+										"green_status": schema.StringAttribute{
+											Computed: true,
+										},
 										"network_optimised": schema.BoolAttribute{
 											Computed: true,
 										},
@@ -86,6 +89,24 @@ func CoreVirtualMachinesDataSourceSchema(ctx context.Context) schema.Schema {
 									Computed: true,
 								},
 								"id": schema.Int64Attribute{
+									Computed: true,
+								},
+								"labels": schema.ListNestedAttribute{
+									NestedObject: schema.NestedAttributeObject{
+										Attributes: map[string]schema.Attribute{
+											"id": schema.Int64Attribute{
+												Computed: true,
+											},
+											"label": schema.StringAttribute{
+												Computed: true,
+											},
+										},
+										CustomType: LabelsType{
+											ObjectType: types.ObjectType{
+												AttrTypes: LabelsValue{}.AttributeTypes(ctx),
+											},
+										},
+									},
 									Computed: true,
 								},
 								"name": schema.StringAttribute{
@@ -157,6 +178,9 @@ func CoreVirtualMachinesDataSourceSchema(ctx context.Context) schema.Schema {
 							Computed: true,
 						},
 						"power_state": schema.StringAttribute{
+							Computed: true,
+						},
+						"requires_public_ip": schema.BoolAttribute{
 							Computed: true,
 						},
 						"security_rules": schema.ListNestedAttribute{
@@ -645,6 +669,24 @@ func (t CoreVirtualMachinesType) ValueFromObject(ctx context.Context, in basetyp
 			fmt.Sprintf(`power_state expected to be basetypes.StringValue, was: %T`, powerStateAttribute))
 	}
 
+	requiresPublicIpAttribute, ok := attributes["requires_public_ip"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`requires_public_ip is missing from object`)
+
+		return nil, diags
+	}
+
+	requiresPublicIpVal, ok := requiresPublicIpAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`requires_public_ip expected to be basetypes.BoolValue, was: %T`, requiresPublicIpAttribute))
+	}
+
 	securityRulesAttribute, ok := attributes["security_rules"]
 
 	if !ok {
@@ -740,6 +782,7 @@ func (t CoreVirtualMachinesType) ValueFromObject(ctx context.Context, in basetyp
 		PortRandomization:       portRandomizationVal,
 		PortRandomizationStatus: portRandomizationStatusVal,
 		PowerState:              powerStateVal,
+		RequiresPublicIp:        requiresPublicIpVal,
 		SecurityRules:           securityRulesVal,
 		Status:                  statusVal,
 		VmState:                 vmStateVal,
@@ -1135,6 +1178,24 @@ func NewCoreVirtualMachinesValue(attributeTypes map[string]attr.Type, attributes
 			fmt.Sprintf(`power_state expected to be basetypes.StringValue, was: %T`, powerStateAttribute))
 	}
 
+	requiresPublicIpAttribute, ok := attributes["requires_public_ip"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`requires_public_ip is missing from object`)
+
+		return NewCoreVirtualMachinesValueUnknown(), diags
+	}
+
+	requiresPublicIpVal, ok := requiresPublicIpAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`requires_public_ip expected to be basetypes.BoolValue, was: %T`, requiresPublicIpAttribute))
+	}
+
 	securityRulesAttribute, ok := attributes["security_rules"]
 
 	if !ok {
@@ -1230,6 +1291,7 @@ func NewCoreVirtualMachinesValue(attributeTypes map[string]attr.Type, attributes
 		PortRandomization:       portRandomizationVal,
 		PortRandomizationStatus: portRandomizationStatusVal,
 		PowerState:              powerStateVal,
+		RequiresPublicIp:        requiresPublicIpVal,
 		SecurityRules:           securityRulesVal,
 		Status:                  statusVal,
 		VmState:                 vmStateVal,
@@ -1324,6 +1386,7 @@ type CoreVirtualMachinesValue struct {
 	PortRandomization       basetypes.BoolValue   `tfsdk:"port_randomization"`
 	PortRandomizationStatus basetypes.StringValue `tfsdk:"port_randomization_status"`
 	PowerState              basetypes.StringValue `tfsdk:"power_state"`
+	RequiresPublicIp        basetypes.BoolValue   `tfsdk:"requires_public_ip"`
 	SecurityRules           basetypes.ListValue   `tfsdk:"security_rules"`
 	Status                  basetypes.StringValue `tfsdk:"status"`
 	VmState                 basetypes.StringValue `tfsdk:"vm_state"`
@@ -1332,7 +1395,7 @@ type CoreVirtualMachinesValue struct {
 }
 
 func (v CoreVirtualMachinesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 22)
+	attrTypes := make(map[string]tftypes.Type, 23)
 
 	var val tftypes.Value
 	var err error
@@ -1365,6 +1428,7 @@ func (v CoreVirtualMachinesValue) ToTerraformValue(ctx context.Context) (tftypes
 	attrTypes["port_randomization"] = basetypes.BoolType{}.TerraformType(ctx)
 	attrTypes["port_randomization_status"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["power_state"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["requires_public_ip"] = basetypes.BoolType{}.TerraformType(ctx)
 	attrTypes["security_rules"] = basetypes.ListType{
 		ElemType: SecurityRulesValue{}.Type(ctx),
 	}.TerraformType(ctx)
@@ -1378,7 +1442,7 @@ func (v CoreVirtualMachinesValue) ToTerraformValue(ctx context.Context) (tftypes
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 22)
+		vals := make(map[string]tftypes.Value, 23)
 
 		val, err = v.CallbackUrl.ToTerraformValue(ctx)
 
@@ -1523,6 +1587,14 @@ func (v CoreVirtualMachinesValue) ToTerraformValue(ctx context.Context) (tftypes
 		}
 
 		vals["power_state"] = val
+
+		val, err = v.RequiresPublicIp.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["requires_public_ip"] = val
 
 		val, err = v.SecurityRules.ToTerraformValue(ctx)
 
@@ -1761,6 +1833,7 @@ func (v CoreVirtualMachinesValue) ToObjectValue(ctx context.Context) (basetypes.
 			"port_randomization":        basetypes.BoolType{},
 			"port_randomization_status": basetypes.StringType{},
 			"power_state":               basetypes.StringType{},
+			"requires_public_ip":        basetypes.BoolType{},
 			"security_rules": basetypes.ListType{
 				ElemType: SecurityRulesValue{}.Type(ctx),
 			},
@@ -1801,6 +1874,7 @@ func (v CoreVirtualMachinesValue) ToObjectValue(ctx context.Context) (basetypes.
 		"port_randomization":        basetypes.BoolType{},
 		"port_randomization_status": basetypes.StringType{},
 		"power_state":               basetypes.StringType{},
+		"requires_public_ip":        basetypes.BoolType{},
 		"security_rules": basetypes.ListType{
 			ElemType: SecurityRulesValue{}.Type(ctx),
 		},
@@ -1840,6 +1914,7 @@ func (v CoreVirtualMachinesValue) ToObjectValue(ctx context.Context) (basetypes.
 			"port_randomization":        v.PortRandomization,
 			"port_randomization_status": v.PortRandomizationStatus,
 			"power_state":               v.PowerState,
+			"requires_public_ip":        v.RequiresPublicIp,
 			"security_rules":            securityRules,
 			"status":                    v.Status,
 			"vm_state":                  v.VmState,
@@ -1936,6 +2011,10 @@ func (v CoreVirtualMachinesValue) Equal(o attr.Value) bool {
 		return false
 	}
 
+	if !v.RequiresPublicIp.Equal(other.RequiresPublicIp) {
+		return false
+	}
+
 	if !v.SecurityRules.Equal(other.SecurityRules) {
 		return false
 	}
@@ -1993,6 +2072,7 @@ func (v CoreVirtualMachinesValue) AttributeTypes(ctx context.Context) map[string
 		"port_randomization":        basetypes.BoolType{},
 		"port_randomization_status": basetypes.StringType{},
 		"power_state":               basetypes.StringType{},
+		"requires_public_ip":        basetypes.BoolType{},
 		"security_rules": basetypes.ListType{
 			ElemType: SecurityRulesValue{}.Type(ctx),
 		},
@@ -2600,6 +2680,24 @@ func (t FeaturesType) ValueFromObject(ctx context.Context, in basetypes.ObjectVa
 
 	attributes := in.Attributes()
 
+	greenStatusAttribute, ok := attributes["green_status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`green_status is missing from object`)
+
+		return nil, diags
+	}
+
+	greenStatusVal, ok := greenStatusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`green_status expected to be basetypes.StringValue, was: %T`, greenStatusAttribute))
+	}
+
 	networkOptimisedAttribute, ok := attributes["network_optimised"]
 
 	if !ok {
@@ -2623,6 +2721,7 @@ func (t FeaturesType) ValueFromObject(ctx context.Context, in basetypes.ObjectVa
 	}
 
 	return FeaturesValue{
+		GreenStatus:      greenStatusVal,
 		NetworkOptimised: networkOptimisedVal,
 		state:            attr.ValueStateKnown,
 	}, diags
@@ -2691,6 +2790,24 @@ func NewFeaturesValue(attributeTypes map[string]attr.Type, attributes map[string
 		return NewFeaturesValueUnknown(), diags
 	}
 
+	greenStatusAttribute, ok := attributes["green_status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`green_status is missing from object`)
+
+		return NewFeaturesValueUnknown(), diags
+	}
+
+	greenStatusVal, ok := greenStatusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`green_status expected to be basetypes.StringValue, was: %T`, greenStatusAttribute))
+	}
+
 	networkOptimisedAttribute, ok := attributes["network_optimised"]
 
 	if !ok {
@@ -2714,6 +2831,7 @@ func NewFeaturesValue(attributeTypes map[string]attr.Type, attributes map[string
 	}
 
 	return FeaturesValue{
+		GreenStatus:      greenStatusVal,
 		NetworkOptimised: networkOptimisedVal,
 		state:            attr.ValueStateKnown,
 	}, diags
@@ -2787,23 +2905,33 @@ func (t FeaturesType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = FeaturesValue{}
 
 type FeaturesValue struct {
-	NetworkOptimised basetypes.BoolValue `tfsdk:"network_optimised"`
+	GreenStatus      basetypes.StringValue `tfsdk:"green_status"`
+	NetworkOptimised basetypes.BoolValue   `tfsdk:"network_optimised"`
 	state            attr.ValueState
 }
 
 func (v FeaturesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 1)
+	attrTypes := make(map[string]tftypes.Type, 2)
 
 	var val tftypes.Value
 	var err error
 
+	attrTypes["green_status"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["network_optimised"] = basetypes.BoolType{}.TerraformType(ctx)
 
 	objectType := tftypes.Object{AttributeTypes: attrTypes}
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 1)
+		vals := make(map[string]tftypes.Value, 2)
+
+		val, err = v.GreenStatus.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["green_status"] = val
 
 		val, err = v.NetworkOptimised.ToTerraformValue(ctx)
 
@@ -2843,6 +2971,7 @@ func (v FeaturesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue
 	var diags diag.Diagnostics
 
 	attributeTypes := map[string]attr.Type{
+		"green_status":      basetypes.StringType{},
 		"network_optimised": basetypes.BoolType{},
 	}
 
@@ -2857,6 +2986,7 @@ func (v FeaturesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
+			"green_status":      v.GreenStatus,
 			"network_optimised": v.NetworkOptimised,
 		})
 
@@ -2878,6 +3008,10 @@ func (v FeaturesValue) Equal(o attr.Value) bool {
 		return true
 	}
 
+	if !v.GreenStatus.Equal(other.GreenStatus) {
+		return false
+	}
+
 	if !v.NetworkOptimised.Equal(other.NetworkOptimised) {
 		return false
 	}
@@ -2895,6 +3029,7 @@ func (v FeaturesValue) Type(ctx context.Context) attr.Type {
 
 func (v FeaturesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
+		"green_status":      basetypes.StringType{},
 		"network_optimised": basetypes.BoolType{},
 	}
 }
@@ -3032,6 +3167,24 @@ func (t FlavorType) ValueFromObject(ctx context.Context, in basetypes.ObjectValu
 			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
 	}
 
+	labelsAttribute, ok := attributes["labels"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`labels is missing from object`)
+
+		return nil, diags
+	}
+
+	labelsVal, ok := labelsAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`labels expected to be basetypes.ListValue, was: %T`, labelsAttribute))
+	}
+
 	nameAttribute, ok := attributes["name"]
 
 	if !ok {
@@ -3079,6 +3232,7 @@ func (t FlavorType) ValueFromObject(ctx context.Context, in basetypes.ObjectValu
 		Gpu:       gpuVal,
 		GpuCount:  gpuCountVal,
 		Id:        idVal,
+		Labels:    labelsVal,
 		Name:      nameVal,
 		Ram:       ramVal,
 		state:     attr.ValueStateKnown,
@@ -3256,6 +3410,24 @@ func NewFlavorValue(attributeTypes map[string]attr.Type, attributes map[string]a
 			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
 	}
 
+	labelsAttribute, ok := attributes["labels"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`labels is missing from object`)
+
+		return NewFlavorValueUnknown(), diags
+	}
+
+	labelsVal, ok := labelsAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`labels expected to be basetypes.ListValue, was: %T`, labelsAttribute))
+	}
+
 	nameAttribute, ok := attributes["name"]
 
 	if !ok {
@@ -3303,6 +3475,7 @@ func NewFlavorValue(attributeTypes map[string]attr.Type, attributes map[string]a
 		Gpu:       gpuVal,
 		GpuCount:  gpuCountVal,
 		Id:        idVal,
+		Labels:    labelsVal,
 		Name:      nameVal,
 		Ram:       ramVal,
 		state:     attr.ValueStateKnown,
@@ -3383,13 +3556,14 @@ type FlavorValue struct {
 	Gpu       basetypes.StringValue `tfsdk:"gpu"`
 	GpuCount  basetypes.Int64Value  `tfsdk:"gpu_count"`
 	Id        basetypes.Int64Value  `tfsdk:"id"`
+	Labels    basetypes.ListValue   `tfsdk:"labels"`
 	Name      basetypes.StringValue `tfsdk:"name"`
 	Ram       basetypes.NumberValue `tfsdk:"ram"`
 	state     attr.ValueState
 }
 
 func (v FlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 8)
+	attrTypes := make(map[string]tftypes.Type, 9)
 
 	var val tftypes.Value
 	var err error
@@ -3400,6 +3574,9 @@ func (v FlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error
 	attrTypes["gpu"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["gpu_count"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["labels"] = basetypes.ListType{
+		ElemType: LabelsValue{}.Type(ctx),
+	}.TerraformType(ctx)
 	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["ram"] = basetypes.NumberType{}.TerraformType(ctx)
 
@@ -3407,7 +3584,7 @@ func (v FlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 8)
+		vals := make(map[string]tftypes.Value, 9)
 
 		val, err = v.Cpu.ToTerraformValue(ctx)
 
@@ -3457,6 +3634,14 @@ func (v FlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error
 
 		vals["id"] = val
 
+		val, err = v.Labels.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["labels"] = val
+
 		val, err = v.Name.ToTerraformValue(ctx)
 
 		if err != nil {
@@ -3502,6 +3687,35 @@ func (v FlavorValue) String() string {
 func (v FlavorValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	labels := types.ListValueMust(
+		LabelsType{
+			basetypes.ObjectType{
+				AttrTypes: LabelsValue{}.AttributeTypes(ctx),
+			},
+		},
+		v.Labels.Elements(),
+	)
+
+	if v.Labels.IsNull() {
+		labels = types.ListNull(
+			LabelsType{
+				basetypes.ObjectType{
+					AttrTypes: LabelsValue{}.AttributeTypes(ctx),
+				},
+			},
+		)
+	}
+
+	if v.Labels.IsUnknown() {
+		labels = types.ListUnknown(
+			LabelsType{
+				basetypes.ObjectType{
+					AttrTypes: LabelsValue{}.AttributeTypes(ctx),
+				},
+			},
+		)
+	}
+
 	attributeTypes := map[string]attr.Type{
 		"cpu":       basetypes.Int64Type{},
 		"disk":      basetypes.Int64Type{},
@@ -3509,8 +3723,11 @@ func (v FlavorValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, 
 		"gpu":       basetypes.StringType{},
 		"gpu_count": basetypes.Int64Type{},
 		"id":        basetypes.Int64Type{},
-		"name":      basetypes.StringType{},
-		"ram":       basetypes.NumberType{},
+		"labels": basetypes.ListType{
+			ElemType: LabelsValue{}.Type(ctx),
+		},
+		"name": basetypes.StringType{},
+		"ram":  basetypes.NumberType{},
 	}
 
 	if v.IsNull() {
@@ -3530,6 +3747,7 @@ func (v FlavorValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, 
 			"gpu":       v.Gpu,
 			"gpu_count": v.GpuCount,
 			"id":        v.Id,
+			"labels":    labels,
 			"name":      v.Name,
 			"ram":       v.Ram,
 		})
@@ -3576,6 +3794,10 @@ func (v FlavorValue) Equal(o attr.Value) bool {
 		return false
 	}
 
+	if !v.Labels.Equal(other.Labels) {
+		return false
+	}
+
 	if !v.Name.Equal(other.Name) {
 		return false
 	}
@@ -3603,8 +3825,390 @@ func (v FlavorValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 		"gpu":       basetypes.StringType{},
 		"gpu_count": basetypes.Int64Type{},
 		"id":        basetypes.Int64Type{},
-		"name":      basetypes.StringType{},
-		"ram":       basetypes.NumberType{},
+		"labels": basetypes.ListType{
+			ElemType: LabelsValue{}.Type(ctx),
+		},
+		"name": basetypes.StringType{},
+		"ram":  basetypes.NumberType{},
+	}
+}
+
+var _ basetypes.ObjectTypable = LabelsType{}
+
+type LabelsType struct {
+	basetypes.ObjectType
+}
+
+func (t LabelsType) Equal(o attr.Type) bool {
+	other, ok := o.(LabelsType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t LabelsType) String() string {
+	return "LabelsType"
+}
+
+func (t LabelsType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return nil, diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	labelAttribute, ok := attributes["label"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`label is missing from object`)
+
+		return nil, diags
+	}
+
+	labelVal, ok := labelAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`label expected to be basetypes.StringValue, was: %T`, labelAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return LabelsValue{
+		Id:    idVal,
+		Label: labelVal,
+		state: attr.ValueStateKnown,
+	}, diags
+}
+
+func NewLabelsValueNull() LabelsValue {
+	return LabelsValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewLabelsValueUnknown() LabelsValue {
+	return LabelsValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewLabelsValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (LabelsValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing LabelsValue Attribute Value",
+				"While creating a LabelsValue value, a missing attribute value was detected. "+
+					"A LabelsValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("LabelsValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid LabelsValue Attribute Type",
+				"While creating a LabelsValue value, an invalid attribute value was detected. "+
+					"A LabelsValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("LabelsValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("LabelsValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra LabelsValue Attribute Value",
+				"While creating a LabelsValue value, an extra attribute value was detected. "+
+					"A LabelsValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra LabelsValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewLabelsValueUnknown(), diags
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return NewLabelsValueUnknown(), diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	labelAttribute, ok := attributes["label"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`label is missing from object`)
+
+		return NewLabelsValueUnknown(), diags
+	}
+
+	labelVal, ok := labelAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`label expected to be basetypes.StringValue, was: %T`, labelAttribute))
+	}
+
+	if diags.HasError() {
+		return NewLabelsValueUnknown(), diags
+	}
+
+	return LabelsValue{
+		Id:    idVal,
+		Label: labelVal,
+		state: attr.ValueStateKnown,
+	}, diags
+}
+
+func NewLabelsValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) LabelsValue {
+	object, diags := NewLabelsValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewLabelsValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t LabelsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewLabelsValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewLabelsValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewLabelsValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewLabelsValueMust(LabelsValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t LabelsType) ValueType(ctx context.Context) attr.Value {
+	return LabelsValue{}
+}
+
+var _ basetypes.ObjectValuable = LabelsValue{}
+
+type LabelsValue struct {
+	Id    basetypes.Int64Value  `tfsdk:"id"`
+	Label basetypes.StringValue `tfsdk:"label"`
+	state attr.ValueState
+}
+
+func (v LabelsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 2)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["label"] = basetypes.StringType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 2)
+
+		val, err = v.Id.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["id"] = val
+
+		val, err = v.Label.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["label"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v LabelsValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v LabelsValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v LabelsValue) String() string {
+	return "LabelsValue"
+}
+
+func (v LabelsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributeTypes := map[string]attr.Type{
+		"id":    basetypes.Int64Type{},
+		"label": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"id":    v.Id,
+			"label": v.Label,
+		})
+
+	return objVal, diags
+}
+
+func (v LabelsValue) Equal(o attr.Value) bool {
+	other, ok := o.(LabelsValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.Id.Equal(other.Id) {
+		return false
+	}
+
+	if !v.Label.Equal(other.Label) {
+		return false
+	}
+
+	return true
+}
+
+func (v LabelsValue) Type(ctx context.Context) attr.Type {
+	return LabelsType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v LabelsValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"id":    basetypes.Int64Type{},
+		"label": basetypes.StringType{},
 	}
 }
 

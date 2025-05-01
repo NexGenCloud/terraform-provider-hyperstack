@@ -129,7 +129,7 @@ func (d *DataSourceCoreKeypairs) MapKeypairs(
 						"name":        types.StringValue(*row.Name),
 						"public_key":  types.StringValue(*row.PublicKey),
 						"fingerprint": types.StringValue(*row.Fingerprint),
-						"environment": types.StringValue(*row.Environment),
+						"environment": d.MapEnvironment(ctx, diags, *row.Environment),
 						"created_at": func() attr.Value {
 							if row.CreatedAt == nil {
 								return types.StringNull()
@@ -145,5 +145,24 @@ func (d *DataSourceCoreKeypairs) MapKeypairs(
 		}(),
 	)
 	diags.Append(diagnostic...)
+	return model
+}
+
+func (d *DataSourceCoreKeypairs) MapEnvironment(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data keypair.KeypairEnvironmentFields,
+) datasource_core_keypairs.EnvironmentValue {
+	model, diagnostic := datasource_core_keypairs.NewEnvironmentValue(
+		datasource_core_keypairs.EnvironmentValue{}.AttributeTypes(ctx),
+		map[string]attr.Value{
+			"id":     types.Int64Value(int64(*data.Id)),
+			"name":   types.StringValue(*data.Name),
+			"region": types.StringValue(*data.Region),
+			//"features": d.MapEnvironmentFeatures(ctx, diags, *data.Features),
+		},
+	)
+	diags.Append(diagnostic...)
+
 	return model
 }

@@ -23,6 +23,9 @@ func CoreEnvironmentDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"features": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
+					"green_status": schema.StringAttribute{
+						Computed: true,
+					},
 					"network_optimised": schema.BoolAttribute{
 						Computed: true,
 					},
@@ -80,6 +83,24 @@ func (t FeaturesType) ValueFromObject(ctx context.Context, in basetypes.ObjectVa
 
 	attributes := in.Attributes()
 
+	greenStatusAttribute, ok := attributes["green_status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`green_status is missing from object`)
+
+		return nil, diags
+	}
+
+	greenStatusVal, ok := greenStatusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`green_status expected to be basetypes.StringValue, was: %T`, greenStatusAttribute))
+	}
+
 	networkOptimisedAttribute, ok := attributes["network_optimised"]
 
 	if !ok {
@@ -103,6 +124,7 @@ func (t FeaturesType) ValueFromObject(ctx context.Context, in basetypes.ObjectVa
 	}
 
 	return FeaturesValue{
+		GreenStatus:      greenStatusVal,
 		NetworkOptimised: networkOptimisedVal,
 		state:            attr.ValueStateKnown,
 	}, diags
@@ -171,6 +193,24 @@ func NewFeaturesValue(attributeTypes map[string]attr.Type, attributes map[string
 		return NewFeaturesValueUnknown(), diags
 	}
 
+	greenStatusAttribute, ok := attributes["green_status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`green_status is missing from object`)
+
+		return NewFeaturesValueUnknown(), diags
+	}
+
+	greenStatusVal, ok := greenStatusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`green_status expected to be basetypes.StringValue, was: %T`, greenStatusAttribute))
+	}
+
 	networkOptimisedAttribute, ok := attributes["network_optimised"]
 
 	if !ok {
@@ -194,6 +234,7 @@ func NewFeaturesValue(attributeTypes map[string]attr.Type, attributes map[string
 	}
 
 	return FeaturesValue{
+		GreenStatus:      greenStatusVal,
 		NetworkOptimised: networkOptimisedVal,
 		state:            attr.ValueStateKnown,
 	}, diags
@@ -267,23 +308,33 @@ func (t FeaturesType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = FeaturesValue{}
 
 type FeaturesValue struct {
-	NetworkOptimised basetypes.BoolValue `tfsdk:"network_optimised"`
+	GreenStatus      basetypes.StringValue `tfsdk:"green_status"`
+	NetworkOptimised basetypes.BoolValue   `tfsdk:"network_optimised"`
 	state            attr.ValueState
 }
 
 func (v FeaturesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 1)
+	attrTypes := make(map[string]tftypes.Type, 2)
 
 	var val tftypes.Value
 	var err error
 
+	attrTypes["green_status"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["network_optimised"] = basetypes.BoolType{}.TerraformType(ctx)
 
 	objectType := tftypes.Object{AttributeTypes: attrTypes}
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 1)
+		vals := make(map[string]tftypes.Value, 2)
+
+		val, err = v.GreenStatus.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["green_status"] = val
 
 		val, err = v.NetworkOptimised.ToTerraformValue(ctx)
 
@@ -323,6 +374,7 @@ func (v FeaturesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue
 	var diags diag.Diagnostics
 
 	attributeTypes := map[string]attr.Type{
+		"green_status":      basetypes.StringType{},
 		"network_optimised": basetypes.BoolType{},
 	}
 
@@ -337,6 +389,7 @@ func (v FeaturesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
+			"green_status":      v.GreenStatus,
 			"network_optimised": v.NetworkOptimised,
 		})
 
@@ -358,6 +411,10 @@ func (v FeaturesValue) Equal(o attr.Value) bool {
 		return true
 	}
 
+	if !v.GreenStatus.Equal(other.GreenStatus) {
+		return false
+	}
+
 	if !v.NetworkOptimised.Equal(other.NetworkOptimised) {
 		return false
 	}
@@ -375,6 +432,7 @@ func (v FeaturesValue) Type(ctx context.Context) attr.Type {
 
 func (v FeaturesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
+		"green_status":      basetypes.StringType{},
 		"network_optimised": basetypes.BoolType{},
 	}
 }
