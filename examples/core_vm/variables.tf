@@ -37,6 +37,11 @@ variable "callback_url" {
   default = null
 }
 
+variable "enable_port_randomization" {
+  type    = bool
+  default = null
+}
+
 variable "assign_floating_ip" {
   type    = bool
   default = null
@@ -44,5 +49,10 @@ variable "assign_floating_ip" {
 
 variable "create_bootable_volume" {
   type    = bool
+  default = null
+}
+
+variable "labels" {
+  type    = list(string)
   default = null
 }

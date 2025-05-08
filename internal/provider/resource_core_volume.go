@@ -115,7 +115,7 @@ func (r *ResourceCoreVolume) Create(
 	result, err := r.client.CreateVolumeWithResponse(ctx, func() volume.CreateVolumeJSONRequestBody {
 		return volume.CreateVolumeJSONRequestBody{
 			CallbackUrl:     dataOld.CallbackUrl.ValueStringPointer(),
-			Description:     dataOld.Description.ValueString(),
+			Description:     dataOld.Description.ValueStringPointer(),
 			EnvironmentName: dataOld.EnvironmentName.ValueString(),
 			ImageId: func() *int {
 				if dataOld.ImageId.IsNull() {

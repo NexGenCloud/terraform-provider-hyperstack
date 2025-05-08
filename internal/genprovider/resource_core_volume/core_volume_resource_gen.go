@@ -42,7 +42,8 @@ func CoreVolumeResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"description": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
+				Computed:            true,
 				Description:         "A brief description or comment about the volume.",
 				MarkdownDescription: "A brief description or comment about the volume.",
 				PlanModifiers: []planmodifier.String{
@@ -93,6 +94,9 @@ func CoreVolumeResourceSchema(ctx context.Context) schema.Schema {
 					stringvalidator.LengthAtMost(50),
 				},
 			},
+			"os_image": schema.StringAttribute{
+				Computed: true,
+			},
 			"size": schema.Int64Attribute{
 				Required:            true,
 				Description:         "The size of the volume in GB. 1048576GB storage capacity per volume.",
@@ -109,8 +113,8 @@ func CoreVolumeResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"volume_type": schema.StringAttribute{
 				Required:            true,
-				Description:         "Specifies the type of volume being created, which determines the storage technology it will use. Call the \"[List volume types](https://infrahub-api-doc.nexgencloud.com/#get-/core/volumes)\" endpoint to retrieve a list of available volume model types.",
-				MarkdownDescription: "Specifies the type of volume being created, which determines the storage technology it will use. Call the \"[List volume types](https://infrahub-api-doc.nexgencloud.com/#get-/core/volumes)\" endpoint to retrieve a list of available volume model types.",
+				Description:         "Specifies the type of volume being created, which determines the storage technology it will use. Call the [List volume types](https://infrahub-api-doc.nexgencloud.com/#get-/core/volumes) endpoint to retrieve a list of available volume model types.",
+				MarkdownDescription: "Specifies the type of volume being created, which determines the storage technology it will use. Call the [List volume types](https://infrahub-api-doc.nexgencloud.com/#get-/core/volumes) endpoint to retrieve a list of available volume model types.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -129,6 +133,7 @@ type CoreVolumeModel struct {
 	Id              types.Int64      `tfsdk:"id"`
 	ImageId         types.Int64      `tfsdk:"image_id"`
 	Name            types.String     `tfsdk:"name"`
+	OsImage         types.String     `tfsdk:"os_image"`
 	Size            types.Int64      `tfsdk:"size"`
 	Status          types.String     `tfsdk:"status"`
 	UpdatedAt       types.String     `tfsdk:"updated_at"`

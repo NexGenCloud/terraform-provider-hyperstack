@@ -202,6 +202,7 @@ func (d *DataSourceCoreFlavors) MapFlavors(
 									"region_name":     types.StringValue(regionName),
 									"display_name":    types.StringValue(displayName),
 									"stock_available": types.BoolValue(stockAvailable),
+									"labels":          d.MapLabels(ctx, diags, *flavorItem.Labels),
 								},
 							)
 							flavors = append(flavors, modelFlavor)
@@ -221,6 +222,33 @@ func (d *DataSourceCoreFlavors) MapFlavors(
 			}
 
 			return coreFlavors
+		}(),
+	)
+	diags.Append(diagnostic...)
+	return model
+}
+
+func (d *DataSourceCoreFlavors) MapLabels(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data []flavor.LableResonse,
+) types.List {
+	model, diagnostic := types.ListValue(
+		datasource_core_flavors.LabelsValue{}.Type(ctx),
+		func() []attr.Value {
+			labels := make([]attr.Value, 0)
+			for _, row := range data {
+				model, diagnostic := datasource_core_flavors.NewLabelsValue(
+					datasource_core_flavors.LabelsValue{}.AttributeTypes(ctx),
+					map[string]attr.Value{
+						"id":    types.Int64Value(int64(*row.Id)),
+						"label": types.StringValue(*row.Label),
+					},
+				)
+				diags.Append(diagnostic...)
+				labels = append(labels, model)
+			}
+			return labels
 		}(),
 	)
 	diags.Append(diagnostic...)

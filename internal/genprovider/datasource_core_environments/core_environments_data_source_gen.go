@@ -24,6 +24,22 @@ func CoreEnvironmentsDataSourceSchema(ctx context.Context) schema.Schema {
 						"created_at": schema.StringAttribute{
 							Computed: true,
 						},
+						"features": schema.SingleNestedAttribute{
+							Attributes: map[string]schema.Attribute{
+								"green_status": schema.StringAttribute{
+									Computed: true,
+								},
+								"network_optimised": schema.BoolAttribute{
+									Computed: true,
+								},
+							},
+							CustomType: FeaturesType{
+								ObjectType: types.ObjectType{
+									AttrTypes: FeaturesValue{}.AttributeTypes(ctx),
+								},
+							},
+							Computed: true,
+						},
 						"id": schema.Int64Attribute{
 							Computed: true,
 						},
@@ -114,6 +130,24 @@ func (t CoreEnvironmentsType) ValueFromObject(ctx context.Context, in basetypes.
 			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
 	}
 
+	featuresAttribute, ok := attributes["features"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`features is missing from object`)
+
+		return nil, diags
+	}
+
+	featuresVal, ok := featuresAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`features expected to be basetypes.ObjectValue, was: %T`, featuresAttribute))
+	}
+
 	idAttribute, ok := attributes["id"]
 
 	if !ok {
@@ -174,6 +208,7 @@ func (t CoreEnvironmentsType) ValueFromObject(ctx context.Context, in basetypes.
 
 	return CoreEnvironmentsValue{
 		CreatedAt: createdAtVal,
+		Features:  featuresVal,
 		Id:        idVal,
 		Name:      nameVal,
 		Region:    regionVal,
@@ -262,6 +297,24 @@ func NewCoreEnvironmentsValue(attributeTypes map[string]attr.Type, attributes ma
 			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
 	}
 
+	featuresAttribute, ok := attributes["features"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`features is missing from object`)
+
+		return NewCoreEnvironmentsValueUnknown(), diags
+	}
+
+	featuresVal, ok := featuresAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`features expected to be basetypes.ObjectValue, was: %T`, featuresAttribute))
+	}
+
 	idAttribute, ok := attributes["id"]
 
 	if !ok {
@@ -322,6 +375,7 @@ func NewCoreEnvironmentsValue(attributeTypes map[string]attr.Type, attributes ma
 
 	return CoreEnvironmentsValue{
 		CreatedAt: createdAtVal,
+		Features:  featuresVal,
 		Id:        idVal,
 		Name:      nameVal,
 		Region:    regionVal,
@@ -398,6 +452,7 @@ var _ basetypes.ObjectValuable = CoreEnvironmentsValue{}
 
 type CoreEnvironmentsValue struct {
 	CreatedAt basetypes.StringValue `tfsdk:"created_at"`
+	Features  basetypes.ObjectValue `tfsdk:"features"`
 	Id        basetypes.Int64Value  `tfsdk:"id"`
 	Name      basetypes.StringValue `tfsdk:"name"`
 	Region    basetypes.StringValue `tfsdk:"region"`
@@ -405,12 +460,15 @@ type CoreEnvironmentsValue struct {
 }
 
 func (v CoreEnvironmentsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 4)
+	attrTypes := make(map[string]tftypes.Type, 5)
 
 	var val tftypes.Value
 	var err error
 
 	attrTypes["created_at"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["features"] = basetypes.ObjectType{
+		AttrTypes: FeaturesValue{}.AttributeTypes(ctx),
+	}.TerraformType(ctx)
 	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["region"] = basetypes.StringType{}.TerraformType(ctx)
@@ -419,7 +477,7 @@ func (v CoreEnvironmentsValue) ToTerraformValue(ctx context.Context) (tftypes.Va
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 4)
+		vals := make(map[string]tftypes.Value, 5)
 
 		val, err = v.CreatedAt.ToTerraformValue(ctx)
 
@@ -428,6 +486,14 @@ func (v CoreEnvironmentsValue) ToTerraformValue(ctx context.Context) (tftypes.Va
 		}
 
 		vals["created_at"] = val
+
+		val, err = v.Features.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["features"] = val
 
 		val, err = v.Id.ToTerraformValue(ctx)
 
@@ -482,11 +548,35 @@ func (v CoreEnvironmentsValue) String() string {
 func (v CoreEnvironmentsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	var features basetypes.ObjectValue
+
+	if v.Features.IsNull() {
+		features = types.ObjectNull(
+			FeaturesValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if v.Features.IsUnknown() {
+		features = types.ObjectUnknown(
+			FeaturesValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if !v.Features.IsNull() && !v.Features.IsUnknown() {
+		features = types.ObjectValueMust(
+			FeaturesValue{}.AttributeTypes(ctx),
+			v.Features.Attributes(),
+		)
+	}
+
 	attributeTypes := map[string]attr.Type{
 		"created_at": basetypes.StringType{},
-		"id":         basetypes.Int64Type{},
-		"name":       basetypes.StringType{},
-		"region":     basetypes.StringType{},
+		"features": basetypes.ObjectType{
+			AttrTypes: FeaturesValue{}.AttributeTypes(ctx),
+		},
+		"id":     basetypes.Int64Type{},
+		"name":   basetypes.StringType{},
+		"region": basetypes.StringType{},
 	}
 
 	if v.IsNull() {
@@ -501,6 +591,7 @@ func (v CoreEnvironmentsValue) ToObjectValue(ctx context.Context) (basetypes.Obj
 		attributeTypes,
 		map[string]attr.Value{
 			"created_at": v.CreatedAt,
+			"features":   features,
 			"id":         v.Id,
 			"name":       v.Name,
 			"region":     v.Region,
@@ -525,6 +616,10 @@ func (v CoreEnvironmentsValue) Equal(o attr.Value) bool {
 	}
 
 	if !v.CreatedAt.Equal(other.CreatedAt) {
+		return false
+	}
+
+	if !v.Features.Equal(other.Features) {
 		return false
 	}
 
@@ -554,8 +649,390 @@ func (v CoreEnvironmentsValue) Type(ctx context.Context) attr.Type {
 func (v CoreEnvironmentsValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
 		"created_at": basetypes.StringType{},
-		"id":         basetypes.Int64Type{},
-		"name":       basetypes.StringType{},
-		"region":     basetypes.StringType{},
+		"features": basetypes.ObjectType{
+			AttrTypes: FeaturesValue{}.AttributeTypes(ctx),
+		},
+		"id":     basetypes.Int64Type{},
+		"name":   basetypes.StringType{},
+		"region": basetypes.StringType{},
+	}
+}
+
+var _ basetypes.ObjectTypable = FeaturesType{}
+
+type FeaturesType struct {
+	basetypes.ObjectType
+}
+
+func (t FeaturesType) Equal(o attr.Type) bool {
+	other, ok := o.(FeaturesType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t FeaturesType) String() string {
+	return "FeaturesType"
+}
+
+func (t FeaturesType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	greenStatusAttribute, ok := attributes["green_status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`green_status is missing from object`)
+
+		return nil, diags
+	}
+
+	greenStatusVal, ok := greenStatusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`green_status expected to be basetypes.StringValue, was: %T`, greenStatusAttribute))
+	}
+
+	networkOptimisedAttribute, ok := attributes["network_optimised"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`network_optimised is missing from object`)
+
+		return nil, diags
+	}
+
+	networkOptimisedVal, ok := networkOptimisedAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`network_optimised expected to be basetypes.BoolValue, was: %T`, networkOptimisedAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return FeaturesValue{
+		GreenStatus:      greenStatusVal,
+		NetworkOptimised: networkOptimisedVal,
+		state:            attr.ValueStateKnown,
+	}, diags
+}
+
+func NewFeaturesValueNull() FeaturesValue {
+	return FeaturesValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewFeaturesValueUnknown() FeaturesValue {
+	return FeaturesValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewFeaturesValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (FeaturesValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing FeaturesValue Attribute Value",
+				"While creating a FeaturesValue value, a missing attribute value was detected. "+
+					"A FeaturesValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("FeaturesValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid FeaturesValue Attribute Type",
+				"While creating a FeaturesValue value, an invalid attribute value was detected. "+
+					"A FeaturesValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("FeaturesValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("FeaturesValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra FeaturesValue Attribute Value",
+				"While creating a FeaturesValue value, an extra attribute value was detected. "+
+					"A FeaturesValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra FeaturesValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewFeaturesValueUnknown(), diags
+	}
+
+	greenStatusAttribute, ok := attributes["green_status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`green_status is missing from object`)
+
+		return NewFeaturesValueUnknown(), diags
+	}
+
+	greenStatusVal, ok := greenStatusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`green_status expected to be basetypes.StringValue, was: %T`, greenStatusAttribute))
+	}
+
+	networkOptimisedAttribute, ok := attributes["network_optimised"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`network_optimised is missing from object`)
+
+		return NewFeaturesValueUnknown(), diags
+	}
+
+	networkOptimisedVal, ok := networkOptimisedAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`network_optimised expected to be basetypes.BoolValue, was: %T`, networkOptimisedAttribute))
+	}
+
+	if diags.HasError() {
+		return NewFeaturesValueUnknown(), diags
+	}
+
+	return FeaturesValue{
+		GreenStatus:      greenStatusVal,
+		NetworkOptimised: networkOptimisedVal,
+		state:            attr.ValueStateKnown,
+	}, diags
+}
+
+func NewFeaturesValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) FeaturesValue {
+	object, diags := NewFeaturesValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewFeaturesValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t FeaturesType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewFeaturesValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewFeaturesValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewFeaturesValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewFeaturesValueMust(FeaturesValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t FeaturesType) ValueType(ctx context.Context) attr.Value {
+	return FeaturesValue{}
+}
+
+var _ basetypes.ObjectValuable = FeaturesValue{}
+
+type FeaturesValue struct {
+	GreenStatus      basetypes.StringValue `tfsdk:"green_status"`
+	NetworkOptimised basetypes.BoolValue   `tfsdk:"network_optimised"`
+	state            attr.ValueState
+}
+
+func (v FeaturesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 2)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["green_status"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["network_optimised"] = basetypes.BoolType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 2)
+
+		val, err = v.GreenStatus.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["green_status"] = val
+
+		val, err = v.NetworkOptimised.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["network_optimised"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v FeaturesValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v FeaturesValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v FeaturesValue) String() string {
+	return "FeaturesValue"
+}
+
+func (v FeaturesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributeTypes := map[string]attr.Type{
+		"green_status":      basetypes.StringType{},
+		"network_optimised": basetypes.BoolType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"green_status":      v.GreenStatus,
+			"network_optimised": v.NetworkOptimised,
+		})
+
+	return objVal, diags
+}
+
+func (v FeaturesValue) Equal(o attr.Value) bool {
+	other, ok := o.(FeaturesValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.GreenStatus.Equal(other.GreenStatus) {
+		return false
+	}
+
+	if !v.NetworkOptimised.Equal(other.NetworkOptimised) {
+		return false
+	}
+
+	return true
+}
+
+func (v FeaturesValue) Type(ctx context.Context) attr.Type {
+	return FeaturesType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v FeaturesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"green_status":      basetypes.StringType{},
+		"network_optimised": basetypes.BoolType{},
 	}
 }

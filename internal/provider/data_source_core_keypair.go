@@ -6,6 +6,7 @@ import (
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/keypair"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_keypair"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -124,7 +125,7 @@ func (d *DataSourceCoreKeypair) ApiToModel(
 		Name:        types.StringValue(*response.Name),
 		PublicKey:   types.StringValue(*response.PublicKey),
 		Fingerprint: types.StringValue(*response.Fingerprint),
-		Environment: types.StringValue(*response.Environment),
+		Environment: d.MapEnvironment(ctx, diags, *response.Environment),
 		CreatedAt: func() types.String {
 			if response.CreatedAt == nil {
 				return types.StringNull()
@@ -132,4 +133,23 @@ func (d *DataSourceCoreKeypair) ApiToModel(
 			return types.StringValue(response.CreatedAt.String())
 		}(),
 	}
+}
+
+func (d *DataSourceCoreKeypair) MapEnvironment(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data keypair.KeypairEnvironmentFields,
+) datasource_core_keypair.EnvironmentValue {
+	model, diagnostic := datasource_core_keypair.NewEnvironmentValue(
+		datasource_core_keypair.EnvironmentValue{}.AttributeTypes(ctx),
+		map[string]attr.Value{
+			"id":     types.Int64Value(int64(*data.Id)),
+			"name":   types.StringValue(*data.Name),
+			"region": types.StringValue(*data.Region),
+			//"features": d.MapEnvironmentFeatures(ctx, diags, *data.Features),
+		},
+	)
+	diags.Append(diagnostic...)
+
+	return model
 }

@@ -59,8 +59,9 @@ def attr_update_nested(attr: AttrType, updater: Callable[[str, AttrType, str], N
   # For nested definitions we need to go through all nested attributes
   if "single_nested" in attr:
     updater("single_nested", attr["single_nested"], "object")
-    for nested in attr["single_nested"]["attributes"]:
-      attr_update_nested(nested, updater)
+    if "attributes" in attr["single_nested"]:
+      for nested in attr["single_nested"]["attributes"]:
+        attr_update_nested(nested, updater)
   if "list_nested" in attr:
     updater("list_nested", attr["list_nested"], "list")
     for nested in attr["list_nested"]["nested_object"]["attributes"]:
