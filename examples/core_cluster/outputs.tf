@@ -15,15 +15,15 @@ output "kubernetes_version" {
 }
 
 output "api_address" {
-  value = hyperstack_core_cluster.this.api_address
+  value = try(hyperstack_core_cluster.this.api_address, null)
 }
 
 output "kube_config" {
-  value = hyperstack_core_cluster.this.kube_config
+  value = try(hyperstack_core_cluster.this.kube_config, null)
 }
 
 output "kube_config_file" {
-  value = local_sensitive_file.kubeconfig.filename
+  value = try(local_sensitive_file.kubeconfig.filename, null)
 }
 
 output "status" {
@@ -52,4 +52,15 @@ output "artifacts_dir" {
 
 output "load_balancer_address" {
   value = local.load_balancer_address
+}
+
+# New outputs for enhanced cluster configuration
+output "deployment_mode" {
+  description = "Deployment mode of the cluster"
+  value       = hyperstack_core_cluster.this.deployment_mode
+}
+
+output "master_count" {
+  description = "Number of master nodes"
+  value       = hyperstack_core_cluster.this.master_count
 }

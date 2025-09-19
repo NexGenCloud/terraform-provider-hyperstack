@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/virtual_machine"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_virtual_machine_sg_rule"
@@ -69,8 +70,8 @@ func (r *ResourceCoreVirtualMachineSgRule) Create(
 
 	vmId := int(data.VirtualMachineId.ValueInt64())
 
-	result, err := r.client.AddFirewallRuleToVirtualMachineWithResponse(ctx, vmId, func() virtual_machine.AddFirewallRuleToVirtualMachineJSONRequestBody {
-		return virtual_machine.AddFirewallRuleToVirtualMachineJSONRequestBody{
+	result, err := r.client.PostSecurityRuleWithResponse(ctx, vmId, func() virtual_machine.PostSecurityRuleJSONRequestBody {
+		return virtual_machine.PostSecurityRuleJSONRequestBody{
 			Direction:      data.Direction.ValueString(),
 			Ethertype:      data.Ethertype.ValueString(),
 			Protocol:       virtual_machine.CreateSecurityRulePayloadProtocol(data.Protocol.ValueString()),
@@ -135,7 +136,7 @@ func (r *ResourceCoreVirtualMachineSgRule) Read(
 
 	sgId := int(data.Id.ValueInt64())
 	vmId := int(data.VirtualMachineId.ValueInt64())
-	result, err := r.client.RetrieveVirtualMachineDetailsWithResponse(ctx, vmId)
+	result, err := r.client.GetInstance2WithResponse(ctx, vmId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -204,7 +205,7 @@ func (r *ResourceCoreVirtualMachineSgRule) Delete(ctx context.Context, req resou
 	sgId := int(data.Id.ValueInt64())
 	vmId := int(data.VirtualMachineId.ValueInt64())
 
-	result, err := r.client.DeleteFirewallRuleFromVirtualMachineWithResponse(ctx, vmId, sgId)
+	result, err := r.client.DeleteSecurityRuleWithResponse(ctx, vmId, sgId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

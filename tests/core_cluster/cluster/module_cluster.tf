@@ -14,4 +14,8 @@ module "cluster" {
   node_flavor   = module.flavor_node[each.key].name
   image_type    = each.value.image_type
   image_version = each.value.image_version
+
+  # New fields
+  deployment_mode = each.value.deployment_mode
+  master_count    = each.value.master_count
 }

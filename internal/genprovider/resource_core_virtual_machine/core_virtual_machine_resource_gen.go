@@ -5,13 +5,14 @@ package resource_core_virtual_machine
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -20,9 +21,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 )
 
 func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
@@ -245,11 +246,11 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				},
 				Computed: true,
 			},
-			"labels": schema.ListAttribute{
+			"labels": schema.SetAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
-				Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
+				Default:     setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})),
 			},
 			"locked": schema.BoolAttribute{
 				Computed: true,
@@ -565,7 +566,7 @@ type CoreVirtualMachineModel struct {
 	ImageName               types.String     `tfsdk:"image_name"`
 	KeyName                 types.String     `tfsdk:"key_name"`
 	Keypair                 KeypairValue     `tfsdk:"keypair"`
-	Labels                  types.List       `tfsdk:"labels"`
+	Labels                  types.Set        `tfsdk:"labels"`
 	Locked                  types.Bool       `tfsdk:"locked"`
 	Name                    types.String     `tfsdk:"name"`
 	Os                      types.String     `tfsdk:"os"`

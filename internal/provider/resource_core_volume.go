@@ -3,6 +3,10 @@ package provider
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"strings"
+	"time"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/volume"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_volume"
@@ -11,8 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"io/ioutil"
-	"time"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 var _ resource.Resource = &ResourceCoreVolume{}
@@ -105,6 +108,7 @@ func (r *ResourceCoreVolume) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
+	tflog.Debug(ctx, "=== DEBUG: Entered ResourceCoreVolume.Create ===")
 	var dataOld resource_core_volume.CoreVolumeModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &dataOld)...)
@@ -112,23 +116,29 @@ func (r *ResourceCoreVolume) Create(
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	result, err := r.client.CreateVolumeWithResponse(ctx, func() volume.CreateVolumeJSONRequestBody {
-		return volume.CreateVolumeJSONRequestBody{
-			CallbackUrl:     dataOld.CallbackUrl.ValueStringPointer(),
-			Description:     dataOld.Description.ValueStringPointer(),
-			EnvironmentName: dataOld.EnvironmentName.ValueString(),
-			ImageId: func() *int {
-				if dataOld.ImageId.IsNull() {
-					return nil
-				}
 
-				val := int(dataOld.ImageId.ValueInt64())
-				return &val
-			}(),
-			Name:       dataOld.Name.ValueString(),
-			Size:       int(dataOld.Size.ValueInt64()),
-			VolumeType: dataOld.VolumeType.ValueString(),
-		}
+	// DEBUG: Print the payload that will be sent to the API
+	payload := volume.CreateVolumeJSONRequestBody{
+		CallbackUrl:     dataOld.CallbackUrl.ValueStringPointer(),
+		Description:     dataOld.Description.ValueStringPointer(),
+		EnvironmentName: dataOld.EnvironmentName.ValueString(),
+		ImageId: func() *int {
+			if dataOld.ImageId.IsNull() {
+				return nil
+			}
+			val := int(dataOld.ImageId.ValueInt64())
+			return &val
+		}(),
+		Name:       dataOld.Name.ValueString(),
+		Size:       int(dataOld.Size.ValueInt64()),
+		VolumeType: dataOld.VolumeType.ValueString(),
+	}
+	tflog.Debug(ctx, "[DEBUG] CreateVolume payload", map[string]interface{}{
+		"payload": payload,
+	})
+
+	result, err := r.client.CreateVolumeWithResponse(ctx, func() volume.CreateVolumeJSONRequestBody {
+		return payload
 	}())
 
 	if err != nil {
@@ -173,12 +183,25 @@ func (r *ResourceCoreVolume) Create(
 				return false, err
 			}
 
+			fmt.Printf("[DEBUG] Polling for volume id=%v\n", id)
 			if result.JSON200 == nil {
-				return false, fmt.Errorf("Wrong API result: %s", result.StatusCode())
+				fmt.Printf("[DEBUG] API result is nil, status=%v, body=%s\n", result.StatusCode(), string(result.Body))
+			}
+			if result.JSON200 != nil {
+				fmt.Printf("[DEBUG] API result: status=%v, volumes field present=%v\n", result.JSON200.Status, result.JSON200.Volumes != nil)
 			}
 
-			var volumeResult *volume.VolumeFields
+			if result.JSON200.Volumes == nil {
+				// Treat as empty list, not an error
+				fmt.Printf("[DEBUG] Volumes list is nil (SDK struct field 'Volumes', API field 'volumes'), will keep polling.\n")
+				return false, nil
+			}
+
+			var volumeResult *volume.VolumesFields
 			for _, row := range *result.JSON200.Volumes {
+				if row.Id == nil {
+					continue
+				}
 				if *row.Id == id {
 					volumeResult = &row
 					break
@@ -189,13 +212,39 @@ func (r *ResourceCoreVolume) Create(
 				return false, fmt.Errorf("Volume not found")
 			}
 
-			status := *volumeResult.Status
-			if status == "creating" || status == "downloading" {
-				return false, nil
+			if volumeResult.Status == nil {
+				return false, fmt.Errorf("volume status is nil")
 			}
-
-			volumeModel = volumeResult
-			return true, nil
+			status := strings.ToLower(*volumeResult.Status)
+			fmt.Printf("Polling volume %d: status=%s\n", id, status)
+			fmt.Printf("[DEBUG] Found volume id=%v, status=%v\n", id, *volumeResult.Status)
+			switch status {
+			case "creating", "downloading":
+				return false, nil // keep waiting
+			case "available":
+				// Convert VolumesFields to VolumeFields for compatibility
+				volumeModel = &volume.VolumeFields{
+					Attachments: volumeResult.Attachments,
+					Bootable:    volumeResult.Bootable,
+					CallbackUrl: volumeResult.CallbackUrl,
+					CreatedAt:   volumeResult.CreatedAt,
+					Description: volumeResult.Description,
+					Environment: volumeResult.Environment,
+					Id:          volumeResult.Id,
+					ImageId:     volumeResult.ImageId,
+					Name:        volumeResult.Name,
+					OsImage:     nil, // This field doesn't exist in VolumesFields
+					Size:        volumeResult.Size,
+					Status:      volumeResult.Status,
+					UpdatedAt:   volumeResult.UpdatedAt,
+					VolumeType:  volumeResult.VolumeType,
+				}
+				return true, nil  // done!
+			case "error", "deleted", "deleteed":
+				return false, fmt.Errorf("Volume in error or deleted state: %s", status)
+			default:
+				return false, fmt.Errorf("Unexpected volume status: %s", status)
+			}
 		},
 	)
 
@@ -209,7 +258,15 @@ func (r *ResourceCoreVolume) Create(
 	}
 
 	// TODO: doesn't save resource info in state
-	if *volumeModel.Status != "available" {
+	if volumeModel.Status == nil {
+		resp.Diagnostics.AddError(
+			"Failed creating volume: status is nil",
+			"Volume status is nil",
+		)
+		return
+	}
+
+	if strings.ToLower(*volumeModel.Status) != "available" {
 		resp.Diagnostics.AddError(
 			"Failed creating volume: status %s",
 			*volumeModel.Status,
@@ -217,7 +274,7 @@ func (r *ResourceCoreVolume) Create(
 		return
 	}
 
-	data := r.ApiToModel(ctx, &resp.Diagnostics, callResult.Volume)
+	data := r.ApiToModel(ctx, &resp.Diagnostics, r.convertVolumeFieldsToVolumesFields(callResult.Volume))
 	r.MergeData(&data, &dataOld)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -271,7 +328,7 @@ func (r *ResourceCoreVolume) Read(
 	}
 
 	// Find the volume with the matching ID
-	var volumeResult *volume.VolumeFields
+	var volumeResult *volume.VolumesFields
 	for _, row := range *searchCallResult {
 		if *row.Id == id {
 			volumeResult = &row
@@ -334,7 +391,7 @@ func (r *ResourceCoreVolume) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 
 	// Find the volume with the matching ID
-	var volumeResult *volume.VolumeFields
+	var volumeResult *volume.VolumesFields
 	for _, row := range *callResult {
 		if *row.Id == id {
 			volumeResult = &row
@@ -383,10 +440,10 @@ func (r *ResourceCoreVolume) Delete(ctx context.Context, req resource.DeleteRequ
 			}
 
 			if result.JSON200 == nil {
-				return false, fmt.Errorf("Wrong API result: %s", result.StatusCode())
+				return false, fmt.Errorf("Wrong API result: %d", result.StatusCode())
 			}
 
-			var volumeResult *volume.VolumeFields
+			var volumeResult *volume.VolumesFields
 			for _, row := range *result.JSON200.Volumes {
 				if *row.Id == id {
 					volumeResult = &row
@@ -419,10 +476,32 @@ func (r *ResourceCoreVolume) MergeData(
 	data.EnvironmentName = dataOld.EnvironmentName
 }
 
+func (r *ResourceCoreVolume) convertVolumeFieldsToVolumesFields(vf *volume.VolumeFields) *volume.VolumesFields {
+	if vf == nil {
+		return nil
+	}
+	return &volume.VolumesFields{
+		Attachments: vf.Attachments,
+		Bootable:    vf.Bootable,
+		CallbackUrl: vf.CallbackUrl,
+		CreatedAt:   vf.CreatedAt,
+		Description: vf.Description,
+		Environment: vf.Environment,
+		Id:          vf.Id,
+		ImageId:     vf.ImageId,
+		Name:        vf.Name,
+		Size:        vf.Size,
+		Status:      vf.Status,
+		UpdatedAt:   vf.UpdatedAt,
+		VolumeType:  vf.VolumeType,
+		// Note: OsImage field from VolumeFields is not copied as it doesn't exist in VolumesFields
+	}
+}
+
 func (r *ResourceCoreVolume) ApiToModel(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	response *volume.VolumeFields,
+	response *volume.VolumesFields,
 ) resource_core_volume.CoreVolumeModel {
 	return resource_core_volume.CoreVolumeModel{
 		Bootable:        types.BoolPointerValue(response.Bootable),
@@ -469,7 +548,7 @@ func (r *ResourceCoreVolume) ApiToModel(
 func (r *ResourceCoreVolume) MapEnvironment(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data volume.EnvironmentFieldsforVolume,
+	data volume.EnvironmentFieldsForVolume,
 ) resource_core_volume.EnvironmentValue {
 	model, diagnostic := resource_core_volume.NewEnvironmentValue(
 		resource_core_volume.EnvironmentValue{}.AttributeTypes(ctx),

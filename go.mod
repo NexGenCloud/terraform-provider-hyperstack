@@ -2,10 +2,8 @@ module github.com/NexGenCloud/terraform-provider-hyperstack
 
 go 1.23
 
-replace github.com/NexGenCloud/hyperstack-sdk-go => ../hyperstack-sdk-go
-
 require (
-	github.com/NexGenCloud/hyperstack-sdk-go v0.1.23-fix
+	github.com/NexGenCloud/hyperstack-sdk-go v1.41.0-alpha
 	github.com/hashicorp/terraform-plugin-framework v1.13.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.16.0
 	github.com/hashicorp/terraform-plugin-go v0.25.0
@@ -49,7 +47,7 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/oapi-codegen/runtime v1.1.1 // indirect
+	github.com/oapi-codegen/runtime v1.1.2 // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect

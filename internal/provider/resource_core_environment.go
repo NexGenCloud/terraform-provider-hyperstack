@@ -3,13 +3,17 @@ package provider
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/environment"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_environment"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/NexGenCloud/hyperstack-sdk-go/lib/environment"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_environment"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 var _ resource.Resource = &ResourceCoreEnvironment{}
@@ -207,12 +211,24 @@ func (r *ResourceCoreEnvironment) Delete(ctx context.Context, req resource.Delet
 
 	id := int(data.Id.ValueInt64())
 
+	// Add delay before environment deletion to ensure resource cleanup
+	// This addresses the 405 error where API thinks resources still exist
+	tflog.Info(ctx, "Waiting 5 seconds before environment deletion to ensure resource cleanup...")
+	time.Sleep(5 * time.Second)
+
 	result, err := r.client.DeleteEnvironmentWithResponse(ctx, id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
 			fmt.Sprintf("%s", err),
 		)
+		return
+	}
+
+	// Handle 404 Not Found - resource already deleted
+	if result.StatusCode() == 404 {
+		// Resource doesn't exist, consider it successfully deleted
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
@@ -261,5 +277,33 @@ func (r *ResourceCoreEnvironment) ApiToModel(
 			}
 			return types.StringValue(response.CreatedAt.String())
 		}(),
+		Features: r.MapFeatures(ctx, diags, response.Features),
 	}
+}
+
+func (r *ResourceCoreEnvironment) MapFeatures(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data *environment.EnvironmentFeatures,
+) resource_core_environment.FeaturesValue {
+	model, diagnostic := resource_core_environment.NewFeaturesValue(
+		resource_core_environment.FeaturesValue{}.AttributeTypes(ctx),
+		map[string]attr.Value{
+			"green_status": func() attr.Value {
+				if data.GreenStatus == nil {
+					return types.StringNull()
+				}
+				return types.StringValue(string(*data.GreenStatus))
+			}(),
+			"network_optimised": func() attr.Value {
+				if data.NetworkOptimised == nil {
+					return types.BoolNull()
+				}
+				return types.BoolValue(*data.NetworkOptimised)
+			}(),
+		},
+	)
+	diags.Append(diagnostic...)
+
+	return model
 }

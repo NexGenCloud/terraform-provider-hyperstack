@@ -3,6 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"strings"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/keypair"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_keypair"
@@ -13,8 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"io/ioutil"
-	"strings"
 )
 
 var _ resource.Resource = &ResourceCoreKeypair{}
@@ -333,6 +334,13 @@ func (r *ResourceCoreKeypair) Delete(ctx context.Context, req resource.DeleteReq
 			"API request error",
 			fmt.Sprintf("%s", err),
 		)
+		return
+	}
+
+	// Handle 404 Not Found - resource already deleted
+	if resultDelete.StatusCode() == 404 {
+		// Resource doesn't exist, consider it successfully deleted
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

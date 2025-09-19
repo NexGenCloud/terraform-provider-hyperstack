@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/rbac_role"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_auth_role"
@@ -69,8 +70,8 @@ func (r *ResourceAuthRole) Create(
 		return
 	}
 
-	result, err := r.client.CreateRbacRoleWithResponse(ctx, func() rbac_role.CreateRbacRoleJSONRequestBody {
-		return rbac_role.CreateRbacRoleJSONRequestBody{
+	result, err := r.client.CreateRBACRoleWithResponse(ctx, func() rbac_role.CreateRBACRoleJSONRequestBody {
+		return rbac_role.CreateRBACRoleJSONRequestBody{
 			Description: data.Description.ValueString(),
 			Name:        data.Name.ValueString(),
 			Policies: func() *[]int {
@@ -129,7 +130,7 @@ func (r *ResourceAuthRole) Read(
 		return
 	}
 
-	result, err := r.client.RetrieveRbacRoleDetailsWithResponse(ctx, int(data.Id.ValueInt64()))
+	result, err := r.client.RetrieveRBACRoleDetailsWithResponse(ctx, int(data.Id.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -180,8 +181,8 @@ func (r *ResourceAuthRole) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	result, err := r.client.UpdateRbacRoleWithResponse(ctx, id, func() rbac_role.UpdateRbacRoleJSONRequestBody {
-		return rbac_role.UpdateRbacRoleJSONRequestBody{
+	result, err := r.client.UpdateRBACRoleWithResponse(ctx, id, func() rbac_role.UpdateRBACRoleJSONRequestBody {
+		return rbac_role.UpdateRBACRoleJSONRequestBody{
 			Description: data.Description.ValueString(),
 			Name:        data.Name.ValueString(),
 			Policies: func() *[]int {
@@ -238,7 +239,7 @@ func (r *ResourceAuthRole) Delete(ctx context.Context, req resource.DeleteReques
 
 	id := int(data.Id.ValueInt64())
 
-	result, err := r.client.DeleteRbacRoleWithResponse(ctx, id)
+	result, err := r.client.DeleteRBACRoleWithResponse(ctx, id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

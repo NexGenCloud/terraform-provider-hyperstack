@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/keypair"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_keypair"
@@ -10,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"io/ioutil"
 )
 
 var _ datasource.DataSource = &DataSourceCoreKeypair{}
@@ -143,10 +144,69 @@ func (d *DataSourceCoreKeypair) MapEnvironment(
 	model, diagnostic := datasource_core_keypair.NewEnvironmentValue(
 		datasource_core_keypair.EnvironmentValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
-			"id":     types.Int64Value(int64(*data.Id)),
-			"name":   types.StringValue(*data.Name),
-			"region": types.StringValue(*data.Region),
-			//"features": d.MapEnvironmentFeatures(ctx, diags, *data.Features),
+			"id": func() attr.Value {
+				if data.Id == nil {
+					return types.Int64Null()
+				}
+				return types.Int64Value(int64(*data.Id))
+			}(),
+			"name": func() attr.Value {
+				if data.Name == nil {
+					return types.StringNull()
+				}
+				return types.StringValue(*data.Name)
+			}(),
+			"region": func() attr.Value {
+				if data.Region == nil {
+					return types.StringNull()
+				}
+				return types.StringValue(*data.Region)
+			}(),
+			"created_at": func() attr.Value {
+				if data.CreatedAt == nil {
+					return types.StringNull()
+				}
+				return types.StringValue(data.CreatedAt.String())
+			}(),
+			"features": func() attr.Value {
+				if data.Features == nil {
+					return types.ObjectNull(map[string]attr.Type{
+						"green_status":      types.StringType,
+						"network_optimised": types.BoolType,
+					})
+				}
+				return d.MapEnvironmentFeatures(ctx, diags, *data.Features)
+			}(),
+		},
+	)
+	diags.Append(diagnostic...)
+
+	return model
+}
+
+func (d *DataSourceCoreKeypair) MapEnvironmentFeatures(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data keypair.KeypairEnvironmentFeatures,
+) types.Object {
+	model, diagnostic := types.ObjectValue(
+		map[string]attr.Type{
+			"green_status":      types.StringType,
+			"network_optimised": types.BoolType,
+		},
+		map[string]attr.Value{
+			"green_status": func() attr.Value {
+				if data.GreenStatus == nil {
+					return types.StringNull()
+				}
+				return types.StringValue(string(*data.GreenStatus))
+			}(),
+			"network_optimised": func() attr.Value {
+				if data.NetworkOptimised == nil {
+					return types.BoolNull()
+				}
+				return types.BoolValue(*data.NetworkOptimised)
+			}(),
 		},
 	)
 	diags.Append(diagnostic...)

@@ -75,18 +75,31 @@ func (r *ResourceCoreCluster) Create(
 		"name": dataOld.Name.ValueString(),
 	})
 	result, err := r.client.CreateClusterWithResponse(ctx, func() clusters.CreateClusterJSONRequestBody {
-		return clusters.CreateClusterJSONRequestBody{
-			// TODO: currently not available during create
-			//EnablePublicIp:    dataOld.EnablePublicIp.ValueBoolPointer(),
+		payload := clusters.CreateClusterJSONRequestBody{
 			EnvironmentName:   dataOld.EnvironmentName.ValueString(),
-			ImageName:         dataOld.ImageName.ValueString(),
 			KeypairName:       dataOld.KeypairName.ValueString(),
 			KubernetesVersion: dataOld.KubernetesVersion.ValueString(),
 			MasterFlavorName:  dataOld.MasterFlavorName.ValueString(),
 			Name:              dataOld.Name.ValueString(),
-			NodeCount:         int(dataOld.NodeCount.ValueInt64()),
-			NodeFlavorName:    dataOld.NodeFlavorName.ValueString(),
+			NodeCount:         func() *int { v := int(dataOld.NodeCount.ValueInt64()); return &v }(),
+			NodeFlavorName:    func() *string { v := dataOld.NodeFlavorName.ValueString(); return &v }(),
 		}
+
+		// Add deployment_mode if provided
+		if !dataOld.DeploymentMode.IsNull() {
+			deploymentMode := clusters.CreateClusterPayloadDeploymentMode(dataOld.DeploymentMode.ValueString())
+			payload.DeploymentMode = &deploymentMode
+		}
+
+		// Add master_count if provided
+		if !dataOld.MasterCount.IsNull() {
+			masterCount := int(dataOld.MasterCount.ValueInt64())
+			payload.MasterCount = &masterCount
+		}
+
+		// Remove the entire node_groups section
+
+		return payload
 	}())
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -135,7 +148,7 @@ func (r *ResourceCoreCluster) Create(
 			}
 
 			if result.JSON200 == nil {
-				return false, fmt.Errorf("Wrong API result: %s", result.StatusCode())
+				return false, fmt.Errorf("Wrong API result: %d", result.StatusCode())
 			}
 
 			status := *result.JSON200.Cluster.Status
@@ -149,29 +162,16 @@ func (r *ResourceCoreCluster) Create(
 					return *result.JSON200.Cluster.StatusReason
 				}(),
 			})
-			if status == "CREATING" {
-				return false, nil
+
+			if status == "ACTIVE" {
+				clusterModel = result.JSON200.Cluster
+				return true, nil
 			}
 
-			// TODO: remove this check after API is functional
-			if status == "CREATE_COMPLETE" {
-				tflog.Warn(ctx, "Create cluster: status is CREATE_COMPLETE but kubeconfig is empty!")
-				kubeConfig := result.JSON200.Cluster.KubeConfig
-				if kubeConfig == nil {
-					return false, nil
-				}
-			}
-
-			clusterModel = result.JSON200.Cluster
-			return true, nil
+			return false, nil
 		},
 	)
-	tflog.Debug(ctx, "Create cluster: status", map[string]interface{}{
-		"id":     fmt.Sprintf("%v", id),
-		"status": clusterModel.Status,
-	})
 
-	// TODO: doesn't save resource info in state
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Waiting for state change error",
@@ -179,9 +179,13 @@ func (r *ResourceCoreCluster) Create(
 		)
 		return
 	}
+	tflog.Debug(ctx, "Create cluster: status", map[string]interface{}{
+		"id":     fmt.Sprintf("%v", id),
+		"status": clusterModel.Status,
+	})
 
 	// TODO: doesn't save resource info in state
-	if *clusterModel.Status != "CREATE_COMPLETE" {
+	if *clusterModel.Status != "CREATE_COMPLETE" && *clusterModel.Status != "ACTIVE" {
 		resp.Diagnostics.AddError(
 			"Failed creating instance: status %s",
 			*clusterModel.Status,
@@ -252,6 +256,11 @@ func (r *ResourceCoreCluster) WaitForResult(
 	timeoutTimer := time.NewTimer(timeout)
 	pollTicker := time.NewTicker(pollInterval)
 
+	// Add retry configuration
+	maxRetries := 3
+	retryDelay := 2 * time.Second
+	consecutiveFailures := 0
+
 	defer timeoutTimer.Stop()
 	defer pollTicker.Stop()
 
@@ -265,11 +274,37 @@ func (r *ResourceCoreCluster) WaitForResult(
 		case <-pollTicker.C:
 			status, err := checker(ctx)
 			if err != nil {
+				consecutiveFailures++
+				tflog.Warn(ctx, "Checker failed, attempting retry", map[string]interface{}{
+					"attempt": consecutiveFailures,
+					"max_retries": maxRetries,
+					"error": err.Error(),
+				})
+
+				// If we haven't exceeded max retries, wait and retry
+				if consecutiveFailures <= maxRetries {
+					select {
+					case <-ctx.Done():
+						return ctx.Err()
+					case <-time.After(retryDelay):
+						// Exponential backoff: increase delay for each retry
+						retryDelay = time.Duration(float64(retryDelay) * 1.5)
+						continue
+					}
+				}
+
+				// Max retries exceeded, return the error
 				return fmt.Errorf(
-					"Error calling checker while waiting: %e",
+					"Error calling checker while waiting after %d retries: %w",
+					maxRetries,
 					err,
 				)
 			}
+
+			// Reset failure counter on success
+			consecutiveFailures = 0
+			retryDelay = 2 * time.Second // Reset retry delay
+
 			if status {
 				return nil // Resource is created
 			}
@@ -362,7 +397,21 @@ func (r *ResourceCoreCluster) Delete(ctx context.Context, req resource.DeleteReq
 		)
 		return
 	}
+	// Add 1-minute wait after cluster deletion
+	tflog.Info(ctx, "Cluster deleted successfully, waiting additional 1 minute for cleanup", map[string]interface{}{
+		"id": fmt.Sprintf("%v", id),
+	})
 
+	select {
+	case <-ctx.Done():
+		// Context cancelled, return early
+		return
+	case <-time.After(1 * time.Minute):
+		// Wait completed
+		tflog.Info(ctx, "Additional wait completed, removing resource from state", map[string]interface{}{
+			"id": fmt.Sprintf("%v", id),
+		})
+	}
 	resp.State.RemoveResource(ctx)
 }
 
@@ -388,6 +437,8 @@ func (r *ResourceCoreCluster) MergeData(
 	data.ImageName = dataOld.ImageName
 	data.NodeFlavorName = dataOld.NodeFlavorName
 	data.MasterFlavorName = dataOld.MasterFlavorName
+	data.MasterCount = dataOld.MasterCount
+	data.DeploymentMode = dataOld.DeploymentMode
 }
 
 func (r *ResourceCoreCluster) ApiToModel(
@@ -416,15 +467,27 @@ func (r *ResourceCoreCluster) ApiToModel(
 		KubeConfig:        types.StringPointerValue(response.KubeConfig),
 		KubernetesVersion: types.StringPointerValue(response.KubernetesVersion),
 		MasterFlavorName:  types.StringNull(),
+		MasterCount:       types.Int64Null(), // This will be set from user input
 		Name:              types.StringPointerValue(response.Name),
 		NodeCount: func() types.Int64 {
-			if response.NodeCount == nil {
+			if response.NodeGroups == nil {
 				return types.Int64Null()
 			}
-			return types.Int64Value(int64(*response.NodeCount))
+			// Calculate total node count from all node groups
+			totalCount := int64(0)
+			for _, nodeGroup := range *response.NodeGroups {
+				if nodeGroup.Count != nil {
+					totalCount += int64(*nodeGroup.Count)
+				}
+			}
+			if totalCount == 0 {
+				return types.Int64Null()
+			}
+			return types.Int64Value(totalCount)
 		}(),
 		NodeFlavor:     resource_core_cluster.NodeFlavorValue{},
 		NodeFlavorName: types.StringNull(),
+		DeploymentMode: types.StringNull(), // This will be set from user input
 		Status:         types.StringPointerValue(response.Status),
 		StatusReason:   types.StringPointerValue(response.StatusReason),
 	}

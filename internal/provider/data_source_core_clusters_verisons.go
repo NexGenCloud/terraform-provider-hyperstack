@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/clusters"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_clusters_versions"
@@ -10,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"io/ioutil"
 )
 
 var _ datasource.DataSource = &DataSourceCoreClustersVersions{}
@@ -63,7 +64,9 @@ func (d *DataSourceCoreClustersVersions) Read(ctx context.Context, req datasourc
 		return
 	}
 
-	result, err := d.client.GetClusterVersionsWithResponse(ctx)
+	result, err := d.client.GetClusterVersionsWithResponse(ctx, func() *clusters.GetClusterVersionsParams {
+		return &clusters.GetClusterVersionsParams{}
+	}())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error",
@@ -97,7 +100,7 @@ func (d *DataSourceCoreClustersVersions) Read(ctx context.Context, req datasourc
 func (d *DataSourceCoreClustersVersions) ApiToModel(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	response *[]string,
+	response *[]clusters.ClusterVersion,
 ) datasource_core_clusters_versions.CoreClustersVersionsModel {
 	return datasource_core_clusters_versions.CoreClustersVersionsModel{
 		CoreClustersVersions: func() types.Set {
@@ -109,15 +112,25 @@ func (d *DataSourceCoreClustersVersions) ApiToModel(
 func (d *DataSourceCoreClustersVersions) MapProtocols(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data []string,
+	data []clusters.ClusterVersion,
 ) types.Set {
 	model, diagnostic := types.SetValue(
 		types.StringType,
 		func() []attr.Value {
+			// Use a map to deduplicate version strings
+			versionMap := make(map[string]bool)
 			protocols := make([]attr.Value, 0)
+			
 			for _, row := range data {
-				model := types.StringValue(row)
-				protocols = append(protocols, model)
+				if row.Version != nil {
+					version := *row.Version
+					// Only add if we haven't seen this version before
+					if !versionMap[version] {
+						versionMap[version] = true
+						model := types.StringValue(version)
+						protocols = append(protocols, model)
+					}
+				}
 			}
 			return protocols
 		}(),

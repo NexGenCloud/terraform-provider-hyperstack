@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/rbac_role"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_auth_role"
@@ -10,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"io/ioutil"
 )
 
 var _ datasource.DataSource = &DataSourceAuthRole{}
@@ -63,7 +64,7 @@ func (d *DataSourceAuthRole) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	result, err := d.client.RetrieveRbacRoleDetailsWithResponse(ctx, int(data.Id.ValueInt64()))
+	result, err := d.client.RetrieveRBACRoleDetailsWithResponse(ctx, int(data.Id.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

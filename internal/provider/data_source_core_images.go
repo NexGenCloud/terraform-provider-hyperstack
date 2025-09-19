@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/image"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_images"
@@ -10,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"io/ioutil"
 )
 
 var _ datasource.DataSource = &DataSourceCoreImages{}
@@ -63,20 +64,20 @@ func (d *DataSourceCoreImages) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 	// Initialize the parameters as nil
-	params := (*image.ListImagesParams)(nil)
-	result := (*image.ListImagesResponse)(nil)
+	params := (*image.ListImages2Params)(nil)
+	result := (*image.ListImages2Response)(nil)
 	err := error(nil)
 
 	// If data.Region is not nil or empty, construct the parameters
 	if !data.Region.IsNull() && data.Region.String() != "" {
 		stringRegion := string(data.Region.ValueString())
 
-		params = &image.ListImagesParams{
+		params = &image.ListImages2Params{
 			Region: &stringRegion,
 		}
-		result, err = d.client.ListImagesWithResponse(ctx, params)
+		result, err = d.client.ListImages2WithResponse(ctx, params)
 	} else {
-		result, err = d.client.ListImagesWithResponse(ctx, nil)
+		result, err = d.client.ListImages2WithResponse(ctx, nil)
 	}
 	if err != nil {
 		resp.Diagnostics.AddError(

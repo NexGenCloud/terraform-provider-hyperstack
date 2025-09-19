@@ -5,17 +5,23 @@ package resource_core_cluster
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 )
 
 func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
@@ -56,6 +62,14 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"master_flavor_name": schema.StringAttribute{
 				Required: true,
+			},
+			"master_count": schema.Int64Attribute{
+				Optional: true,
+				Computed: true,
+				Validators: []validator.Int64{
+					int64validator.Between(2, 3),
+				},
+				Default: int64default.StaticInt64(2),
 			},
 			"name": schema.StringAttribute{
 				Required: true,
@@ -133,6 +147,14 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 			"node_flavor_name": schema.StringAttribute{
 				Required: true,
 			},
+			"deployment_mode": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("full", "standard"),
+				},
+				Default: stringdefault.StaticString("full"),
+			},
 			"status": schema.StringAttribute{
 				Computed: true,
 			},
@@ -153,10 +175,12 @@ type CoreClusterModel struct {
 	KubeConfig        types.String    `tfsdk:"kube_config"`
 	KubernetesVersion types.String    `tfsdk:"kubernetes_version"`
 	MasterFlavorName  types.String    `tfsdk:"master_flavor_name"`
+	MasterCount       types.Int64     `tfsdk:"master_count"`
 	Name              types.String    `tfsdk:"name"`
 	NodeCount         types.Int64     `tfsdk:"node_count"`
 	NodeFlavor        NodeFlavorValue `tfsdk:"node_flavor"`
 	NodeFlavorName    types.String    `tfsdk:"node_flavor_name"`
+	DeploymentMode    types.String    `tfsdk:"deployment_mode"`
 	Status            types.String    `tfsdk:"status"`
 	StatusReason      types.String    `tfsdk:"status_reason"`
 }

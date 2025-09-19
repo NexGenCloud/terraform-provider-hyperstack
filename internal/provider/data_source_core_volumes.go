@@ -89,8 +89,8 @@ func (d *DataSourceCoreVolumes) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	callResult := result.JSON200.Volumes
-	if callResult == nil {
+	if result.JSON200.Volumes == nil {
+		// API returns 'volumes', SDK struct field is 'Volumes'
 		resp.Diagnostics.AddWarning(
 			"No user data",
 			"",
@@ -98,14 +98,14 @@ func (d *DataSourceCoreVolumes) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	data = d.ApiToModel(ctx, &resp.Diagnostics, callResult)
+	data = d.ApiToModel(ctx, &resp.Diagnostics, result.JSON200.Volumes)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (d *DataSourceCoreVolumes) ApiToModel(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	response *[]volume.VolumeFields,
+	response *[]volume.VolumesFields,
 ) datasource_core_volumes.CoreVolumesModel {
 	return datasource_core_volumes.CoreVolumesModel{
 		CoreVolumes: func() types.Set {
@@ -117,7 +117,7 @@ func (d *DataSourceCoreVolumes) ApiToModel(
 func (d *DataSourceCoreVolumes) MapVolumes(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data []volume.VolumeFields,
+	data []volume.VolumesFields,
 ) types.Set {
 	model, diagnostic := types.SetValue(
 		datasource_core_volumes.CoreVolumesValue{}.Type(ctx),
@@ -147,7 +147,7 @@ func (d *DataSourceCoreVolumes) MapVolumes(
 						"bootable":     types.BoolPointerValue(row.Bootable),
 						"image_id":     types.Int64Value(int64(*row.ImageId)),
 						"callback_url": types.StringPointerValue(row.CallbackUrl),
-						"os_image":     types.StringPointerValue(row.OsImage),
+						"os_image":     types.StringNull(), // OsImage field not available in VolumesFields
 						"created_at": func() attr.Value {
 							if row.CreatedAt == nil {
 								return types.StringNull()

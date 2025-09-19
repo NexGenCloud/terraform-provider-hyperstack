@@ -24,6 +24,7 @@ Notes:
 import argparse
 import json
 import re
+import copy
 from typing import Dict, Any
 
 AttrType = Dict[str, Any]
@@ -85,6 +86,8 @@ def attr_fix_components(data: AttrType) -> None:
     if new_key != key:
       schemas[new_key] = schemas.pop(key)
 
+    # TODO: UNSYNCED see tf provider
+    continue
     props = schemas[new_key]["properties"]
     # TODO: how do we get it? e.g. count
     to_delete = ["status", "message", "page", "page_size", "count"]
@@ -119,23 +122,32 @@ def attr_fix_components(data: AttrType) -> None:
       #print(props)
       # print(schemas[new_key]["properties"])
 
-  schemas["InstanceOverviewFields"]["properties"]["ram"]["type"] = "number"
-  schemas["ContainerOverviewFields"]["properties"]["ram"]["type"] = "number"
-  schemas["InstanceFlavorFields"]["properties"]["ram"]["type"] = "number"
-  schemas["FlavorFields"]["properties"]["ram"]["type"] = "number"
+  # API incorrectly returns "roles"
+  schemas["RbacRoleDetailResponseModelFixed"] = copy.deepcopy(schemas["RbacRoleDetailResponseModel"])
+  schemas["RbacRoleDetailResponseModelFixed"]["properties"]["roles"] = schemas["RbacRoleDetailResponseModelFixed"]["properties"]["role"]
+  del schemas["RbacRoleDetailResponseModelFixed"]["properties"]["role"]
+  paths["/auth/roles/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["$ref"] = "#/components/schemas/RbacRoleDetailResponseModelFixed"
 
-  schemas["ImportKeypairPayload"]["properties"]["environment"] = schemas["ImportKeypairPayload"]["properties"][
-    "environment_name"]
-  del schemas["ImportKeypairPayload"]["properties"]["environment_name"]
+  schemas["Flavor_Fields"]["properties"]["ram"]["type"] = "number"
 
-  schemas["CreateSecurityRulePayload"]["required"].append("virtual_machine_id")
-  schemas["CreateSecurityRulePayload"]["properties"]["virtual_machine_id"] = {
+  schemas["Instance_Overview_Fields"]["properties"]["ram"]["type"] = "number"
+  schemas["Container_Overview_Fields"]["properties"]["ram"]["type"] = "number"
+  schemas["Instance_Flavor_Fields"]["properties"]["ram"]["type"] = "number"
+  schemas["Cluster_Flavor_Fields"]["properties"]["ram"]["type"] = "number"
+
+  # TODO: UNSYNCED see tf provider
+  #schemas["ImportKeypairPayload"]["properties"]["environment"] = schemas["ImportKeypairPayload"]["properties"]["environment_name"]
+  #del schemas["ImportKeypairPayload"]["properties"]["environment_name"]
+
+  # TODO: UNSYNCED see tf provider
+  schemas["Create_Security_Rule_Payload"]["required"].append("virtual_machine_id")
+  # schemas["Create_Security_Rule_Payload"]["properties"]["virtual_machine_id"] = {
+  #   "type": "integer",
+  # }
+  schemas["Create_Security_Rule_Payload"]["properties"]["port_range_min"] = {
     "type": "integer",
   }
-  schemas["CreateSecurityRulePayload"]["properties"]["port_range_min"] = {
-    "type": "integer",
-  }
-  schemas["CreateSecurityRulePayload"]["properties"]["port_range_max"] = {
+  schemas["Create_Security_Rule_Payload"]["properties"]["port_range_max"] = {
     "type": "integer",
   }
 
@@ -143,21 +155,27 @@ def attr_fix_components(data: AttrType) -> None:
     "type": "string"
   }
 
+  # TODO: UNSYNCED see tf provider
   # Fix digit-prefixed keys
-  props = schemas["NewConfigurationsResponse"]["properties"]
-  for p in list(props.keys()):
-    props["N%s" % p] = props.pop(p)
+  #props = schemas["NewConfigurationsResponse"]["properties"]
+  #for p in list(props.keys()):
+  #  props["N%s" % p] = props.pop(p)
 
-  paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"] = paths["/core/virtual-machines/{vm_id}/sg-rules"]
-  del paths["/core/virtual-machines/{vm_id}/sg-rules"]
-  paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"]["post"]["parameters"][0]["name"] = "virtual_machine_id"
+  # TODO: UNSYNCED see tf provider
+  # The API spec now uses {vm_id} instead of {id}
+  # paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"] = paths["/core/virtual-machines/{id}/sg-rules"]
+  # del paths["/core/virtual-machines/{id}/sg-rules"]
+  # Commented out because the API spec now uses different path parameters
+  # paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"]["post"]["parameters"][0]["name"] = "virtual_machine_id"
 
-  paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"] = paths[
-    "/core/virtual-machines/{vm_id}/sg-rules/{sg_rule_id}"]
-  del paths["/core/virtual-machines/{vm_id}/sg-rules/{sg_rule_id}"]
-  paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"]["delete"]["parameters"][0][
-    "name"] = "virtual_machine_id"
-  paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"]["delete"]["parameters"][1]["name"] = "id"
+  # TODO: UNSYNCED see tf provider
+  # The API spec now uses {sg_rule_id} instead of {id}
+  # paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"] = paths[
+  #   "/core/virtual-machines/{virtual_machine_id}/sg-rules/{sg_rule_id}"]
+  # del paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{sg_rule_id}"]
+  # paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"]["delete"]["parameters"][0][
+  #   "name"] = "virtual_machine_id"
+  # paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"]["delete"]["parameters"][1]["name"] = "id"
 
 
 def fix_api_spec(spec_file: str) -> None:

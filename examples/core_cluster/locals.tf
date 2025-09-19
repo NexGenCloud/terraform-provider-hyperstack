@@ -5,8 +5,15 @@ locals {
   node_flavor_name   = var.node_flavor
   image_name         = module.image.name
 
-  kubeconfig_in = yamldecode(base64decode(hyperstack_core_cluster.this.kube_config))
-  cluster_in = local.kubeconfig_in["clusters"][0]
+  kubeconfig_in = try(
+    yamldecode(base64decode(hyperstack_core_cluster.this.kube_config)),
+    {}
+  )
+
+  cluster_in = try(
+    local.kubeconfig_in.clusters[0],
+    {}
+  )
 
   # This magic reencoding is needed due to static terraform types
   cluster_cert = jsondecode(var.skip_certificate ? jsonencode({
@@ -27,5 +34,8 @@ locals {
 
   # Extract the IP address using a regular expression that captures text between https:// and :6443
   # TODO: this should come from api
-  load_balancer_address = regex("https?://([0-9\\.]+):6443", hyperstack_core_cluster.this.api_address)[0]
+  load_balancer_address = try(
+    regex("https?://([^:]+):6443", hyperstack_core_cluster.this.api_address)[0],
+    ""
+  )
 }
