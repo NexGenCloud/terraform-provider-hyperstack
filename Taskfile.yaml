@@ -33,7 +33,7 @@ env:
 
   HYPERSTACK_API_KEY: ~
   HYPERSTACK_API_ADDRESS: "{{ .HYPERSTACK_API_ADDRESS }}"
-  HYPERSTACK_API_SPEC_ADDRESS: "https://preprod-infrahub-api-docs.internal.ngbackend.cloud/api.json"
+  HYPERSTACK_API_SPEC_ADDRESS: "https://infrahub-api-doc.nexgencloud.com/api.json"
 
 
 tasks:
