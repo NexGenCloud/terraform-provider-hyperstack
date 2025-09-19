@@ -3,6 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
+	"math/big"
+	"time"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/virtual_machine"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_virtual_machine"
@@ -12,8 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"math/big"
-	"time"
 )
 
 var _ resource.Resource = &ResourceCoreVirtualMachine{}
@@ -71,8 +72,8 @@ func (r *ResourceCoreVirtualMachine) Create(
 		return
 	}
 
-	result, err := r.client.CreateVirtualMachinesWithResponse(ctx, func() virtual_machine.CreateVirtualMachinesJSONRequestBody {
-		return virtual_machine.CreateVirtualMachinesJSONRequestBody{
+	result, err := r.client.PostInstanceWithResponse(ctx, func() virtual_machine.PostInstanceJSONRequestBody {
+		return virtual_machine.PostInstanceJSONRequestBody{
 			Name:                 dataOld.Name.ValueString(),
 			EnvironmentName:      dataOld.EnvironmentName.ValueString(),
 			ImageName:            dataOld.ImageName.ValueStringPointer(),
@@ -125,6 +126,16 @@ func (r *ResourceCoreVirtualMachine) Create(
 			CallbackUrl:             dataOld.CallbackUrl.ValueStringPointer(),
 			AssignFloatingIp:        dataOld.AssignFloatingIp.ValueBoolPointer(),
 			EnablePortRandomization: dataOld.EnablePortRandomization.ValueBoolPointer(),
+					Labels: func() *[]string {
+			if dataOld.Labels.IsNull() {
+				return nil
+			}
+			labels := make([]string, 0)
+			for _, label := range dataOld.Labels.Elements() {
+				labels = append(labels, label.(types.String).ValueString())
+			}
+			return &labels
+		}(),
 			// TODO: disable setting here
 			Profile: func() *virtual_machine.ProfileObjectFields {
 				if dataOld.Profile.IsNull() {
@@ -181,7 +192,7 @@ func (r *ResourceCoreVirtualMachine) Create(
 		3*time.Second,
 		300*time.Second,
 		func(ctx context.Context) (bool, error) {
-			result, err := r.client.RetrieveVirtualMachineDetailsWithResponse(ctx, id)
+			result, err := r.client.GetInstance2WithResponse(ctx, id)
 			if err != nil {
 				return false, err
 			}
@@ -234,7 +245,7 @@ func (r *ResourceCoreVirtualMachine) Read(
 		return
 	}
 
-	result, err := r.client.RetrieveVirtualMachineDetailsWithResponse(ctx, int(dataOld.Id.ValueInt64()))
+	result, err := r.client.GetInstance2WithResponse(ctx, int(dataOld.Id.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -340,12 +351,19 @@ func (r *ResourceCoreVirtualMachine) Delete(ctx context.Context, req resource.De
 
 	id := int(data.Id.ValueInt64())
 
-	result, err := r.client.DeleteVirtualMachineWithResponse(ctx, id)
+	result, err := r.client.DeleteInstanceWithResponse(ctx, id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
 			fmt.Sprintf("%s", err),
 		)
+		return
+	}
+
+	// Handle 404 Not Found - resource already deleted
+	if result.StatusCode() == 404 {
+		// Resource doesn't exist, consider it successfully deleted
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
@@ -362,7 +380,7 @@ func (r *ResourceCoreVirtualMachine) Delete(ctx context.Context, req resource.De
 		3*time.Second,
 		120*time.Second,
 		func(ctx context.Context) (bool, error) {
-			result, err := r.client.RetrieveVirtualMachineDetailsWithResponse(ctx, id)
+			result, err := r.client.GetInstance2WithResponse(ctx, id)
 			if err != nil {
 				return false, err
 			}
@@ -458,7 +476,12 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 		Keypair:           r.MapKeypair(ctx, diags, *response.Keypair),
 		Environment:       r.MapEnvironment(ctx, diags, *response.Environment),
 		Image:             r.MapImage(ctx, diags, *response.Image),
-		Labels:            r.MapLabels(ctx, diags, *response.Labels),
+		Labels: func() types.Set {
+			if response.Labels == nil {
+				return types.SetNull(types.StringType)
+			}
+			return r.MapLabels(ctx, diags, *response.Labels)
+		}(),
 		Flavor:            r.MapFlavor(ctx, diags, *response.Flavor),
 		VolumeAttachments: r.MapVolumeAttachments(ctx, diags, *response.VolumeAttachments),
 		SecurityRules:     r.MapSecurityRules(ctx, diags, *response.SecurityRules, int64(*response.Id)),
@@ -514,7 +537,18 @@ func (r *ResourceCoreVirtualMachine) MapEnvironmentFeatures(
 	model, diagnostic := resource_core_virtual_machine.NewFeaturesValue(
 		resource_core_virtual_machine.FeaturesValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
-			"network_optimised": types.BoolValue(*data.NetworkOptimised),
+			"green_status": func() attr.Value {
+				if data.GreenStatus == nil {
+					return types.StringNull()
+				}
+				return types.StringValue(string(*data.GreenStatus))
+			}(),
+			"network_optimised": func() attr.Value {
+				if data.NetworkOptimised == nil {
+					return types.BoolNull()
+				}
+				return types.BoolValue(*data.NetworkOptimised)
+			}(),
 		},
 	)
 	diags.Append(diagnostic...)
@@ -549,14 +583,64 @@ func (r *ResourceCoreVirtualMachine) MapFlavor(
 	model, diagnostic := resource_core_virtual_machine.NewFlavorValue(
 		resource_core_virtual_machine.FlavorValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
-			"id":        types.Int64Value(int64(*data.Id)),
-			"ephemeral": types.Int64Value(int64(*data.Ephemeral)),
-			"name":      types.StringValue(*data.Name),
-			"cpu":       types.Int64Value(int64(*data.Cpu)),
-			"ram":       types.NumberValue(big.NewFloat(float64(*data.Ram))),
-			"disk":      types.Int64Value(int64(*data.Disk)),
-			"gpu":       types.StringValue(*data.Gpu),
-			"gpu_count": types.Int64Value(int64(*data.GpuCount)),
+			"id": func() attr.Value {
+				if data.Id == nil {
+					return types.Int64Null()
+				}
+				return types.Int64Value(int64(*data.Id))
+			}(),
+			"ephemeral": func() attr.Value {
+				if data.Ephemeral == nil {
+					return types.Int64Null()
+				}
+				return types.Int64Value(int64(*data.Ephemeral))
+			}(),
+			"name": func() attr.Value {
+				if data.Name == nil {
+					return types.StringNull()
+				}
+				return types.StringValue(*data.Name)
+			}(),
+			"cpu": func() attr.Value {
+				if data.Cpu == nil {
+					return types.Int64Null()
+				}
+				return types.Int64Value(int64(*data.Cpu))
+			}(),
+			"ram": func() attr.Value {
+				if data.Ram == nil {
+					return types.NumberNull()
+				}
+				return types.NumberValue(big.NewFloat(float64(*data.Ram)))
+			}(),
+			"disk": func() attr.Value {
+				if data.Disk == nil {
+					return types.Int64Null()
+				}
+				return types.Int64Value(int64(*data.Disk))
+			}(),
+			"gpu": func() attr.Value {
+				if data.Gpu == nil {
+					return types.StringNull()
+				}
+				return types.StringValue(*data.Gpu)
+			}(),
+			"gpu_count": func() attr.Value {
+				if data.GpuCount == nil {
+					return types.Int64Null()
+				}
+				return types.Int64Value(int64(*data.GpuCount))
+			}(),
+			"labels": func() attr.Value {
+				if data.Labels == nil {
+					return types.ListNull(resource_core_virtual_machine.LabelsType{
+						basetypes.ObjectType{
+							AttrTypes: resource_core_virtual_machine.LabelsValue{}.AttributeTypes(ctx),
+						},
+					})
+				}
+				return r.MapFlavorLabels(ctx, diags, *data.Labels)
+			}(),
 		},
 	)
 	diags.Append(diagnostic...)
@@ -622,7 +706,7 @@ func (r *ResourceCoreVirtualMachine) MapVolumeAttachments(
 func (r *ResourceCoreVirtualMachine) MapVolume(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data virtual_machine.VolumeFieldsforInstance,
+	data virtual_machine.VolumeFieldsForInstance,
 ) attr.Value {
 	model, diagnostic := resource_core_virtual_machine.NewVolumeValue(
 		resource_core_virtual_machine.VolumeValue{}.AttributeTypes(ctx),
@@ -650,7 +734,7 @@ func (r *ResourceCoreVirtualMachine) MapVolume(
 func (r *ResourceCoreVirtualMachine) MapSecurityRules(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data []virtual_machine.SecurityRulesFieldsforInstance,
+	data []virtual_machine.SecurityRulesFieldsForInstance,
 	vmId int64,
 ) types.List {
 	model, diagnostic := types.ListValue(
@@ -702,13 +786,54 @@ func (r *ResourceCoreVirtualMachine) MapLabels(
 	ctx context.Context,
 	diags *diag.Diagnostics,
 	data []string,
-) types.List {
-	model, diagnostic := types.ListValue(
+) types.Set {
+	model, diagnostic := types.SetValue(
 		types.StringType,
 		func() []attr.Value {
 			labels := make([]attr.Value, 0)
 			for _, row := range data {
 				model := types.StringValue(row)
+				labels = append(labels, model)
+			}
+			return labels
+		}(),
+	)
+	diags.Append(diagnostic...)
+	return model
+}
+
+func (r *ResourceCoreVirtualMachine) MapFlavorLabels(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data []virtual_machine.FlavorLabelFields,
+) types.List {
+	model, diagnostic := types.ListValue(
+		resource_core_virtual_machine.LabelsType{
+			basetypes.ObjectType{
+				AttrTypes: resource_core_virtual_machine.LabelsValue{}.AttributeTypes(ctx),
+			},
+		},
+		func() []attr.Value {
+			labels := make([]attr.Value, 0)
+			for _, row := range data {
+				model, diagnostic := resource_core_virtual_machine.NewLabelsValue(
+					resource_core_virtual_machine.LabelsValue{}.AttributeTypes(ctx),
+					map[string]attr.Value{
+						"id": func() attr.Value {
+							if row.Id == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.Id))
+						}(),
+						"label": func() attr.Value {
+							if row.Label == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.Label)
+						}(),
+					},
+				)
+				diags.Append(diagnostic...)
 				labels = append(labels, model)
 			}
 			return labels

@@ -3,14 +3,15 @@ package provider
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/region"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_regions"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/NexGenCloud/hyperstack-sdk-go/lib/region"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_regions"
-	"io/ioutil"
 )
 
 var _ datasource.DataSource = &DataSourceCoreRegions{}
@@ -116,16 +117,39 @@ func (d *DataSourceCoreRegions) MapRegions(
 		func() []attr.Value {
 			regions := make([]attr.Value, 0)
 			for _, row := range data {
-				description := ""
-				if row.Description != nil {
-					description = *row.Description
-				}
 				model, diagnostic := datasource_core_regions.NewCoreRegionsValue(
 					datasource_core_regions.CoreRegionsValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
-						"id":          types.Int64Value(int64(*row.Id)),
-						"name":        types.StringValue(*row.Name),
-						"description": types.StringValue(description),
+						"id": func() attr.Value {
+							if row.Id == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.Id))
+						}(),
+						"name": func() attr.Value {
+							if row.Name == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.Name)
+						}(),
+						"description": func() attr.Value {
+							if row.Description == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.Description)
+						}(),
+						"country": func() attr.Value {
+							if row.Country == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(*row.Country)
+						}(),
+						"green_status": func() attr.Value {
+							if row.GreenStatus == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(string(*row.GreenStatus))
+						}(),
 					},
 				)
 				diags.Append(diagnostic...)

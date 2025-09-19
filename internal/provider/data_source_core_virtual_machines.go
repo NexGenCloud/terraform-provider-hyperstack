@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"math/big"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/virtual_machine"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_virtual_machines"
@@ -11,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"math/big"
 )
 
 var _ datasource.DataSource = &DataSourceCoreVirtualMachines{}
@@ -64,8 +65,8 @@ func (d *DataSourceCoreVirtualMachines) Read(ctx context.Context, req datasource
 		return
 	}
 
-	result, err := d.client.ListVirtualMachinesWithResponse(ctx, func() *virtual_machine.ListVirtualMachinesParams {
-		return &virtual_machine.ListVirtualMachinesParams{
+	result, err := d.client.GetInstanceWithResponse(ctx, func() *virtual_machine.GetInstanceParams {
+		return &virtual_machine.GetInstanceParams{
 			Page:     nil,
 			PageSize: nil,
 			Search:   nil,
@@ -222,6 +223,12 @@ func (d *DataSourceCoreVirtualMachines) MapInstances(
 						"keypair":            d.MapKeypair(ctx, diags, *row.Keypair),
 						"volume_attachments": d.MapVolumeAttachments(ctx, diags, *row.VolumeAttachments),
 						"security_rules":     d.MapSecurityRules(ctx, diags, *row.SecurityRules),
+						"requires_public_ip": func() types.Bool {
+							if row.RequiresPublicIp == nil {
+								return types.BoolNull()
+							}
+							return types.BoolValue(*row.RequiresPublicIp)
+						}(),
 					},
 				)
 				diags.Append(diagnostic...)
@@ -265,7 +272,18 @@ func (d *DataSourceCoreVirtualMachines) MapEnvironmentFeatures(
 	model, diagnostic := datasource_core_virtual_machines.NewFeaturesValue(
 		datasource_core_virtual_machines.FeaturesValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
-			"network_optimised": types.BoolValue(*data.NetworkOptimised),
+			"network_optimised": func() types.Bool {
+				if data.NetworkOptimised == nil {
+					return types.BoolNull()
+				}
+				return types.BoolValue(*data.NetworkOptimised)
+			}(),
+			"green_status": func() types.String {
+				if data.GreenStatus == nil {
+					return types.StringNull()
+				}
+				return types.StringValue(fmt.Sprintf("%v", *data.GreenStatus))
+			}(),
 		},
 	)
 	diags.Append(diagnostic...)
@@ -311,6 +329,34 @@ func (d *DataSourceCoreVirtualMachines) MapFlavor(
 			"disk":      types.Int64Value(int64(*data.Disk)),
 			"gpu":       types.StringValue(*data.Gpu),
 			"gpu_count": types.Int64Value(int64(*data.GpuCount)),
+			"labels": func() types.List {
+				if data.Labels == nil {
+					return types.ListNull(datasource_core_virtual_machines.LabelsValue{}.Type(ctx))
+				}
+				labels := make([]attr.Value, 0, len(*data.Labels))
+				for _, l := range *data.Labels {
+					model, diagnostic := datasource_core_virtual_machines.NewLabelsValue(
+						datasource_core_virtual_machines.LabelsValue{}.AttributeTypes(ctx),
+						map[string]attr.Value{
+							"id": func() attr.Value {
+								if l.Id == nil {
+									return types.Int64Null()
+								}
+								return types.Int64Value(int64(*l.Id))
+							}(),
+							"label": func() attr.Value {
+								if l.Label == nil {
+									return types.StringNull()
+								}
+								return types.StringValue(*l.Label)
+							}(),
+						},
+					)
+					diags.Append(diagnostic...)
+					labels = append(labels, model)
+				}
+				return types.ListValueMust(datasource_core_virtual_machines.LabelsValue{}.Type(ctx), labels)
+			}(),
 		},
 	)
 	diags.Append(diagnostic...)
@@ -377,7 +423,7 @@ func (d *DataSourceCoreVirtualMachines) MapVolumeAttachments(
 func (d *DataSourceCoreVirtualMachines) MapVolume(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data virtual_machine.VolumeFieldsforInstance,
+	data virtual_machine.VolumeFieldsForInstance,
 ) attr.Value {
 	model, diagnostic := datasource_core_virtual_machines.NewVolumeValue(
 		datasource_core_virtual_machines.VolumeValue{}.AttributeTypes(ctx),
@@ -400,7 +446,7 @@ func (d *DataSourceCoreVirtualMachines) MapVolume(
 func (d *DataSourceCoreVirtualMachines) MapSecurityRules(
 	ctx context.Context,
 	diags *diag.Diagnostics,
-	data []virtual_machine.SecurityRulesFieldsforInstance,
+	data []virtual_machine.SecurityRulesFieldsForInstance,
 ) types.List {
 	model, diagnostic := types.ListValue(
 		datasource_core_virtual_machines.SecurityRulesValue{}.Type(ctx),

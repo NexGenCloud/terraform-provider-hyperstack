@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/environment"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_environment"
@@ -11,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"io/ioutil"
 )
 
 var _ datasource.DataSource = &DataSourceCoreEnvironments{}
@@ -159,7 +160,18 @@ func (d *DataSourceCoreEnvironments) MapFeatures(
 	model, diagnostic := datasource_core_environment.NewFeaturesValue(
 		datasource_core_environment.FeaturesValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
-			"network_optimised": types.BoolValue(*data.NetworkOptimised),
+			"green_status": func() attr.Value {
+				if data.GreenStatus == nil {
+					return types.StringNull()
+				}
+				return types.StringValue(string(*data.GreenStatus))
+			}(),
+			"network_optimised": func() attr.Value {
+				if data.NetworkOptimised == nil {
+					return types.BoolNull()
+				}
+				return types.BoolValue(*data.NetworkOptimised)
+			}(),
 		},
 	)
 	diags.Append(diagnostic...)

@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/stock"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/datasource_core_stocks"
@@ -11,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"io/ioutil"
 )
 
 var _ datasource.DataSource = &DataSourceCoreStocks{}
@@ -64,7 +65,7 @@ func (d *DataSourceCoreStocks) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	result, err := d.client.RetrieveGpuStocksWithResponse(ctx)
+	result, err := d.client.RetrieveGPUStocksWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error",

@@ -64,7 +64,7 @@ func (d *DataSourceCoreGpus) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	result, err := d.client.ListGpusWithResponse(ctx)
+	result, err := d.client.ListGPUsWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
