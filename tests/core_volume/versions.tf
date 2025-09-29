@@ -8,7 +8,7 @@ terraform {
     }
     hyperstack = {
       source  = "nexgencloud/hyperstack"
-      version = "~> 0.1"
+      version = "~> 1.41"
     }
   }
 }
