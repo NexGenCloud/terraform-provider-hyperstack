@@ -65,8 +65,8 @@ func (d *DataSourceCoreVirtualMachines) Read(ctx context.Context, req datasource
 		return
 	}
 
-	result, err := d.client.GetInstanceWithResponse(ctx, func() *virtual_machine.GetInstanceParams {
-		return &virtual_machine.GetInstanceParams{
+	result, err := d.client.ListVirtualMachinesWithResponse(ctx, func() *virtual_machine.ListVirtualMachinesParams{
+		return &virtual_machine.ListVirtualMachinesParams{
 			Page:     nil,
 			PageSize: nil,
 			Search:   nil,
