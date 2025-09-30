@@ -72,8 +72,8 @@ func (r *ResourceCoreVirtualMachine) Create(
 		return
 	}
 
-	result, err := r.client.PostInstanceWithResponse(ctx, func() virtual_machine.PostInstanceJSONRequestBody {
-		return virtual_machine.PostInstanceJSONRequestBody{
+	result, err := r.client.CreateOneOrMoreVirtualMachinesWithResponse(ctx, func() virtual_machine.CreateOneOrMoreVirtualMachinesJSONRequestBody {
+		return virtual_machine.CreateOneOrMoreVirtualMachinesJSONRequestBody{
 			Name:                 dataOld.Name.ValueString(),
 			EnvironmentName:      dataOld.EnvironmentName.ValueString(),
 			ImageName:            dataOld.ImageName.ValueStringPointer(),
@@ -192,7 +192,7 @@ func (r *ResourceCoreVirtualMachine) Create(
 		3*time.Second,
 		300*time.Second,
 		func(ctx context.Context) (bool, error) {
-			result, err := r.client.GetInstance2WithResponse(ctx, id)
+			result, err := r.client.RetrieveVirtualMachineDetailsWithResponse(ctx, id)
 			if err != nil {
 				return false, err
 			}
@@ -245,7 +245,7 @@ func (r *ResourceCoreVirtualMachine) Read(
 		return
 	}
 
-	result, err := r.client.GetInstance2WithResponse(ctx, int(dataOld.Id.ValueInt64()))
+	result, err := r.client.RetrieveVirtualMachineDetailsWithResponse(ctx, int(dataOld.Id.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -351,7 +351,7 @@ func (r *ResourceCoreVirtualMachine) Delete(ctx context.Context, req resource.De
 
 	id := int(data.Id.ValueInt64())
 
-	result, err := r.client.DeleteInstanceWithResponse(ctx, id)
+	result, err := r.client.DeleteVirtualMachineWithResponse(ctx, id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -380,7 +380,7 @@ func (r *ResourceCoreVirtualMachine) Delete(ctx context.Context, req resource.De
 		3*time.Second,
 		120*time.Second,
 		func(ctx context.Context) (bool, error) {
-			result, err := r.client.GetInstance2WithResponse(ctx, id)
+			result, err := r.client.RetrieveVirtualMachineDetailsWithResponse(ctx, id)
 			if err != nil {
 				return false, err
 			}

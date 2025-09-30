@@ -136,7 +136,7 @@ func (r *ResourceCoreVirtualMachineSgRule) Read(
 
 	sgId := int(data.Id.ValueInt64())
 	vmId := int(data.VirtualMachineId.ValueInt64())
-	result, err := r.client.GetInstance2WithResponse(ctx, vmId)
+	result, err := r.client.RetrieveVirtualMachineDetailsWithResponse(ctx, vmId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
