@@ -96,7 +96,7 @@ tasks:
           goreleaser build --clean --snapshot --single-target -o "${TMP_BIN_PATH}"
         
           METADATA="$(cat "{{ .DIR_DIST }}/metadata.json")"
-          VERSION="$(echo "${METADATA}" | jq -r '.version' | sed 's/-SNAPSHOT.*//')"
+          VERSION="$(echo "${METADATA}" | jq -r '.version' | cut -d'-' -f1)"
           PROVIDER_MIRROR_DIR="{{ .DIR_ARTIFACTS_PROVIDER }}/${PROVIDER_ADDRESS}/${VERSION}/{{ .ARCH }}"
           PROJECT_NAME="$(echo "${METADATA}" | jq -r '.project_name')"
           PROVIDER_FILENAME="${PROJECT_NAME}_v${VERSION}"
