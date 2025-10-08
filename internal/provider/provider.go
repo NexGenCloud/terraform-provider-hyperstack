@@ -3,8 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"os"
+
+	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -108,6 +109,7 @@ func (p *hyperstackProvider) Resources(ctx context.Context) []func() resource.Re
 		NewResourceCoreVirtualMachine,
 		NewResourceCoreVirtualMachineSgRule,
 		NewResourceCoreVolume,
+		NewResourceCoreVolumeAttachment,
 	}
 }
 

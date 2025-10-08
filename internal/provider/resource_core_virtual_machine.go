@@ -721,6 +721,12 @@ func (r *ResourceCoreVirtualMachine) MapVolume(
 			}(),
 			"volume_type": types.StringValue(*data.VolumeType),
 			"size":        types.Int64Value(int64(*data.Size)),
+			"bootable": func() attr.Value {
+				if data.Bootable == nil {
+					return types.BoolNull()
+				}
+				return types.BoolValue(*data.Bootable)
+			}(),
 		},
 	)
 	diags.Append(diagnostic...)
