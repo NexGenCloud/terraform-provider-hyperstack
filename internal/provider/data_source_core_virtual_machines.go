@@ -433,6 +433,12 @@ func (d *DataSourceCoreVirtualMachines) MapVolume(
 			"description": types.StringValue(*data.Description),
 			"volume_type": types.StringValue(*data.VolumeType),
 			"size":        types.Int64Value(int64(*data.Size)),
+			"bootable": func() attr.Value {
+				if data.Bootable == nil {
+					return types.BoolNull()
+				}
+				return types.BoolValue(*data.Bootable)
+			}(),
 		},
 	)
 	diags.Append(diagnostic...)
