@@ -3,7 +3,7 @@ module github.com/NexGenCloud/terraform-provider-hyperstack
 go 1.23
 
 require (
-	github.com/NexGenCloud/hyperstack-sdk-go v1.42.1-alpha
+	github.com/NexGenCloud/hyperstack-sdk-go v1.43.0-alpha
 	github.com/hashicorp/terraform-plugin-framework v1.13.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.16.0
 	github.com/hashicorp/terraform-plugin-go v0.25.0
