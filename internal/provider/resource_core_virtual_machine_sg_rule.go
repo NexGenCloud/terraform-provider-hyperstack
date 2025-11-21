@@ -70,8 +70,8 @@ func (r *ResourceCoreVirtualMachineSgRule) Create(
 
 	vmId := int(data.VirtualMachineId.ValueInt64())
 
-	result, err := r.client.PostSecurityRuleWithResponse(ctx, vmId, func() virtual_machine.PostSecurityRuleJSONRequestBody {
-		return virtual_machine.PostSecurityRuleJSONRequestBody{
+	result, err := r.client.CreateFirewallRuleForVMWithResponse(ctx, vmId, func() virtual_machine.CreateFirewallRuleForVMJSONRequestBody {
+		return virtual_machine.CreateFirewallRuleForVMJSONRequestBody{
 			Direction:      data.Direction.ValueString(),
 			Ethertype:      data.Ethertype.ValueString(),
 			Protocol:       virtual_machine.CreateSecurityRulePayloadProtocol(data.Protocol.ValueString()),
@@ -136,7 +136,7 @@ func (r *ResourceCoreVirtualMachineSgRule) Read(
 
 	sgId := int(data.Id.ValueInt64())
 	vmId := int(data.VirtualMachineId.ValueInt64())
-	result, err := r.client.RetrieveVirtualMachineDetailsWithResponse(ctx, vmId)
+	result, err := r.client.GetVMWithResponse(ctx, vmId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -205,7 +205,7 @@ func (r *ResourceCoreVirtualMachineSgRule) Delete(ctx context.Context, req resou
 	sgId := int(data.Id.ValueInt64())
 	vmId := int(data.VirtualMachineId.ValueInt64())
 
-	result, err := r.client.DeleteSecurityRuleWithResponse(ctx, vmId, sgId)
+	result, err := r.client.DeleteFirewallRuleForVMWithResponse(ctx, vmId, sgId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

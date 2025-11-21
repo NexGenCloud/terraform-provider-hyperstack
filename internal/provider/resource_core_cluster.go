@@ -342,7 +342,7 @@ func (r *ResourceCoreCluster) Delete(ctx context.Context, req resource.DeleteReq
 	tflog.Info(ctx, "Delete cluster: Running DELETE /core/clusters/:id", map[string]interface{}{
 		"name": fmt.Sprintf("%v", id),
 	})
-	result, err := r.client.DeleteAClusterWithResponse(ctx, id)
+	result, err := r.client.DeleteClusterWithResponse(ctx, id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

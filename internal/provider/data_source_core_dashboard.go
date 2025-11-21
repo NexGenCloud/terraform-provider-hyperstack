@@ -63,7 +63,7 @@ func (d *DataSourceCoreDashboard) Read(ctx context.Context, req datasource.ReadR
 		return
 	}
 
-	result, err := d.client.RetrieveDashboardWithResponse(ctx)
+	result, err := d.client.GetDashboardWithResponse(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error",
