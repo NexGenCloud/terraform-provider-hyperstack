@@ -64,7 +64,7 @@ func (d *DataSourceCoreEnvironment) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
-	result, err := d.client.RetrieveEnvironmentWithResponse(ctx, int(data.Id.ValueInt64()))
+	result, err := d.client.GetEnvironmentWithResponse(ctx, int(data.Id.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

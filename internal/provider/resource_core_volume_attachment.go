@@ -96,7 +96,7 @@ func (r *ResourceCoreVolumeAttachment) Create(
 	})
 
 	// Call the API to attach volumes
-	result, err := r.client.AttachVolumesToVirtualMachineWithResponse(ctx, vmId, payload)
+	result, err := r.client.AttachVolumesToVMWithResponse(ctx, vmId, payload)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",
@@ -238,7 +238,7 @@ func (r *ResourceCoreVolumeAttachment) Delete(
 	})
 
 	// Call the API to detach volumes
-	result, err := r.client.DetachVolumesFromVirtualMachineWithResponse(ctx, vmId, payload)
+	result, err := r.client.DetachVolumesFromVMWithResponse(ctx, vmId, payload)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

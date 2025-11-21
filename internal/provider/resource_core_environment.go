@@ -117,7 +117,7 @@ func (r *ResourceCoreEnvironment) Read(
 		return
 	}
 
-	result, err := r.client.RetrieveEnvironmentWithResponse(ctx, int(data.Id.ValueInt64()))
+	result, err := r.client.GetEnvironmentWithResponse(ctx, int(data.Id.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"API request error",

@@ -65,8 +65,8 @@ func (d *DataSourceCoreVirtualMachines) Read(ctx context.Context, req datasource
 		return
 	}
 
-	result, err := d.client.ListVirtualMachinesWithResponse(ctx, func() *virtual_machine.ListVirtualMachinesParams{
-		return &virtual_machine.ListVirtualMachinesParams{
+	result, err := d.client.ListVMsWithResponse(ctx, func() *virtual_machine.ListVMsParams{
+		return &virtual_machine.ListVMsParams{
 			Page:     nil,
 			PageSize: nil,
 			Search:   nil,
