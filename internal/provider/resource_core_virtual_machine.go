@@ -198,7 +198,7 @@ func (r *ResourceCoreVirtualMachine) Create(
 			}
 
 			if result.JSON200 == nil {
-				return false, fmt.Errorf("Wrong API result: %s", result.StatusCode())
+				return false, fmt.Errorf("Wrong API result: %d", result.StatusCode())
 			}
 
 			status := *result.JSON200.Instance.Status
@@ -634,7 +634,7 @@ func (r *ResourceCoreVirtualMachine) MapFlavor(
 			"labels": func() attr.Value {
 				if data.Labels == nil {
 					return types.ListNull(resource_core_virtual_machine.LabelsType{
-						basetypes.ObjectType{
+						ObjectType: basetypes.ObjectType{
 							AttrTypes: resource_core_virtual_machine.LabelsValue{}.AttributeTypes(ctx),
 						},
 					})
@@ -815,7 +815,7 @@ func (r *ResourceCoreVirtualMachine) MapFlavorLabels(
 ) types.List {
 	model, diagnostic := types.ListValue(
 		resource_core_virtual_machine.LabelsType{
-			basetypes.ObjectType{
+			ObjectType: basetypes.ObjectType{
 				AttrTypes: resource_core_virtual_machine.LabelsValue{}.AttributeTypes(ctx),
 			},
 		},
