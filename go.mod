@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.11
 
 require (
-	github.com/NexGenCloud/hyperstack-sdk-go v1.50.0-alpha
+	github.com/NexGenCloud/hyperstack-sdk-go v1.50.2-alpha
 	github.com/hashicorp/terraform-plugin-framework v1.13.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.16.0
 	github.com/hashicorp/terraform-plugin-go v0.25.0
@@ -66,4 +66,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250106144421-5f5ef82da422 // indirect
 	google.golang.org/grpc v1.69.2 // indirect
 	google.golang.org/protobuf v1.36.2 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
