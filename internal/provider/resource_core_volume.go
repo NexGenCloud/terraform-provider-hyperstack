@@ -291,7 +291,7 @@ func (r *ResourceCoreVolume) Read(
 		return
 	}
 
-	id := int(dataOld.Id.ValueInt64())
+	id := int(dataOld.VolumeId.ValueInt64())
 
 	// Perform a Read operation to get all volumes
 	searchResult, err := r.client.ListVolumesWithResponse(ctx, func() *volume.ListVolumesParams {
@@ -354,7 +354,7 @@ func (r *ResourceCoreVolume) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	id := int(data.Id.ValueInt64())
+	id := int(data.VolumeId.ValueInt64())
 
 	// Perform a Read operation to get all volumes
 	result, err := r.client.ListVolumesWithResponse(ctx, func() *volume.ListVolumesParams {
@@ -503,45 +503,35 @@ func (r *ResourceCoreVolume) ApiToModel(
 	diags *diag.Diagnostics,
 	response *volume.VolumesFields,
 ) resource_core_volume.CoreVolumeModel {
+	_ = ctx
+	_ = diags
 	return resource_core_volume.CoreVolumeModel{
-		Bootable:        types.BoolPointerValue(response.Bootable),
 		CallbackUrl:     types.StringPointerValue(response.CallbackUrl),
 		Description:     types.StringPointerValue(response.Description),
-		Environment:     r.MapEnvironment(ctx, diags, *response.Environment),
 		EnvironmentName: types.StringNull(),
-		Id: func() types.Int64 {
-			if response.Id == nil {
-				return types.Int64Null()
-			}
-			return types.Int64Value(int64(*response.Id))
-		}(),
 		ImageId: func() types.Int64 {
 			if response.ImageId == nil {
 				return types.Int64Null()
 			}
 			return types.Int64Value(int64(*response.ImageId))
 		}(),
-		Name: types.StringPointerValue(response.Name),
+		Message: types.StringNull(),
+		Name:    types.StringPointerValue(response.Name),
 		Size: func() types.Int64 {
 			if response.Size == nil {
 				return types.Int64Null()
 			}
 			return types.Int64Value(int64(*response.Size))
 		}(),
-		Status:     types.StringPointerValue(response.Status),
+		Status: types.BoolValue(true),
+		Volume: resource_core_volume.NewVolumeValueUnknown(),
+		VolumeId: func() types.Int64 {
+			if response.Id == nil {
+				return types.Int64Null()
+			}
+			return types.Int64Value(int64(*response.Id))
+		}(),
 		VolumeType: types.StringPointerValue(response.VolumeType),
-		CreatedAt: func() types.String {
-			if response.CreatedAt == nil {
-				return types.StringNull()
-			}
-			return types.StringValue(response.CreatedAt.String())
-		}(),
-		UpdatedAt: func() types.String {
-			if response.UpdatedAt == nil {
-				return types.StringNull()
-			}
-			return types.StringValue(response.UpdatedAt.String())
-		}(),
 	}
 }
 

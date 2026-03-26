@@ -255,7 +255,6 @@ tasks:
         python "{{ .FIX_PROVIDER_SPEC }}" "{{ .PROVIDER_SPEC_PATH }}"
       # language=bash
       - |
-        rm -Rf "{{ .DIR_GENPROVIDER }}"
         mkdir -p "{{ .DIR_GENPROVIDER }}"
         tfplugingen-framework generate data-sources \
           --input "{{ .DIR_ARTIFACTS }}/provider-spec.json" \

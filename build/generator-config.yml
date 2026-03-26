@@ -12,6 +12,9 @@ data_sources:
     read:
       path: /core/stocks
       method: GET
+    schema:
+      ignores:
+        - stocks.models.configurations
 
   core_firewall_protocols:
     read:
@@ -27,6 +30,9 @@ data_sources:
     read:
       path: /core/images
       method: GET
+    schema:
+      ignores:
+        - images
 
   core_regions:
     read:
@@ -47,11 +53,17 @@ data_sources:
     read:
       path: /core/environments
       method: GET
+    schema:
+      ignores:
+        - page_size
 
   core_volumes:
     read:
       path: /core/volumes
       method: GET
+    schema:
+      ignores:
+        - page_size
 
   core_volume_types:
     read:
@@ -82,6 +94,10 @@ data_sources:
     read:
       path: /auth/roles
       method: GET
+    schema:
+      ignores:
+        - permissions
+        - policies
 
   auth_role:
     read:
@@ -102,11 +118,19 @@ data_sources:
     read:
       path: /core/keypairs
       method: GET
+    schema:
+      ignores:
+        - page_size
+        - environment
+        - features
 
   core_keypairs:
     read:
       path: /core/keypairs
       method: GET
+    schema:
+      ignores:
+        - page_size
 
   core_virtual_machines:
     read:
@@ -114,13 +138,23 @@ data_sources:
       method: GET
     schema:
       ignores:
+        - page_size
         - features
+        - flavor
         - flavor.features
 
   core_clusters:
     read:
       path: /core/clusters
       method: GET
+    schema:
+      ignores:
+        - labels
+        - features
+        - master_flavor.features
+        - master_flavor.labels
+        - worker_flavor.features
+        - worker_flavor.labels
 
   core_clusters_versions:
     read:
@@ -130,13 +164,13 @@ data_sources:
 resources:
   core_virtual_machine_sg_rule:
     read:
-      path: /core/virtual-machines/{virtual_machine_id}/sg-rules
+      path: /core/virtual-machines/{vm_id}/sg-rules
       method: GET
     create:
-      path: /core/virtual-machines/{virtual_machine_id}/sg-rules
+      path: /core/virtual-machines/{vm_id}/sg-rules
       method: POST
     delete:
-      path: /core/virtual-machines/{virtual_machine_id}/sg-rules/{id}
+      path: /core/virtual-machines/{vm_id}/sg-rules/{sg_rule_id}
       method: DELETE
 
   core_environment:
@@ -154,6 +188,10 @@ resources:
     create:
       path: /auth/roles
       method: POST
+    schema:
+      ignores:
+        - permissions
+        - policies
 
   core_keypair:
     read:
@@ -165,6 +203,11 @@ resources:
     update:
       path: /core/keypair/{id}
       method: PUT
+    schema:
+      ignores:
+        - page_size
+        - environment
+        - features
 
   core_virtual_machine:
     read:
@@ -176,11 +219,12 @@ resources:
     schema:
       ignores:
         - features
+        - flavor
         - flavor.features
 
   core_volume:
     read:
-      path: /core/volumes/{id}
+      path: /core/volumes/{volume_id}
       method: GET
     create:
       path: /core/volumes
@@ -193,3 +237,11 @@ resources:
     create:
       path: /core/clusters
       method: POST
+    schema:
+      ignores:
+        - labels
+        - features
+        - master_flavor.features
+        - master_flavor.labels
+        - worker_flavor.features
+        - worker_flavor.labels

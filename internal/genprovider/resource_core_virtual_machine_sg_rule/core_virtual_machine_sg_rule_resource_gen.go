@@ -4,12 +4,20 @@ package resource_core_virtual_machine_sg_rule
 
 import (
 	"context"
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
@@ -17,12 +25,6 @@ import (
 func CoreVirtualMachineSgRuleResourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"created_at": schema.StringAttribute{
-				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
 			"direction": schema.StringAttribute{
 				Required:            true,
 				Description:         "The direction of traffic that the firewall rule applies to.",
@@ -41,8 +43,11 @@ func CoreVirtualMachineSgRuleResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"id": schema.Int64Attribute{
 				Computed: true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
+			},
+			"message": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"port_range_max": schema.Int64Attribute{
@@ -105,14 +110,83 @@ func CoreVirtualMachineSgRuleResourceSchema(ctx context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"status": schema.StringAttribute{
+			"security_rule": schema.SingleNestedAttribute{
+				Attributes: map[string]schema.Attribute{
+					"created_at": schema.StringAttribute{
+						Computed: true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.RequiresReplace(),
+						},
+					},
+					"direction": schema.StringAttribute{
+						Computed: true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.RequiresReplace(),
+						},
+					},
+					"ethertype": schema.StringAttribute{
+						Computed: true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.RequiresReplace(),
+						},
+					},
+					"id": schema.Int64Attribute{
+						Computed: true,
+						PlanModifiers: []planmodifier.Int64{
+							int64planmodifier.RequiresReplace(),
+						},
+					},
+					"port_range_max": schema.Int64Attribute{
+						Computed: true,
+						PlanModifiers: []planmodifier.Int64{
+							int64planmodifier.RequiresReplace(),
+						},
+					},
+					"port_range_min": schema.Int64Attribute{
+						Computed: true,
+						PlanModifiers: []planmodifier.Int64{
+							int64planmodifier.RequiresReplace(),
+						},
+					},
+					"protocol": schema.StringAttribute{
+						Computed: true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.RequiresReplace(),
+						},
+					},
+					"remote_ip_prefix": schema.StringAttribute{
+						Computed: true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.RequiresReplace(),
+						},
+					},
+					"status": schema.StringAttribute{
+						Computed: true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.RequiresReplace(),
+						},
+					},
+				},
+				CustomType: SecurityRuleType{
+					ObjectType: types.ObjectType{
+						AttrTypes: SecurityRuleValue{}.AttributeTypes(ctx),
+					},
+				},
 				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.RequiresReplace(),
+				},
+			},
+			"status": schema.BoolAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
 				},
 			},
 			"virtual_machine_id": schema.Int64Attribute{
-				Required: true,
+				Required:            true,
+				Description:         "The ID of the virtual machine to attach the security rule to.",
+				MarkdownDescription: "The ID of the virtual machine to attach the security rule to.",
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},
@@ -122,14 +196,779 @@ func CoreVirtualMachineSgRuleResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type CoreVirtualMachineSgRuleModel struct {
-	CreatedAt        types.String `tfsdk:"created_at"`
-	Direction        types.String `tfsdk:"direction"`
-	Ethertype        types.String `tfsdk:"ethertype"`
-	Id               types.Int64  `tfsdk:"id"`
-	PortRangeMax     types.Int64  `tfsdk:"port_range_max"`
-	PortRangeMin     types.Int64  `tfsdk:"port_range_min"`
-	Protocol         types.String `tfsdk:"protocol"`
-	RemoteIpPrefix   types.String `tfsdk:"remote_ip_prefix"`
-	Status           types.String `tfsdk:"status"`
-	VirtualMachineId types.Int64  `tfsdk:"virtual_machine_id"`
+	Direction        types.String      `tfsdk:"direction"`
+	Ethertype        types.String      `tfsdk:"ethertype"`
+	Id               types.Int64       `tfsdk:"id"`
+	Message          types.String      `tfsdk:"message"`
+	PortRangeMax     types.Int64       `tfsdk:"port_range_max"`
+	PortRangeMin     types.Int64       `tfsdk:"port_range_min"`
+	Protocol         types.String      `tfsdk:"protocol"`
+	RemoteIpPrefix   types.String      `tfsdk:"remote_ip_prefix"`
+	SecurityRule     SecurityRuleValue `tfsdk:"security_rule"`
+	Status           types.Bool        `tfsdk:"status"`
+	VirtualMachineId types.Int64       `tfsdk:"virtual_machine_id"`
+}
+
+var _ basetypes.ObjectTypable = SecurityRuleType{}
+
+type SecurityRuleType struct {
+	basetypes.ObjectType
+}
+
+func (t SecurityRuleType) Equal(o attr.Type) bool {
+	other, ok := o.(SecurityRuleType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t SecurityRuleType) String() string {
+	return "SecurityRuleType"
+}
+
+func (t SecurityRuleType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	createdAtAttribute, ok := attributes["created_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`created_at is missing from object`)
+
+		return nil, diags
+	}
+
+	createdAtVal, ok := createdAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
+	}
+
+	directionAttribute, ok := attributes["direction"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`direction is missing from object`)
+
+		return nil, diags
+	}
+
+	directionVal, ok := directionAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`direction expected to be basetypes.StringValue, was: %T`, directionAttribute))
+	}
+
+	ethertypeAttribute, ok := attributes["ethertype"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`ethertype is missing from object`)
+
+		return nil, diags
+	}
+
+	ethertypeVal, ok := ethertypeAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`ethertype expected to be basetypes.StringValue, was: %T`, ethertypeAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return nil, diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	portRangeMaxAttribute, ok := attributes["port_range_max"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`port_range_max is missing from object`)
+
+		return nil, diags
+	}
+
+	portRangeMaxVal, ok := portRangeMaxAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`port_range_max expected to be basetypes.Int64Value, was: %T`, portRangeMaxAttribute))
+	}
+
+	portRangeMinAttribute, ok := attributes["port_range_min"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`port_range_min is missing from object`)
+
+		return nil, diags
+	}
+
+	portRangeMinVal, ok := portRangeMinAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`port_range_min expected to be basetypes.Int64Value, was: %T`, portRangeMinAttribute))
+	}
+
+	protocolAttribute, ok := attributes["protocol"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`protocol is missing from object`)
+
+		return nil, diags
+	}
+
+	protocolVal, ok := protocolAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`protocol expected to be basetypes.StringValue, was: %T`, protocolAttribute))
+	}
+
+	remoteIpPrefixAttribute, ok := attributes["remote_ip_prefix"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`remote_ip_prefix is missing from object`)
+
+		return nil, diags
+	}
+
+	remoteIpPrefixVal, ok := remoteIpPrefixAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`remote_ip_prefix expected to be basetypes.StringValue, was: %T`, remoteIpPrefixAttribute))
+	}
+
+	statusAttribute, ok := attributes["status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`status is missing from object`)
+
+		return nil, diags
+	}
+
+	statusVal, ok := statusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return SecurityRuleValue{
+		CreatedAt:      createdAtVal,
+		Direction:      directionVal,
+		Ethertype:      ethertypeVal,
+		Id:             idVal,
+		PortRangeMax:   portRangeMaxVal,
+		PortRangeMin:   portRangeMinVal,
+		Protocol:       protocolVal,
+		RemoteIpPrefix: remoteIpPrefixVal,
+		Status:         statusVal,
+		state:          attr.ValueStateKnown,
+	}, diags
+}
+
+func NewSecurityRuleValueNull() SecurityRuleValue {
+	return SecurityRuleValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewSecurityRuleValueUnknown() SecurityRuleValue {
+	return SecurityRuleValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewSecurityRuleValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (SecurityRuleValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing SecurityRuleValue Attribute Value",
+				"While creating a SecurityRuleValue value, a missing attribute value was detected. "+
+					"A SecurityRuleValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("SecurityRuleValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid SecurityRuleValue Attribute Type",
+				"While creating a SecurityRuleValue value, an invalid attribute value was detected. "+
+					"A SecurityRuleValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("SecurityRuleValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("SecurityRuleValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra SecurityRuleValue Attribute Value",
+				"While creating a SecurityRuleValue value, an extra attribute value was detected. "+
+					"A SecurityRuleValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra SecurityRuleValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewSecurityRuleValueUnknown(), diags
+	}
+
+	createdAtAttribute, ok := attributes["created_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`created_at is missing from object`)
+
+		return NewSecurityRuleValueUnknown(), diags
+	}
+
+	createdAtVal, ok := createdAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
+	}
+
+	directionAttribute, ok := attributes["direction"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`direction is missing from object`)
+
+		return NewSecurityRuleValueUnknown(), diags
+	}
+
+	directionVal, ok := directionAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`direction expected to be basetypes.StringValue, was: %T`, directionAttribute))
+	}
+
+	ethertypeAttribute, ok := attributes["ethertype"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`ethertype is missing from object`)
+
+		return NewSecurityRuleValueUnknown(), diags
+	}
+
+	ethertypeVal, ok := ethertypeAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`ethertype expected to be basetypes.StringValue, was: %T`, ethertypeAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return NewSecurityRuleValueUnknown(), diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	portRangeMaxAttribute, ok := attributes["port_range_max"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`port_range_max is missing from object`)
+
+		return NewSecurityRuleValueUnknown(), diags
+	}
+
+	portRangeMaxVal, ok := portRangeMaxAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`port_range_max expected to be basetypes.Int64Value, was: %T`, portRangeMaxAttribute))
+	}
+
+	portRangeMinAttribute, ok := attributes["port_range_min"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`port_range_min is missing from object`)
+
+		return NewSecurityRuleValueUnknown(), diags
+	}
+
+	portRangeMinVal, ok := portRangeMinAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`port_range_min expected to be basetypes.Int64Value, was: %T`, portRangeMinAttribute))
+	}
+
+	protocolAttribute, ok := attributes["protocol"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`protocol is missing from object`)
+
+		return NewSecurityRuleValueUnknown(), diags
+	}
+
+	protocolVal, ok := protocolAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`protocol expected to be basetypes.StringValue, was: %T`, protocolAttribute))
+	}
+
+	remoteIpPrefixAttribute, ok := attributes["remote_ip_prefix"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`remote_ip_prefix is missing from object`)
+
+		return NewSecurityRuleValueUnknown(), diags
+	}
+
+	remoteIpPrefixVal, ok := remoteIpPrefixAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`remote_ip_prefix expected to be basetypes.StringValue, was: %T`, remoteIpPrefixAttribute))
+	}
+
+	statusAttribute, ok := attributes["status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`status is missing from object`)
+
+		return NewSecurityRuleValueUnknown(), diags
+	}
+
+	statusVal, ok := statusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
+	}
+
+	if diags.HasError() {
+		return NewSecurityRuleValueUnknown(), diags
+	}
+
+	return SecurityRuleValue{
+		CreatedAt:      createdAtVal,
+		Direction:      directionVal,
+		Ethertype:      ethertypeVal,
+		Id:             idVal,
+		PortRangeMax:   portRangeMaxVal,
+		PortRangeMin:   portRangeMinVal,
+		Protocol:       protocolVal,
+		RemoteIpPrefix: remoteIpPrefixVal,
+		Status:         statusVal,
+		state:          attr.ValueStateKnown,
+	}, diags
+}
+
+func NewSecurityRuleValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) SecurityRuleValue {
+	object, diags := NewSecurityRuleValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewSecurityRuleValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t SecurityRuleType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewSecurityRuleValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewSecurityRuleValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewSecurityRuleValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewSecurityRuleValueMust(SecurityRuleValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t SecurityRuleType) ValueType(ctx context.Context) attr.Value {
+	return SecurityRuleValue{}
+}
+
+var _ basetypes.ObjectValuable = SecurityRuleValue{}
+
+type SecurityRuleValue struct {
+	CreatedAt      basetypes.StringValue `tfsdk:"created_at"`
+	Direction      basetypes.StringValue `tfsdk:"direction"`
+	Ethertype      basetypes.StringValue `tfsdk:"ethertype"`
+	Id             basetypes.Int64Value  `tfsdk:"id"`
+	PortRangeMax   basetypes.Int64Value  `tfsdk:"port_range_max"`
+	PortRangeMin   basetypes.Int64Value  `tfsdk:"port_range_min"`
+	Protocol       basetypes.StringValue `tfsdk:"protocol"`
+	RemoteIpPrefix basetypes.StringValue `tfsdk:"remote_ip_prefix"`
+	Status         basetypes.StringValue `tfsdk:"status"`
+	state          attr.ValueState
+}
+
+func (v SecurityRuleValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 9)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["created_at"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["direction"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["ethertype"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["port_range_max"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["port_range_min"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["protocol"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["remote_ip_prefix"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["status"] = basetypes.StringType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 9)
+
+		val, err = v.CreatedAt.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["created_at"] = val
+
+		val, err = v.Direction.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["direction"] = val
+
+		val, err = v.Ethertype.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["ethertype"] = val
+
+		val, err = v.Id.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["id"] = val
+
+		val, err = v.PortRangeMax.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["port_range_max"] = val
+
+		val, err = v.PortRangeMin.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["port_range_min"] = val
+
+		val, err = v.Protocol.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["protocol"] = val
+
+		val, err = v.RemoteIpPrefix.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["remote_ip_prefix"] = val
+
+		val, err = v.Status.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["status"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v SecurityRuleValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v SecurityRuleValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v SecurityRuleValue) String() string {
+	return "SecurityRuleValue"
+}
+
+func (v SecurityRuleValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributeTypes := map[string]attr.Type{
+		"created_at":       basetypes.StringType{},
+		"direction":        basetypes.StringType{},
+		"ethertype":        basetypes.StringType{},
+		"id":               basetypes.Int64Type{},
+		"port_range_max":   basetypes.Int64Type{},
+		"port_range_min":   basetypes.Int64Type{},
+		"protocol":         basetypes.StringType{},
+		"remote_ip_prefix": basetypes.StringType{},
+		"status":           basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"created_at":       v.CreatedAt,
+			"direction":        v.Direction,
+			"ethertype":        v.Ethertype,
+			"id":               v.Id,
+			"port_range_max":   v.PortRangeMax,
+			"port_range_min":   v.PortRangeMin,
+			"protocol":         v.Protocol,
+			"remote_ip_prefix": v.RemoteIpPrefix,
+			"status":           v.Status,
+		})
+
+	return objVal, diags
+}
+
+func (v SecurityRuleValue) Equal(o attr.Value) bool {
+	other, ok := o.(SecurityRuleValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.CreatedAt.Equal(other.CreatedAt) {
+		return false
+	}
+
+	if !v.Direction.Equal(other.Direction) {
+		return false
+	}
+
+	if !v.Ethertype.Equal(other.Ethertype) {
+		return false
+	}
+
+	if !v.Id.Equal(other.Id) {
+		return false
+	}
+
+	if !v.PortRangeMax.Equal(other.PortRangeMax) {
+		return false
+	}
+
+	if !v.PortRangeMin.Equal(other.PortRangeMin) {
+		return false
+	}
+
+	if !v.Protocol.Equal(other.Protocol) {
+		return false
+	}
+
+	if !v.RemoteIpPrefix.Equal(other.RemoteIpPrefix) {
+		return false
+	}
+
+	if !v.Status.Equal(other.Status) {
+		return false
+	}
+
+	return true
+}
+
+func (v SecurityRuleValue) Type(ctx context.Context) attr.Type {
+	return SecurityRuleType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v SecurityRuleValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"created_at":       basetypes.StringType{},
+		"direction":        basetypes.StringType{},
+		"ethertype":        basetypes.StringType{},
+		"id":               basetypes.Int64Type{},
+		"port_range_max":   basetypes.Int64Type{},
+		"port_range_min":   basetypes.Int64Type{},
+		"protocol":         basetypes.StringType{},
+		"remote_ip_prefix": basetypes.StringType{},
+		"status":           basetypes.StringType{},
+	}
 }
