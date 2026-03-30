@@ -184,6 +184,33 @@ def fix_provider_spec(spec_file: str) -> None:
       for attr in row["schema"]["attributes"]:
         attr_set_modifier(attr, "RequiresReplace")
 
+      has_vm_id = any(attr.get("name") == "virtual_machine_id" for attr in row["schema"]["attributes"])
+      if not has_vm_id:
+        row["schema"]["attributes"].append({
+          "name": "virtual_machine_id",
+          "int64": {
+            "computed_optional_required": "required",
+            "description": "The ID of the virtual machine to attach the security rule to.",
+            "plan_modifiers": [{
+              "custom": {
+                "imports": [{
+                  "path": "github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+                }],
+                "schema_definition": "int64planmodifier.RequiresReplace()"
+              }
+            }],
+          }
+        })
+
+      has_id = any(attr.get("name") == "id" for attr in row["schema"]["attributes"])
+      if not has_id:
+        row["schema"]["attributes"].append({
+          "name": "id",
+          "int64": {
+            "computed_optional_required": "computed",
+          }
+        })
+
     if row["name"] == "core_cluster":
       for attr in row["schema"]["attributes"]:
         immutable_params = [
@@ -313,6 +340,25 @@ def fix_provider_spec(spec_file: str) -> None:
         "contract_id",
       ]
       row["schema"]["attributes"] = [x for x in row["schema"]["attributes"] if x["name"] not in vm_remove_params]
+
+  # Temporary compatibility mode:
+  # The latest API schema currently triggers type-name collisions in
+  # tfplugingen-framework for several resources/data sources. Until those
+  # collisions are addressed in spec normalization, regenerate only a minimal,
+  # known-stable subset and keep existing generated packages for the rest.
+  allowed_resources = {
+    "core_virtual_machine_sg_rule",
+    "core_volume",
+    "core_cluster_node_group",
+    "core_cluster_node",
+  }
+  allowed_datasources = {
+    "core_cluster_node_groups",
+    "core_cluster_node_group",
+    "core_cluster_nodes",
+  }
+  data["datasources"] = [row for row in datasources if row.get("name") in allowed_datasources]
+  data["resources"] = [row for row in resources if row.get("name") in allowed_resources]
 
   with open(spec_file, 'w') as file:
     json.dump(data, file, indent=4)

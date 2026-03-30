@@ -236,12 +236,6 @@ func (r *ResourceCoreVirtualMachineSgRule) ApiToModel(
 	vmId int,
 ) resource_core_virtual_machine_sg_rule.CoreVirtualMachineSgRuleModel {
 	return resource_core_virtual_machine_sg_rule.CoreVirtualMachineSgRuleModel{
-		CreatedAt: func() types.String {
-			if response.CreatedAt == nil {
-				return types.StringNull()
-			}
-			return types.StringValue(response.CreatedAt.String())
-		}(),
 		Direction: func() types.String {
 			if response.Direction == nil {
 				return types.StringNull()
@@ -284,12 +278,7 @@ func (r *ResourceCoreVirtualMachineSgRule) ApiToModel(
 			}
 			return types.StringValue(*response.RemoteIpPrefix)
 		}(),
-		Status: func() types.String {
-			if response.Status == nil {
-				return types.StringNull()
-			}
-			return types.StringValue(*response.Status)
-		}(),
+		Status: types.BoolValue(true),
 		VirtualMachineId: func() types.Int64 {
 			return types.Int64Value(int64(vmId))
 		}(),
