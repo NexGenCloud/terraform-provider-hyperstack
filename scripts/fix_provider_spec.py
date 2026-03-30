@@ -349,8 +349,15 @@ def fix_provider_spec(spec_file: str) -> None:
   allowed_resources = {
     "core_virtual_machine_sg_rule",
     "core_volume",
+    "core_cluster_node_group",
+    "core_cluster_node",
   }
-  data["datasources"] = []
+  allowed_datasources = {
+    "core_cluster_node_groups",
+    "core_cluster_node_group",
+    "core_cluster_nodes",
+  }
+  data["datasources"] = [row for row in datasources if row.get("name") in allowed_datasources]
   data["resources"] = [row for row in resources if row.get("name") in allowed_resources]
 
   with open(spec_file, 'w') as file:

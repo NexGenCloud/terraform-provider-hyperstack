@@ -161,6 +161,21 @@ data_sources:
       path: /core/clusters/versions
       method: GET
 
+  core_cluster_node_groups:
+    read:
+      path: /core/clusters/{cluster_id}/node-groups
+      method: GET
+
+  core_cluster_node_group:
+    read:
+      path: /core/clusters/{cluster_id}/node-groups/{node_group_id}
+      method: GET
+
+  core_cluster_nodes:
+    read:
+      path: /core/clusters/{cluster_id}/nodes
+      method: GET
+
 resources:
   core_virtual_machine_sg_rule:
     read:
@@ -237,6 +252,31 @@ resources:
     create:
       path: /core/clusters
       method: POST
+
+  core_cluster_node_group:
+    read:
+      path: /core/clusters/{cluster_id}/node-groups/{node_group_id}
+      method: GET
+    create:
+      path: /core/clusters/{cluster_id}/node-groups
+      method: POST
+    update:
+      path: /core/clusters/{cluster_id}/node-groups/{node_group_id}
+      method: PATCH
+    delete:
+      path: /core/clusters/{cluster_id}/node-groups/{node_group_id}
+      method: DELETE
+
+  core_cluster_node:
+    read:
+      path: /core/clusters/{cluster_id}/nodes/{node_id}
+      method: GET
+    create:
+      path: /core/clusters/{cluster_id}/nodes
+      method: POST
+    delete:
+      path: /core/clusters/{cluster_id}/nodes/{node_id}
+      method: DELETE
     schema:
       ignores:
         - labels
