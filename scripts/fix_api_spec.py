@@ -81,46 +81,15 @@ def attr_fix_components(data: AttrType) -> None:
   components = data.get("components", {})
   schemas = components.get("schemas", {})
 
+  # Pass 1: normalize schema names (strip stray spaces / %20 in keys).
   for key in list(schemas.keys()):
     new_key = re.sub(r'(\s+|%20)', '', key)
     if new_key != key:
       schemas[new_key] = schemas.pop(key)
 
-    # TODO: UNSYNCED see tf provider
-    continue
-    props = schemas[new_key]["properties"]
-    # TODO: how do we get it? e.g. count
-    to_delete = ["status", "message", "page", "page_size", "count"]
-    if "status" in props and "message" in props:
-      print("Fixing %s" % new_key)
-
-      for r in to_delete:
-        if r in props:
-          del props[r]
-
-
-      # TODO: recheck
-      if new_key == "Instances" and "instance_count" in props:
-        del props["instance_count"]
-
-      if len(props.keys()) > 1:
-        pass
-
-      subfield = True
-      if len(props.keys()) == 0:
-        props = {}
-      elif len(props.keys()) == 1:
-        props = list(props.values())[0]
-      else:
-        # TODO: not anymore as now we have some filters like page
-        print("Warning: check this key")
-
-      if "type" not in props and "$ref" not in props:
-        props["type"] = "object"
-
-      schemas[new_key] = props
-      #print(props)
-      # print(schemas[new_key]["properties"])
+  # Pass 2: schema-specific fixes below. These must run before the envelope
+  # unwrapping (Pass 3) because they rely on the wrapped structure still being
+  # present (e.g. the RBAC role fix reads properties off the wrapper).
 
   # API incorrectly returns "roles"
   schemas["RbacRoleDetailResponseModelFixed"] = copy.deepcopy(schemas["RbacRoleDetailResponseModel"])
@@ -155,27 +124,135 @@ def attr_fix_components(data: AttrType) -> None:
     "type": "string"
   }
 
-  # TODO: UNSYNCED see tf provider
-  # Fix digit-prefixed keys
-  #props = schemas["NewConfigurationsResponse"]["properties"]
-  #for p in list(props.keys()):
-  #  props["N%s" % p] = props.pop(p)
+  # GPU stock configuration keys are digit-prefixed (1x, 2x, ... 10x), which
+  # all sanitize to the same invalid Go/Terraform identifier ("x") and clash.
+  # Prefix them with "n" so each maps to a distinct attribute (n1x, n2x, ...),
+  # matching the SDK's N-prefixed fields used by the stocks data source.
+  if "New_Configurations_Response" in schemas:
+    config_props = schemas["New_Configurations_Response"].get("properties", {})
+    for p in list(config_props.keys()):
+      config_props["n%s" % p] = config_props.pop(p)
 
-  # TODO: UNSYNCED see tf provider
-  # The API spec now uses {vm_id} instead of {id}
-  # paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"] = paths["/core/virtual-machines/{id}/sg-rules"]
-  # del paths["/core/virtual-machines/{id}/sg-rules"]
-  # Commented out because the API spec now uses different path parameters
-  # paths["/core/virtual-machines/{virtual_machine_id}/sg-rules"]["post"]["parameters"][0]["name"] = "virtual_machine_id"
+  # Pass 3: unwrap envelope response bodies.
+  unwrap_envelopes(schemas)
 
-  # TODO: UNSYNCED see tf provider
-  # The API spec now uses {sg_rule_id} instead of {id}
-  # paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"] = paths[
-  #   "/core/virtual-machines/{virtual_machine_id}/sg-rules/{sg_rule_id}"]
-  # del paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{sg_rule_id}"]
-  # paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"]["delete"]["parameters"][0][
-  #   "name"] = "virtual_machine_id"
-  # paths["/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"]["delete"]["parameters"][1]["name"] = "id"
+  # Pass 4: normalize paths (parameter names + synthesized sg-rules read).
+  normalize_paths(paths, schemas)
+
+
+def unwrap_envelopes(schemas: AttrType) -> None:
+  """
+  Collapses API "envelope" response schemas down to their payload.
+
+  Most list/detail responses wrap the real payload under a single field
+  alongside envelope noise (status/message) and pagination noise
+  (page/page_size/count), e.g. ``{"status", "message", "volume": {...}}``.
+  Left as-is these surface as extra schema attributes that either duplicate
+  identically-named query parameters (page_size) or nest the real fields one
+  level too deep (breaking the dot-paths used by ``schema.ignores`` in
+  generator-config.yml). We strip the noise and, when a single payload field
+  remains, replace the schema with that field so downstream schemas stay flat.
+
+  Args:
+      schemas: The components/schemas map, mutated in place.
+  """
+  noise = ["status", "message", "page", "page_size", "count"]
+  for name in list(schemas.keys()):
+    schema = schemas[name]
+    if not isinstance(schema, dict):
+      continue
+    props = schema.get("properties")
+    if not props or "status" not in props or "message" not in props:
+      continue
+
+    print("Fixing %s" % name)
+    for key in noise:
+      props.pop(key, None)
+
+    # Instances list carries an extra count field under a different name
+    if name == "Instances" and "instance_count" in props:
+      del props["instance_count"]
+
+    if len(props) == 0:
+      schemas[name] = {"type": "object"}
+    elif len(props) == 1:
+      payload = list(props.values())[0]
+      if "type" not in payload and "$ref" not in payload:
+        payload["type"] = "object"
+      schemas[name] = payload
+    # More than one payload field remains: keep it as an object with the
+    # noise removed rather than guessing which field to unwrap.
+
+
+def rename_path_param(operation: AttrType, old_name: str, new_name: str) -> None:
+  """
+  Renames a single path parameter within an operation in place.
+
+  Args:
+      operation: OpenAPI operation object (e.g. paths[path]["get"]).
+      old_name: Current parameter name.
+      new_name: Desired parameter name.
+  """
+  for param in operation.get("parameters", []):
+    if param.get("in") == "path" and param.get("name") == old_name:
+      param["name"] = new_name
+
+
+def normalize_paths(paths: AttrType, schemas: AttrType) -> None:
+  """
+  Normalizes API paths to the stable parameter names expected by
+  generator-config.yml and reconstructs the sg-rules read endpoint.
+
+  Upstream renamed path parameters (`{id}` -> `{volume_id}`,
+  `{virtual_machine_id}`/`{id}` -> `{vm_id}`/`{sg_rule_id}`) and dropped the
+  sg-rules listing endpoint. generator-config.yml derives the
+  `virtual_machine_id`/`id` schema attributes from these path parameter
+  names, so we normalize them back here instead of churning the config.
+  """
+  # Volume detail: {volume_id} -> {id}. The GET response is wrapped in a
+  # Volume envelope; point it at the flat Volume_Fields so the resource
+  # schema exposes the volume attributes directly.
+  vol_old = "/core/volumes/{volume_id}"
+  vol_new = "/core/volumes/{id}"
+  if vol_old in paths:
+    paths[vol_new] = paths.pop(vol_old)
+    for method in paths[vol_new].values():
+      rename_path_param(method, "volume_id", "id")
+    if "Volume_Fields" in schemas:
+      paths[vol_new]["get"]["responses"]["200"]["content"]["application/json"]["schema"] = {
+        "$ref": "#/components/schemas/Volume_Fields",
+      }
+
+  # SG rules collection: {vm_id} -> {virtual_machine_id}. Upstream removed the
+  # GET listing, but the resource still needs a read source for its computed
+  # fields, so synthesize one returning the flat Security_Group_Rule_Fields.
+  sg_old = "/core/virtual-machines/{vm_id}/sg-rules"
+  sg_new = "/core/virtual-machines/{virtual_machine_id}/sg-rules"
+  if sg_old in paths:
+    paths[sg_new] = paths.pop(sg_old)
+    rename_path_param(paths[sg_new].get("post", {}), "vm_id", "virtual_machine_id")
+    paths[sg_new]["get"] = {
+      "parameters": [{
+        "in": "path",
+        "name": "virtual_machine_id",
+        "required": True,
+        "schema": {"type": "integer"},
+      }],
+      "responses": {"200": {
+        "description": "Success",
+        "content": {"application/json": {
+          "schema": {"$ref": "#/components/schemas/Security_Group_Rule_Fields"},
+        }},
+      }},
+    }
+
+  # SG rules detail (DELETE): {vm_id}/{sg_rule_id} -> {virtual_machine_id}/{id}
+  sg_detail_old = "/core/virtual-machines/{vm_id}/sg-rules/{sg_rule_id}"
+  sg_detail_new = "/core/virtual-machines/{virtual_machine_id}/sg-rules/{id}"
+  if sg_detail_old in paths:
+    paths[sg_detail_new] = paths.pop(sg_detail_old)
+    rename_path_param(paths[sg_detail_new].get("delete", {}), "vm_id", "virtual_machine_id")
+    rename_path_param(paths[sg_detail_new].get("delete", {}), "sg_rule_id", "id")
 
 
 def fix_api_spec(spec_file: str) -> None:
