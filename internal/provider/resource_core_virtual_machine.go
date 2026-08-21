@@ -126,16 +126,16 @@ func (r *ResourceCoreVirtualMachine) Create(
 			CallbackUrl:             dataOld.CallbackUrl.ValueStringPointer(),
 			AssignFloatingIp:        dataOld.AssignFloatingIp.ValueBoolPointer(),
 			EnablePortRandomization: dataOld.EnablePortRandomization.ValueBoolPointer(),
-					Labels: func() *[]string {
-			if dataOld.Labels.IsNull() {
-				return nil
-			}
-			labels := make([]string, 0)
-			for _, label := range dataOld.Labels.Elements() {
-				labels = append(labels, label.(types.String).ValueString())
-			}
-			return &labels
-		}(),
+			Labels: func() *[]string {
+				if dataOld.Labels.IsNull() {
+					return nil
+				}
+				labels := make([]string, 0)
+				for _, label := range dataOld.Labels.Elements() {
+					labels = append(labels, label.(types.String).ValueString())
+				}
+				return &labels
+			}(),
 			// TODO: disable setting here
 			Profile: func() *virtual_machine.ProfileObjectFields {
 				if dataOld.Profile.IsNull() {
@@ -473,12 +473,12 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 			}
 			return types.StringValue(*response.FloatingIpStatus)
 		}(),
-		Keypair:           r.MapKeypair(ctx, diags, *response.Keypair),
-		Environment:       r.MapEnvironment(ctx, diags, *response.Environment),
-		Image:             r.MapImage(ctx, diags, *response.Image),
-		Labels: func() types.Set {
+		Keypair:     r.MapKeypair(ctx, diags, *response.Keypair),
+		Environment: r.MapEnvironment(ctx, diags, *response.Environment),
+		Image:       r.MapImage(ctx, diags, *response.Image),
+		Labels: func() types.List {
 			if response.Labels == nil {
-				return types.SetNull(types.StringType)
+				return types.ListNull(types.StringType)
 			}
 			return r.MapLabels(ctx, diags, *response.Labels)
 		}(),
@@ -792,8 +792,8 @@ func (r *ResourceCoreVirtualMachine) MapLabels(
 	ctx context.Context,
 	diags *diag.Diagnostics,
 	data []string,
-) types.Set {
-	model, diagnostic := types.SetValue(
+) types.List {
+	model, diagnostic := types.ListValue(
 		types.StringType,
 		func() []attr.Value {
 			labels := make([]attr.Value, 0)

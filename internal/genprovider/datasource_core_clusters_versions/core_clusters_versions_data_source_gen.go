@@ -4,7 +4,13 @@ package datasource_core_clusters_versions
 
 import (
 	"context"
+	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
@@ -12,14 +18,1232 @@ import (
 func CoreClustersVersionsDataSourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"core_clusters_versions": schema.SetAttribute{
-				ElementType: types.StringType,
-				Computed:    true,
+			"core_clusters_versions": schema.SetNestedAttribute{
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"created_at": schema.StringAttribute{
+							Computed: true,
+						},
+						"id": schema.Int64Attribute{
+							Computed: true,
+						},
+						"image": schema.SingleNestedAttribute{
+							Attributes: map[string]schema.Attribute{},
+							CustomType: ImageType{
+								ObjectType: types.ObjectType{
+									AttrTypes: ImageValue{}.AttributeTypes(ctx),
+								},
+							},
+							Computed: true,
+						},
+						"region": schema.SingleNestedAttribute{
+							Attributes: map[string]schema.Attribute{},
+							CustomType: RegionType{
+								ObjectType: types.ObjectType{
+									AttrTypes: RegionValue{}.AttributeTypes(ctx),
+								},
+							},
+							Computed: true,
+						},
+						"updated_at": schema.StringAttribute{
+							Computed: true,
+						},
+						"version": schema.StringAttribute{
+							Computed: true,
+						},
+					},
+					CustomType: CoreClustersVersionsType{
+						ObjectType: types.ObjectType{
+							AttrTypes: CoreClustersVersionsValue{}.AttributeTypes(ctx),
+						},
+					},
+				},
+				Computed: true,
+			},
+			"region": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Filter versions by region name (optional)",
+				MarkdownDescription: "Filter versions by region name (optional)",
 			},
 		},
 	}
 }
 
 type CoreClustersVersionsModel struct {
-	CoreClustersVersions types.Set `tfsdk:"core_clusters_versions"`
+	CoreClustersVersions types.Set    `tfsdk:"core_clusters_versions"`
+	Region               types.String `tfsdk:"region"`
+}
+
+var _ basetypes.ObjectTypable = CoreClustersVersionsType{}
+
+type CoreClustersVersionsType struct {
+	basetypes.ObjectType
+}
+
+func (t CoreClustersVersionsType) Equal(o attr.Type) bool {
+	other, ok := o.(CoreClustersVersionsType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t CoreClustersVersionsType) String() string {
+	return "CoreClustersVersionsType"
+}
+
+func (t CoreClustersVersionsType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	createdAtAttribute, ok := attributes["created_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`created_at is missing from object`)
+
+		return nil, diags
+	}
+
+	createdAtVal, ok := createdAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return nil, diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	imageAttribute, ok := attributes["image"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`image is missing from object`)
+
+		return nil, diags
+	}
+
+	imageVal, ok := imageAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`image expected to be basetypes.ObjectValue, was: %T`, imageAttribute))
+	}
+
+	regionAttribute, ok := attributes["region"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`region is missing from object`)
+
+		return nil, diags
+	}
+
+	regionVal, ok := regionAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`region expected to be basetypes.ObjectValue, was: %T`, regionAttribute))
+	}
+
+	updatedAtAttribute, ok := attributes["updated_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`updated_at is missing from object`)
+
+		return nil, diags
+	}
+
+	updatedAtVal, ok := updatedAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`updated_at expected to be basetypes.StringValue, was: %T`, updatedAtAttribute))
+	}
+
+	versionAttribute, ok := attributes["version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`version is missing from object`)
+
+		return nil, diags
+	}
+
+	versionVal, ok := versionAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`version expected to be basetypes.StringValue, was: %T`, versionAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return CoreClustersVersionsValue{
+		CreatedAt: createdAtVal,
+		Id:        idVal,
+		Image:     imageVal,
+		Region:    regionVal,
+		UpdatedAt: updatedAtVal,
+		Version:   versionVal,
+		state:     attr.ValueStateKnown,
+	}, diags
+}
+
+func NewCoreClustersVersionsValueNull() CoreClustersVersionsValue {
+	return CoreClustersVersionsValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewCoreClustersVersionsValueUnknown() CoreClustersVersionsValue {
+	return CoreClustersVersionsValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewCoreClustersVersionsValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (CoreClustersVersionsValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing CoreClustersVersionsValue Attribute Value",
+				"While creating a CoreClustersVersionsValue value, a missing attribute value was detected. "+
+					"A CoreClustersVersionsValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("CoreClustersVersionsValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid CoreClustersVersionsValue Attribute Type",
+				"While creating a CoreClustersVersionsValue value, an invalid attribute value was detected. "+
+					"A CoreClustersVersionsValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("CoreClustersVersionsValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("CoreClustersVersionsValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra CoreClustersVersionsValue Attribute Value",
+				"While creating a CoreClustersVersionsValue value, an extra attribute value was detected. "+
+					"A CoreClustersVersionsValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra CoreClustersVersionsValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewCoreClustersVersionsValueUnknown(), diags
+	}
+
+	createdAtAttribute, ok := attributes["created_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`created_at is missing from object`)
+
+		return NewCoreClustersVersionsValueUnknown(), diags
+	}
+
+	createdAtVal, ok := createdAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return NewCoreClustersVersionsValueUnknown(), diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	imageAttribute, ok := attributes["image"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`image is missing from object`)
+
+		return NewCoreClustersVersionsValueUnknown(), diags
+	}
+
+	imageVal, ok := imageAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`image expected to be basetypes.ObjectValue, was: %T`, imageAttribute))
+	}
+
+	regionAttribute, ok := attributes["region"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`region is missing from object`)
+
+		return NewCoreClustersVersionsValueUnknown(), diags
+	}
+
+	regionVal, ok := regionAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`region expected to be basetypes.ObjectValue, was: %T`, regionAttribute))
+	}
+
+	updatedAtAttribute, ok := attributes["updated_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`updated_at is missing from object`)
+
+		return NewCoreClustersVersionsValueUnknown(), diags
+	}
+
+	updatedAtVal, ok := updatedAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`updated_at expected to be basetypes.StringValue, was: %T`, updatedAtAttribute))
+	}
+
+	versionAttribute, ok := attributes["version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`version is missing from object`)
+
+		return NewCoreClustersVersionsValueUnknown(), diags
+	}
+
+	versionVal, ok := versionAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`version expected to be basetypes.StringValue, was: %T`, versionAttribute))
+	}
+
+	if diags.HasError() {
+		return NewCoreClustersVersionsValueUnknown(), diags
+	}
+
+	return CoreClustersVersionsValue{
+		CreatedAt: createdAtVal,
+		Id:        idVal,
+		Image:     imageVal,
+		Region:    regionVal,
+		UpdatedAt: updatedAtVal,
+		Version:   versionVal,
+		state:     attr.ValueStateKnown,
+	}, diags
+}
+
+func NewCoreClustersVersionsValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) CoreClustersVersionsValue {
+	object, diags := NewCoreClustersVersionsValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewCoreClustersVersionsValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t CoreClustersVersionsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewCoreClustersVersionsValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewCoreClustersVersionsValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewCoreClustersVersionsValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewCoreClustersVersionsValueMust(CoreClustersVersionsValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t CoreClustersVersionsType) ValueType(ctx context.Context) attr.Value {
+	return CoreClustersVersionsValue{}
+}
+
+var _ basetypes.ObjectValuable = CoreClustersVersionsValue{}
+
+type CoreClustersVersionsValue struct {
+	CreatedAt basetypes.StringValue `tfsdk:"created_at"`
+	Id        basetypes.Int64Value  `tfsdk:"id"`
+	Image     basetypes.ObjectValue `tfsdk:"image"`
+	Region    basetypes.ObjectValue `tfsdk:"region"`
+	UpdatedAt basetypes.StringValue `tfsdk:"updated_at"`
+	Version   basetypes.StringValue `tfsdk:"version"`
+	state     attr.ValueState
+}
+
+func (v CoreClustersVersionsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 6)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["created_at"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["image"] = basetypes.ObjectType{
+		AttrTypes: ImageValue{}.AttributeTypes(ctx),
+	}.TerraformType(ctx)
+	attrTypes["region"] = basetypes.ObjectType{
+		AttrTypes: RegionValue{}.AttributeTypes(ctx),
+	}.TerraformType(ctx)
+	attrTypes["updated_at"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["version"] = basetypes.StringType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 6)
+
+		val, err = v.CreatedAt.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["created_at"] = val
+
+		val, err = v.Id.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["id"] = val
+
+		val, err = v.Image.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["image"] = val
+
+		val, err = v.Region.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["region"] = val
+
+		val, err = v.UpdatedAt.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["updated_at"] = val
+
+		val, err = v.Version.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["version"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v CoreClustersVersionsValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v CoreClustersVersionsValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v CoreClustersVersionsValue) String() string {
+	return "CoreClustersVersionsValue"
+}
+
+func (v CoreClustersVersionsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var image basetypes.ObjectValue
+
+	if v.Image.IsNull() {
+		image = types.ObjectNull(
+			ImageValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if v.Image.IsUnknown() {
+		image = types.ObjectUnknown(
+			ImageValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if !v.Image.IsNull() && !v.Image.IsUnknown() {
+		image = types.ObjectValueMust(
+			ImageValue{}.AttributeTypes(ctx),
+			v.Image.Attributes(),
+		)
+	}
+
+	var region basetypes.ObjectValue
+
+	if v.Region.IsNull() {
+		region = types.ObjectNull(
+			RegionValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if v.Region.IsUnknown() {
+		region = types.ObjectUnknown(
+			RegionValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if !v.Region.IsNull() && !v.Region.IsUnknown() {
+		region = types.ObjectValueMust(
+			RegionValue{}.AttributeTypes(ctx),
+			v.Region.Attributes(),
+		)
+	}
+
+	attributeTypes := map[string]attr.Type{
+		"created_at": basetypes.StringType{},
+		"id":         basetypes.Int64Type{},
+		"image": basetypes.ObjectType{
+			AttrTypes: ImageValue{}.AttributeTypes(ctx),
+		},
+		"region": basetypes.ObjectType{
+			AttrTypes: RegionValue{}.AttributeTypes(ctx),
+		},
+		"updated_at": basetypes.StringType{},
+		"version":    basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"created_at": v.CreatedAt,
+			"id":         v.Id,
+			"image":      image,
+			"region":     region,
+			"updated_at": v.UpdatedAt,
+			"version":    v.Version,
+		})
+
+	return objVal, diags
+}
+
+func (v CoreClustersVersionsValue) Equal(o attr.Value) bool {
+	other, ok := o.(CoreClustersVersionsValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.CreatedAt.Equal(other.CreatedAt) {
+		return false
+	}
+
+	if !v.Id.Equal(other.Id) {
+		return false
+	}
+
+	if !v.Image.Equal(other.Image) {
+		return false
+	}
+
+	if !v.Region.Equal(other.Region) {
+		return false
+	}
+
+	if !v.UpdatedAt.Equal(other.UpdatedAt) {
+		return false
+	}
+
+	if !v.Version.Equal(other.Version) {
+		return false
+	}
+
+	return true
+}
+
+func (v CoreClustersVersionsValue) Type(ctx context.Context) attr.Type {
+	return CoreClustersVersionsType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v CoreClustersVersionsValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"created_at": basetypes.StringType{},
+		"id":         basetypes.Int64Type{},
+		"image": basetypes.ObjectType{
+			AttrTypes: ImageValue{}.AttributeTypes(ctx),
+		},
+		"region": basetypes.ObjectType{
+			AttrTypes: RegionValue{}.AttributeTypes(ctx),
+		},
+		"updated_at": basetypes.StringType{},
+		"version":    basetypes.StringType{},
+	}
+}
+
+var _ basetypes.ObjectTypable = ImageType{}
+
+type ImageType struct {
+	basetypes.ObjectType
+}
+
+func (t ImageType) Equal(o attr.Type) bool {
+	other, ok := o.(ImageType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t ImageType) String() string {
+	return "ImageType"
+}
+
+func (t ImageType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return ImageValue{
+		state: attr.ValueStateKnown,
+	}, diags
+}
+
+func NewImageValueNull() ImageValue {
+	return ImageValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewImageValueUnknown() ImageValue {
+	return ImageValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewImageValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (ImageValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing ImageValue Attribute Value",
+				"While creating a ImageValue value, a missing attribute value was detected. "+
+					"A ImageValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("ImageValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid ImageValue Attribute Type",
+				"While creating a ImageValue value, an invalid attribute value was detected. "+
+					"A ImageValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("ImageValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("ImageValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra ImageValue Attribute Value",
+				"While creating a ImageValue value, an extra attribute value was detected. "+
+					"A ImageValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra ImageValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewImageValueUnknown(), diags
+	}
+
+	if diags.HasError() {
+		return NewImageValueUnknown(), diags
+	}
+
+	return ImageValue{
+		state: attr.ValueStateKnown,
+	}, diags
+}
+
+func NewImageValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) ImageValue {
+	object, diags := NewImageValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewImageValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t ImageType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewImageValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewImageValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewImageValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewImageValueMust(ImageValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t ImageType) ValueType(ctx context.Context) attr.Value {
+	return ImageValue{}
+}
+
+var _ basetypes.ObjectValuable = ImageValue{}
+
+type ImageValue struct {
+	state attr.ValueState
+}
+
+func (v ImageValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 0)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 0)
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v ImageValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v ImageValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v ImageValue) String() string {
+	return "ImageValue"
+}
+
+func (v ImageValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributeTypes := map[string]attr.Type{}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{})
+
+	return objVal, diags
+}
+
+func (v ImageValue) Equal(o attr.Value) bool {
+	other, ok := o.(ImageValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	return true
+}
+
+func (v ImageValue) Type(ctx context.Context) attr.Type {
+	return ImageType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v ImageValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{}
+}
+
+var _ basetypes.ObjectTypable = RegionType{}
+
+type RegionType struct {
+	basetypes.ObjectType
+}
+
+func (t RegionType) Equal(o attr.Type) bool {
+	other, ok := o.(RegionType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t RegionType) String() string {
+	return "RegionType"
+}
+
+func (t RegionType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return RegionValue{
+		state: attr.ValueStateKnown,
+	}, diags
+}
+
+func NewRegionValueNull() RegionValue {
+	return RegionValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewRegionValueUnknown() RegionValue {
+	return RegionValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewRegionValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (RegionValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing RegionValue Attribute Value",
+				"While creating a RegionValue value, a missing attribute value was detected. "+
+					"A RegionValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("RegionValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid RegionValue Attribute Type",
+				"While creating a RegionValue value, an invalid attribute value was detected. "+
+					"A RegionValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("RegionValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("RegionValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra RegionValue Attribute Value",
+				"While creating a RegionValue value, an extra attribute value was detected. "+
+					"A RegionValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra RegionValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewRegionValueUnknown(), diags
+	}
+
+	if diags.HasError() {
+		return NewRegionValueUnknown(), diags
+	}
+
+	return RegionValue{
+		state: attr.ValueStateKnown,
+	}, diags
+}
+
+func NewRegionValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) RegionValue {
+	object, diags := NewRegionValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewRegionValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t RegionType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewRegionValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewRegionValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewRegionValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewRegionValueMust(RegionValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t RegionType) ValueType(ctx context.Context) attr.Value {
+	return RegionValue{}
+}
+
+var _ basetypes.ObjectValuable = RegionValue{}
+
+type RegionValue struct {
+	state attr.ValueState
+}
+
+func (v RegionValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 0)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 0)
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v RegionValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v RegionValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v RegionValue) String() string {
+	return "RegionValue"
+}
+
+func (v RegionValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributeTypes := map[string]attr.Type{}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{})
+
+	return objVal, diags
+}
+
+func (v RegionValue) Equal(o attr.Value) bool {
+	other, ok := o.(RegionValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	return true
+}
+
+func (v RegionValue) Type(ctx context.Context) attr.Type {
+	return RegionType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v RegionValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{}
 }

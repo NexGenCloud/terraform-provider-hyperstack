@@ -237,6 +237,12 @@ func CoreVirtualMachinesDataSourceSchema(ctx context.Context) schema.Schema {
 									"device": schema.StringAttribute{
 										Computed: true,
 									},
+									"id": schema.Int64Attribute{
+										Computed: true,
+									},
+									"protected": schema.BoolAttribute{
+										Computed: true,
+									},
 									"status": schema.StringAttribute{
 										Computed: true,
 									},
@@ -287,22 +293,29 @@ func CoreVirtualMachinesDataSourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"environment": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Filter Environment ID or Name",
-				MarkdownDescription: "Filter Environment ID or Name",
+				Optional: true,
+				Computed: true,
 			},
-			"page": schema.StringAttribute{
+			"exact_environment_match": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Page Number",
-				MarkdownDescription: "Page Number",
+				Description:         "Flag to filter environment by exact match instead of partial match",
+				MarkdownDescription: "Flag to filter environment by exact match instead of partial match",
 			},
-			"page_size": schema.StringAttribute{
+			"exclude_firewalls": schema.ListAttribute{
+				ElementType:         types.Int64Type,
 				Optional:            true,
 				Computed:            true,
-				Description:         "Data Per Page",
-				MarkdownDescription: "Data Per Page",
+				Description:         "Comma-separated list of Security Group IDs to ignore instances attached",
+				MarkdownDescription: "Comma-separated list of Security Group IDs to ignore instances attached",
+			},
+			"page": schema.Int64Attribute{
+				Optional: true,
+				Computed: true,
+			},
+			"page_size": schema.Int64Attribute{
+				Optional: true,
+				Computed: true,
 			},
 			"search": schema.StringAttribute{
 				Optional: true,
@@ -313,11 +326,13 @@ func CoreVirtualMachinesDataSourceSchema(ctx context.Context) schema.Schema {
 }
 
 type CoreVirtualMachinesModel struct {
-	CoreVirtualMachines types.Set    `tfsdk:"core_virtual_machines"`
-	Environment         types.String `tfsdk:"environment"`
-	Page                types.String `tfsdk:"page"`
-	PageSize            types.String `tfsdk:"page_size"`
-	Search              types.String `tfsdk:"search"`
+	CoreVirtualMachines   types.Set    `tfsdk:"core_virtual_machines"`
+	Environment           types.String `tfsdk:"environment"`
+	ExactEnvironmentMatch types.Bool   `tfsdk:"exact_environment_match"`
+	ExcludeFirewalls      types.List   `tfsdk:"exclude_firewalls"`
+	Page                  types.Int64  `tfsdk:"page"`
+	PageSize              types.Int64  `tfsdk:"page_size"`
+	Search                types.String `tfsdk:"search"`
 }
 
 var _ basetypes.ObjectTypable = CoreVirtualMachinesType{}
@@ -1799,11 +1814,19 @@ func (v CoreVirtualMachinesValue) ToObjectValue(ctx context.Context) (basetypes.
 		)
 	}
 
-	labelsVal, d := types.ListValue(types.StringType, v.Labels.Elements())
+	var labelsVal basetypes.ListValue
+	switch {
+	case v.Labels.IsUnknown():
+		labelsVal = types.ListUnknown(types.StringType)
+	case v.Labels.IsNull():
+		labelsVal = types.ListNull(types.StringType)
+	default:
+		var d diag.Diagnostics
+		labelsVal, d = types.ListValue(types.StringType, v.Labels.Elements())
+		diags.Append(d...)
+	}
 
-	diags.Append(d...)
-
-	if d.HasError() {
+	if diags.HasError() {
 		return types.ObjectUnknown(map[string]attr.Type{
 			"callback_url": basetypes.StringType{},
 			"contract_id":  basetypes.Int64Type{},
@@ -5685,6 +5708,42 @@ func (t VolumeAttachmentsType) ValueFromObject(ctx context.Context, in basetypes
 			fmt.Sprintf(`device expected to be basetypes.StringValue, was: %T`, deviceAttribute))
 	}
 
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return nil, diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	protectedAttribute, ok := attributes["protected"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`protected is missing from object`)
+
+		return nil, diags
+	}
+
+	protectedVal, ok := protectedAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`protected expected to be basetypes.BoolValue, was: %T`, protectedAttribute))
+	}
+
 	statusAttribute, ok := attributes["status"]
 
 	if !ok {
@@ -5728,6 +5787,8 @@ func (t VolumeAttachmentsType) ValueFromObject(ctx context.Context, in basetypes
 	return VolumeAttachmentsValue{
 		CreatedAt: createdAtVal,
 		Device:    deviceVal,
+		Id:        idVal,
+		Protected: protectedVal,
 		Status:    statusVal,
 		Volume:    volumeVal,
 		state:     attr.ValueStateKnown,
@@ -5833,6 +5894,42 @@ func NewVolumeAttachmentsValue(attributeTypes map[string]attr.Type, attributes m
 			fmt.Sprintf(`device expected to be basetypes.StringValue, was: %T`, deviceAttribute))
 	}
 
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return NewVolumeAttachmentsValueUnknown(), diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	protectedAttribute, ok := attributes["protected"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`protected is missing from object`)
+
+		return NewVolumeAttachmentsValueUnknown(), diags
+	}
+
+	protectedVal, ok := protectedAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`protected expected to be basetypes.BoolValue, was: %T`, protectedAttribute))
+	}
+
 	statusAttribute, ok := attributes["status"]
 
 	if !ok {
@@ -5876,6 +5973,8 @@ func NewVolumeAttachmentsValue(attributeTypes map[string]attr.Type, attributes m
 	return VolumeAttachmentsValue{
 		CreatedAt: createdAtVal,
 		Device:    deviceVal,
+		Id:        idVal,
+		Protected: protectedVal,
 		Status:    statusVal,
 		Volume:    volumeVal,
 		state:     attr.ValueStateKnown,
@@ -5952,19 +6051,23 @@ var _ basetypes.ObjectValuable = VolumeAttachmentsValue{}
 type VolumeAttachmentsValue struct {
 	CreatedAt basetypes.StringValue `tfsdk:"created_at"`
 	Device    basetypes.StringValue `tfsdk:"device"`
+	Id        basetypes.Int64Value  `tfsdk:"id"`
+	Protected basetypes.BoolValue   `tfsdk:"protected"`
 	Status    basetypes.StringValue `tfsdk:"status"`
 	Volume    basetypes.ObjectValue `tfsdk:"volume"`
 	state     attr.ValueState
 }
 
 func (v VolumeAttachmentsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 4)
+	attrTypes := make(map[string]tftypes.Type, 6)
 
 	var val tftypes.Value
 	var err error
 
 	attrTypes["created_at"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["device"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["protected"] = basetypes.BoolType{}.TerraformType(ctx)
 	attrTypes["status"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["volume"] = basetypes.ObjectType{
 		AttrTypes: VolumeValue{}.AttributeTypes(ctx),
@@ -5974,7 +6077,7 @@ func (v VolumeAttachmentsValue) ToTerraformValue(ctx context.Context) (tftypes.V
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 4)
+		vals := make(map[string]tftypes.Value, 6)
 
 		val, err = v.CreatedAt.ToTerraformValue(ctx)
 
@@ -5991,6 +6094,22 @@ func (v VolumeAttachmentsValue) ToTerraformValue(ctx context.Context) (tftypes.V
 		}
 
 		vals["device"] = val
+
+		val, err = v.Id.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["id"] = val
+
+		val, err = v.Protected.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["protected"] = val
 
 		val, err = v.Status.ToTerraformValue(ctx)
 
@@ -6061,6 +6180,8 @@ func (v VolumeAttachmentsValue) ToObjectValue(ctx context.Context) (basetypes.Ob
 	attributeTypes := map[string]attr.Type{
 		"created_at": basetypes.StringType{},
 		"device":     basetypes.StringType{},
+		"id":         basetypes.Int64Type{},
+		"protected":  basetypes.BoolType{},
 		"status":     basetypes.StringType{},
 		"volume": basetypes.ObjectType{
 			AttrTypes: VolumeValue{}.AttributeTypes(ctx),
@@ -6080,6 +6201,8 @@ func (v VolumeAttachmentsValue) ToObjectValue(ctx context.Context) (basetypes.Ob
 		map[string]attr.Value{
 			"created_at": v.CreatedAt,
 			"device":     v.Device,
+			"id":         v.Id,
+			"protected":  v.Protected,
 			"status":     v.Status,
 			"volume":     volume,
 		})
@@ -6110,6 +6233,14 @@ func (v VolumeAttachmentsValue) Equal(o attr.Value) bool {
 		return false
 	}
 
+	if !v.Id.Equal(other.Id) {
+		return false
+	}
+
+	if !v.Protected.Equal(other.Protected) {
+		return false
+	}
+
 	if !v.Status.Equal(other.Status) {
 		return false
 	}
@@ -6133,6 +6264,8 @@ func (v VolumeAttachmentsValue) AttributeTypes(ctx context.Context) map[string]a
 	return map[string]attr.Type{
 		"created_at": basetypes.StringType{},
 		"device":     basetypes.StringType{},
+		"id":         basetypes.Int64Type{},
+		"protected":  basetypes.BoolType{},
 		"status":     basetypes.StringType{},
 		"volume": basetypes.ObjectType{
 			AttrTypes: VolumeValue{}.AttributeTypes(ctx),

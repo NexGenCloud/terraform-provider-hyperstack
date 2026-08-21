@@ -276,9 +276,9 @@ func (r *ResourceCoreCluster) WaitForResult(
 			if err != nil {
 				consecutiveFailures++
 				tflog.Warn(ctx, "Checker failed, attempting retry", map[string]interface{}{
-					"attempt": consecutiveFailures,
+					"attempt":     consecutiveFailures,
 					"max_retries": maxRetries,
-					"error": err.Error(),
+					"error":       err.Error(),
 				})
 
 				// If we haven't exceeded max retries, wait and retry
@@ -434,7 +434,6 @@ func (r *ResourceCoreCluster) MergeData(
 	dataOld *resource_core_cluster.CoreClusterModel,
 ) {
 	// Assign all values that are available only during creation stage
-	data.ImageName = dataOld.ImageName
 	data.NodeFlavorName = dataOld.NodeFlavorName
 	data.MasterFlavorName = dataOld.MasterFlavorName
 	data.MasterCount = dataOld.MasterCount
@@ -462,10 +461,11 @@ func (r *ResourceCoreCluster) ApiToModel(
 			}
 			return types.Int64Value(int64(*response.Id))
 		}(),
-		ImageName:         types.StringNull(),
 		KeypairName:       types.StringPointerValue(response.KeypairName),
 		KubeConfig:        types.StringPointerValue(response.KubeConfig),
 		KubernetesVersion: types.StringPointerValue(response.KubernetesVersion),
+		IsReconciling:     types.BoolNull(),
+		MasterFlavor:      resource_core_cluster.NewMasterFlavorValueNull(),
 		MasterFlavorName:  types.StringNull(),
 		MasterCount:       types.Int64Null(), // This will be set from user input
 		Name:              types.StringPointerValue(response.Name),
@@ -485,7 +485,11 @@ func (r *ResourceCoreCluster) ApiToModel(
 			}
 			return types.Int64Value(totalCount)
 		}(),
-		NodeFlavor:     resource_core_cluster.NodeFlavorValue{},
+		// node_groups / nodes are computed; populating them from the API
+		// response is a follow-up (the clusters API was restructured to use
+		// node groups instead of a single node flavor).
+		NodeGroups:     types.ListNull(resource_core_cluster.NodeGroupsValue{}.Type(ctx)),
+		Nodes:          types.ListNull(resource_core_cluster.NodesValue{}.Type(ctx)),
 		NodeFlavorName: types.StringNull(),
 		DeploymentMode: types.StringNull(), // This will be set from user input
 		Status:         types.StringPointerValue(response.Status),

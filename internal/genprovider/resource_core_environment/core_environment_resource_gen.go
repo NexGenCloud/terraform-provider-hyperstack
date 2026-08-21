@@ -52,8 +52,8 @@ func CoreEnvironmentResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"region": schema.StringAttribute{
 				Required:            true,
-				Description:         "The geographic location of the data center where the environment is being created. To learn more about regions, [**click here**](https://infrahub-doc.nexgencloud.com/docs/features/regions).",
-				MarkdownDescription: "The geographic location of the data center where the environment is being created. To learn more about regions, [**click here**](https://infrahub-doc.nexgencloud.com/docs/features/regions).",
+				Description:         "The geographic location of the data center where the environment is being created. To learn more about regions, [**click here**]({Config.INFRAHUB_DOCS_BASE}/docs/features/regions).",
+				MarkdownDescription: "The geographic location of the data center where the environment is being created. To learn more about regions, [**click here**]({Config.INFRAHUB_DOCS_BASE}/docs/features/regions).",
 			},
 		},
 	}

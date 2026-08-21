@@ -121,6 +121,10 @@ data_sources:
     read:
       path: /core/clusters
       method: GET
+    schema:
+      ignores:
+        - master_flavor.features
+        - master_flavor.labels
 
   core_clusters_versions:
     read:
@@ -193,3 +197,7 @@ resources:
     create:
       path: /core/clusters
       method: POST
+    schema:
+      ignores:
+        - master_flavor.features
+        - master_flavor.labels

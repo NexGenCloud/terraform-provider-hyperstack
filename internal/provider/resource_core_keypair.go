@@ -178,7 +178,7 @@ func (r *ResourceCoreKeypair) Create(
 	}
 	result, err := r.client.ImportKeyPairWithResponse(ctx, func() keypair.ImportKeyPairJSONRequestBody {
 		return keypair.ImportKeyPairJSONRequestBody{
-			EnvironmentName: data.Environment.ValueString(),
+			EnvironmentName: data.EnvironmentName.ValueString(),
 			PublicKey:       data.PublicKey.ValueString(),
 			Name:            data.Name.ValueString(),
 		}
@@ -383,8 +383,11 @@ func (r *ResourceCoreKeypair) ApiToModel(
 			}
 			return types.StringValue(*response.PublicKey)
 		}(),
-		Environment: func() types.String {
-			if response.Environment == nil {
+		// The environment object is computed; the meaningful value used
+		// throughout the resource is environment_name.
+		Environment: resource_core_keypair.NewEnvironmentValueNull(),
+		EnvironmentName: func() types.String {
+			if response.Environment == nil || response.Environment.Name == nil {
 				return types.StringNull()
 			}
 			return types.StringValue(*response.Environment.Name)

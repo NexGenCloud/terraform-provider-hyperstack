@@ -127,6 +127,32 @@ tasks:
       - task: build-api-spec
       - task: build-provider-spec
 
+  update-sdk:
+    desc: |
+      Pin hyperstack-sdk-go to the newest published tag.
+
+      NOTE: do not use `go get ...@latest`. Every real SDK release is an
+      -alpha prerelease, and `@latest` skips prereleases when any stable
+      version exists, so it resolves to the stale stable v0.2.0 instead of
+      the newest alpha. We list all tags and take the highest one instead.
+
+      The generated provider schema (task gen) is derived from the live
+      OpenAPI spec, so keep the SDK current alongside regeneration.
+    vars:
+      SDK_MODULE: github.com/NexGenCloud/hyperstack-sdk-go
+    cmds:
+      # language=bash
+      - |
+        LATEST=$(go list -m -versions "{{ .SDK_MODULE }}" \
+          | tr ' ' '\n' | grep -E '^v[0-9]' | tail -1)
+        if [ -z "${LATEST}" ]; then
+          echo "Could not resolve latest {{ .SDK_MODULE }} version" >&2
+          exit 1
+        fi
+        echo "Pinning {{ .SDK_MODULE }} to ${LATEST}"
+        go get "{{ .SDK_MODULE }}@${LATEST}"
+        go mod tidy
+
   test:
     desc: |
       Tests the provider
@@ -263,6 +289,12 @@ tasks:
         tfplugingen-framework generate resources \
           --input "{{ .DIR_ARTIFACTS }}/provider-spec.json" \
           --output "{{ .DIR_GENPROVIDER }}"
+        # Restore hand-maintained generated packages that are not derived from
+        # generator-config.yml. core_volume_attachment has a client-side string
+        # id and no matching read endpoint, so it cannot be produced by
+        # tfplugingen-openapi; it is checked into git and restored after the
+        # regeneration wipes DIR_GENPROVIDER.
+        git checkout -- "{{ .DIR_GENPROVIDER }}/resource_core_volume_attachment" 2>/dev/null || true
       # language=bash
       - |
         rm -Rf "{{ .DIR_PROVIDER }}/data_source"

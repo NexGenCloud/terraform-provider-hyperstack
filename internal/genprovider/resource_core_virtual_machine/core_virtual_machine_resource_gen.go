@@ -5,14 +5,13 @@ package resource_core_virtual_machine
 import (
 	"context"
 	"fmt"
-	"strings"
-
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -21,9 +20,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 )
 
 func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
@@ -32,8 +31,8 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			"assign_floating_ip": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "When this field is set to `true`, it attaches a [public IP address](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/public-ip)to the virtual machine, enabling internet accessibility.",
-				MarkdownDescription: "When this field is set to `true`, it attaches a [public IP address](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/public-ip)to the virtual machine, enabling internet accessibility.",
+				Description:         "When this field is set to `true`, it attaches a [public IP address](https://docs.hyperstack.cloud/docs/api-reference/core-resources/virtual-machines/floating-ip/) to the virtual machine, enabling internet accessibility.",
+				MarkdownDescription: "When this field is set to `true`, it attaches a [public IP address](https://docs.hyperstack.cloud/docs/api-reference/core-resources/virtual-machines/floating-ip/) to the virtual machine, enabling internet accessibility.",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
 				},
@@ -41,8 +40,8 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"callback_url": schema.StringAttribute{
 				Optional:            true,
-				Description:         "An optional URL where actions performed on the virtual machine will be sent. For additional information on event callbacks, [**click here**](https://infrahub-doc.nexgencloud.com/docs/features/webhooks-callbacks).",
-				MarkdownDescription: "An optional URL where actions performed on the virtual machine will be sent. For additional information on event callbacks, [**click here**](https://infrahub-doc.nexgencloud.com/docs/features/webhooks-callbacks).",
+				Description:         "An optional URL where actions performed on the virtual machine will be sent. For additional information on event callbacks, [**click here**](https://docs.hyperstack.cloud/docs/api-reference/core-resources/virtual-machines/callbacks-vms/).",
+				MarkdownDescription: "An optional URL where actions performed on the virtual machine will be sent. For additional information on event callbacks, [**click here**](https://docs.hyperstack.cloud/docs/api-reference/core-resources/virtual-machines/callbacks-vms/).",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -113,8 +112,8 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"environment_name": schema.StringAttribute{
 				Required:            true,
-				Description:         "The name of the [environment](https://infrahub-doc.nexgencloud.com/docs/features/environments-available-features) in which the virtual machine is to be created.",
-				MarkdownDescription: "The name of the [environment](https://infrahub-doc.nexgencloud.com/docs/features/environments-available-features) in which the virtual machine is to be created.",
+				Description:         "The name of the [environment](https://docs.hyperstack.cloud/docs/api-reference/core-resources/environments/) in which the virtual machine is to be created.",
+				MarkdownDescription: "The name of the [environment](https://docs.hyperstack.cloud/docs/api-reference/core-resources/environments/) in which the virtual machine is to be created.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -179,8 +178,8 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"flavor_name": schema.StringAttribute{
 				Required:            true,
-				Description:         "The name of the GPU hardware configuration ([flavor](https://infrahub-doc.nexgencloud.com/docs/hardware/flavors)) for the virtual machines being created.",
-				MarkdownDescription: "The name of the GPU hardware configuration ([flavor](https://infrahub-doc.nexgencloud.com/docs/hardware/flavors)) for the virtual machines being created.",
+				Description:         "The name of the GPU hardware configuration ([flavor](https://docs.hyperstack.cloud/docs/hardware/flavors)) for the virtual machines being created.",
+				MarkdownDescription: "The name of the GPU hardware configuration ([flavor](https://docs.hyperstack.cloud/docs/hardware/flavors)) for the virtual machines being created.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -219,16 +218,16 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			"image_name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The [operating system (OS) image](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/images) name designated for installation on the virtual machine.It also accepts custom, private images, created from [existing snapshots](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/custom-images).",
-				MarkdownDescription: "The [operating system (OS) image](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/images) name designated for installation on the virtual machine.It also accepts custom, private images, created from [existing snapshots](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/custom-images).",
+				Description:         "The [operating system (OS) image](https://docs.hyperstack.cloud/docs/virtual-machines/images) name designated for installation on the virtual machine.It also accepts custom, private images, created from [existing snapshots](https://docs.hyperstack.cloud/docs/virtual-machines/custom-images).",
+				MarkdownDescription: "The [operating system (OS) image](https://docs.hyperstack.cloud/docs/virtual-machines/images) name designated for installation on the virtual machine.It also accepts custom, private images, created from [existing snapshots](https://docs.hyperstack.cloud/docs/virtual-machines/custom-images).",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"key_name": schema.StringAttribute{
 				Required:            true,
-				Description:         "The name of the existing SSH key pair to be used for secure access to the virtual machine. For additional information on SSH key pairs, [**click here**](https://infrahub-doc.nexgencloud.com/docs/getting-started/create-keypair).",
-				MarkdownDescription: "The name of the existing SSH key pair to be used for secure access to the virtual machine. For additional information on SSH key pairs, [**click here**](https://infrahub-doc.nexgencloud.com/docs/getting-started/create-keypair).",
+				Description:         "The name of the existing SSH key pair to be used for secure access to the virtual machine. For additional information on SSH key pairs, [**click here**](https://docs.hyperstack.cloud/docs/api-reference/core-resources/keypairs/).",
+				MarkdownDescription: "The name of the existing SSH key pair to be used for secure access to the virtual machine. For additional information on SSH key pairs, [**click here**](https://docs.hyperstack.cloud/docs/api-reference/core-resources/keypairs/).",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -246,11 +245,11 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 				},
 				Computed: true,
 			},
-			"labels": schema.SetAttribute{
+			"labels": schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
-				Default:     setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})),
+				Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 			},
 			"locked": schema.BoolAttribute{
 				Computed: true,
@@ -385,12 +384,6 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 								stringplanmodifier.UseStateForUnknown(),
 							},
 						},
-						"virtual_machine_id": schema.Int64Attribute{
-							Computed: true,
-							PlanModifiers: []planmodifier.Int64{
-								int64planmodifier.UseStateForUnknown(),
-							},
-						},
 					},
 					CustomType: SecurityRulesType{
 						ObjectType: types.ObjectType{
@@ -412,8 +405,8 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 			"user_data": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Optional initialization configuration commands to manage the configuration of a virtual machine at launch using cloud-init scripts. For more information about custom VM configuration using cloud-init, [**click here**](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/initialization-configuration).",
-				MarkdownDescription: "Optional initialization configuration commands to manage the configuration of a virtual machine at launch using cloud-init scripts. For more information about custom VM configuration using cloud-init, [**click here**](https://infrahub-doc.nexgencloud.com/docs/virtual-machines/initialization-configuration).",
+				Description:         "Optional initialization configuration commands to manage the configuration of a virtual machine at launch using cloud-init scripts. For more information about custom VM configuration using cloud-init, [**click here**](https://docs.hyperstack.cloud/docs/virtual-machines/initialization-configuration).",
+				MarkdownDescription: "Optional initialization configuration commands to manage the configuration of a virtual machine at launch using cloud-init scripts. For more information about custom VM configuration using cloud-init, [**click here**](https://docs.hyperstack.cloud/docs/virtual-machines/initialization-configuration).",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -441,6 +434,18 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 							Computed: true,
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplace(),
+							},
+						},
+						"id": schema.Int64Attribute{
+							Computed: true,
+							PlanModifiers: []planmodifier.Int64{
+								int64planmodifier.RequiresReplace(),
+							},
+						},
+						"protected": schema.BoolAttribute{
+							Computed: true,
+							PlanModifiers: []planmodifier.Bool{
+								boolplanmodifier.RequiresReplace(),
 							},
 						},
 						"status": schema.StringAttribute{
@@ -566,7 +571,7 @@ type CoreVirtualMachineModel struct {
 	ImageName               types.String     `tfsdk:"image_name"`
 	KeyName                 types.String     `tfsdk:"key_name"`
 	Keypair                 KeypairValue     `tfsdk:"keypair"`
-	Labels                  types.Set        `tfsdk:"labels"`
+	Labels                  types.List       `tfsdk:"labels"`
 	Locked                  types.Bool       `tfsdk:"locked"`
 	Name                    types.String     `tfsdk:"name"`
 	Os                      types.String     `tfsdk:"os"`
@@ -3547,40 +3552,21 @@ func (t SecurityRulesType) ValueFromObject(ctx context.Context, in basetypes.Obj
 			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
 	}
 
-	virtualMachineIdAttribute, ok := attributes["virtual_machine_id"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`virtual_machine_id is missing from object`)
-
-		return nil, diags
-	}
-
-	virtualMachineIdVal, ok := virtualMachineIdAttribute.(basetypes.Int64Value)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`virtual_machine_id expected to be basetypes.Int64Value, was: %T`, virtualMachineIdAttribute))
-	}
-
 	if diags.HasError() {
 		return nil, diags
 	}
 
 	return SecurityRulesValue{
-		CreatedAt:        createdAtVal,
-		Direction:        directionVal,
-		Ethertype:        ethertypeVal,
-		Id:               idVal,
-		PortRangeMax:     portRangeMaxVal,
-		PortRangeMin:     portRangeMinVal,
-		Protocol:         protocolVal,
-		RemoteIpPrefix:   remoteIpPrefixVal,
-		Status:           statusVal,
-		VirtualMachineId: virtualMachineIdVal,
-		state:            attr.ValueStateKnown,
+		CreatedAt:      createdAtVal,
+		Direction:      directionVal,
+		Ethertype:      ethertypeVal,
+		Id:             idVal,
+		PortRangeMax:   portRangeMaxVal,
+		PortRangeMin:   portRangeMinVal,
+		Protocol:       protocolVal,
+		RemoteIpPrefix: remoteIpPrefixVal,
+		Status:         statusVal,
+		state:          attr.ValueStateKnown,
 	}, diags
 }
 
@@ -3809,40 +3795,21 @@ func NewSecurityRulesValue(attributeTypes map[string]attr.Type, attributes map[s
 			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
 	}
 
-	virtualMachineIdAttribute, ok := attributes["virtual_machine_id"]
-
-	if !ok {
-		diags.AddError(
-			"Attribute Missing",
-			`virtual_machine_id is missing from object`)
-
-		return NewSecurityRulesValueUnknown(), diags
-	}
-
-	virtualMachineIdVal, ok := virtualMachineIdAttribute.(basetypes.Int64Value)
-
-	if !ok {
-		diags.AddError(
-			"Attribute Wrong Type",
-			fmt.Sprintf(`virtual_machine_id expected to be basetypes.Int64Value, was: %T`, virtualMachineIdAttribute))
-	}
-
 	if diags.HasError() {
 		return NewSecurityRulesValueUnknown(), diags
 	}
 
 	return SecurityRulesValue{
-		CreatedAt:        createdAtVal,
-		Direction:        directionVal,
-		Ethertype:        ethertypeVal,
-		Id:               idVal,
-		PortRangeMax:     portRangeMaxVal,
-		PortRangeMin:     portRangeMinVal,
-		Protocol:         protocolVal,
-		RemoteIpPrefix:   remoteIpPrefixVal,
-		Status:           statusVal,
-		VirtualMachineId: virtualMachineIdVal,
-		state:            attr.ValueStateKnown,
+		CreatedAt:      createdAtVal,
+		Direction:      directionVal,
+		Ethertype:      ethertypeVal,
+		Id:             idVal,
+		PortRangeMax:   portRangeMaxVal,
+		PortRangeMin:   portRangeMinVal,
+		Protocol:       protocolVal,
+		RemoteIpPrefix: remoteIpPrefixVal,
+		Status:         statusVal,
+		state:          attr.ValueStateKnown,
 	}, diags
 }
 
@@ -3914,21 +3881,20 @@ func (t SecurityRulesType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = SecurityRulesValue{}
 
 type SecurityRulesValue struct {
-	CreatedAt        basetypes.StringValue `tfsdk:"created_at"`
-	Direction        basetypes.StringValue `tfsdk:"direction"`
-	Ethertype        basetypes.StringValue `tfsdk:"ethertype"`
-	Id               basetypes.Int64Value  `tfsdk:"id"`
-	PortRangeMax     basetypes.Int64Value  `tfsdk:"port_range_max"`
-	PortRangeMin     basetypes.Int64Value  `tfsdk:"port_range_min"`
-	Protocol         basetypes.StringValue `tfsdk:"protocol"`
-	RemoteIpPrefix   basetypes.StringValue `tfsdk:"remote_ip_prefix"`
-	Status           basetypes.StringValue `tfsdk:"status"`
-	VirtualMachineId basetypes.Int64Value  `tfsdk:"virtual_machine_id"`
-	state            attr.ValueState
+	CreatedAt      basetypes.StringValue `tfsdk:"created_at"`
+	Direction      basetypes.StringValue `tfsdk:"direction"`
+	Ethertype      basetypes.StringValue `tfsdk:"ethertype"`
+	Id             basetypes.Int64Value  `tfsdk:"id"`
+	PortRangeMax   basetypes.Int64Value  `tfsdk:"port_range_max"`
+	PortRangeMin   basetypes.Int64Value  `tfsdk:"port_range_min"`
+	Protocol       basetypes.StringValue `tfsdk:"protocol"`
+	RemoteIpPrefix basetypes.StringValue `tfsdk:"remote_ip_prefix"`
+	Status         basetypes.StringValue `tfsdk:"status"`
+	state          attr.ValueState
 }
 
 func (v SecurityRulesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 10)
+	attrTypes := make(map[string]tftypes.Type, 9)
 
 	var val tftypes.Value
 	var err error
@@ -3942,13 +3908,12 @@ func (v SecurityRulesValue) ToTerraformValue(ctx context.Context) (tftypes.Value
 	attrTypes["protocol"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["remote_ip_prefix"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["status"] = basetypes.StringType{}.TerraformType(ctx)
-	attrTypes["virtual_machine_id"] = basetypes.Int64Type{}.TerraformType(ctx)
 
 	objectType := tftypes.Object{AttributeTypes: attrTypes}
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 10)
+		vals := make(map[string]tftypes.Value, 9)
 
 		val, err = v.CreatedAt.ToTerraformValue(ctx)
 
@@ -4022,14 +3987,6 @@ func (v SecurityRulesValue) ToTerraformValue(ctx context.Context) (tftypes.Value
 
 		vals["status"] = val
 
-		val, err = v.VirtualMachineId.ToTerraformValue(ctx)
-
-		if err != nil {
-			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
-		}
-
-		vals["virtual_machine_id"] = val
-
 		if err := tftypes.ValidateValue(objectType, vals); err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
 		}
@@ -4060,16 +4017,15 @@ func (v SecurityRulesValue) ToObjectValue(ctx context.Context) (basetypes.Object
 	var diags diag.Diagnostics
 
 	attributeTypes := map[string]attr.Type{
-		"created_at":         basetypes.StringType{},
-		"direction":          basetypes.StringType{},
-		"ethertype":          basetypes.StringType{},
-		"id":                 basetypes.Int64Type{},
-		"port_range_max":     basetypes.Int64Type{},
-		"port_range_min":     basetypes.Int64Type{},
-		"protocol":           basetypes.StringType{},
-		"remote_ip_prefix":   basetypes.StringType{},
-		"status":             basetypes.StringType{},
-		"virtual_machine_id": basetypes.Int64Type{},
+		"created_at":       basetypes.StringType{},
+		"direction":        basetypes.StringType{},
+		"ethertype":        basetypes.StringType{},
+		"id":               basetypes.Int64Type{},
+		"port_range_max":   basetypes.Int64Type{},
+		"port_range_min":   basetypes.Int64Type{},
+		"protocol":         basetypes.StringType{},
+		"remote_ip_prefix": basetypes.StringType{},
+		"status":           basetypes.StringType{},
 	}
 
 	if v.IsNull() {
@@ -4083,16 +4039,15 @@ func (v SecurityRulesValue) ToObjectValue(ctx context.Context) (basetypes.Object
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
-			"created_at":         v.CreatedAt,
-			"direction":          v.Direction,
-			"ethertype":          v.Ethertype,
-			"id":                 v.Id,
-			"port_range_max":     v.PortRangeMax,
-			"port_range_min":     v.PortRangeMin,
-			"protocol":           v.Protocol,
-			"remote_ip_prefix":   v.RemoteIpPrefix,
-			"status":             v.Status,
-			"virtual_machine_id": v.VirtualMachineId,
+			"created_at":       v.CreatedAt,
+			"direction":        v.Direction,
+			"ethertype":        v.Ethertype,
+			"id":               v.Id,
+			"port_range_max":   v.PortRangeMax,
+			"port_range_min":   v.PortRangeMin,
+			"protocol":         v.Protocol,
+			"remote_ip_prefix": v.RemoteIpPrefix,
+			"status":           v.Status,
 		})
 
 	return objVal, diags
@@ -4149,10 +4104,6 @@ func (v SecurityRulesValue) Equal(o attr.Value) bool {
 		return false
 	}
 
-	if !v.VirtualMachineId.Equal(other.VirtualMachineId) {
-		return false
-	}
-
 	return true
 }
 
@@ -4166,16 +4117,15 @@ func (v SecurityRulesValue) Type(ctx context.Context) attr.Type {
 
 func (v SecurityRulesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"created_at":         basetypes.StringType{},
-		"direction":          basetypes.StringType{},
-		"ethertype":          basetypes.StringType{},
-		"id":                 basetypes.Int64Type{},
-		"port_range_max":     basetypes.Int64Type{},
-		"port_range_min":     basetypes.Int64Type{},
-		"protocol":           basetypes.StringType{},
-		"remote_ip_prefix":   basetypes.StringType{},
-		"status":             basetypes.StringType{},
-		"virtual_machine_id": basetypes.Int64Type{},
+		"created_at":       basetypes.StringType{},
+		"direction":        basetypes.StringType{},
+		"ethertype":        basetypes.StringType{},
+		"id":               basetypes.Int64Type{},
+		"port_range_max":   basetypes.Int64Type{},
+		"port_range_min":   basetypes.Int64Type{},
+		"protocol":         basetypes.StringType{},
+		"remote_ip_prefix": basetypes.StringType{},
+		"status":           basetypes.StringType{},
 	}
 }
 
@@ -4240,6 +4190,42 @@ func (t VolumeAttachmentsType) ValueFromObject(ctx context.Context, in basetypes
 			fmt.Sprintf(`device expected to be basetypes.StringValue, was: %T`, deviceAttribute))
 	}
 
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return nil, diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	protectedAttribute, ok := attributes["protected"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`protected is missing from object`)
+
+		return nil, diags
+	}
+
+	protectedVal, ok := protectedAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`protected expected to be basetypes.BoolValue, was: %T`, protectedAttribute))
+	}
+
 	statusAttribute, ok := attributes["status"]
 
 	if !ok {
@@ -4283,6 +4269,8 @@ func (t VolumeAttachmentsType) ValueFromObject(ctx context.Context, in basetypes
 	return VolumeAttachmentsValue{
 		CreatedAt: createdAtVal,
 		Device:    deviceVal,
+		Id:        idVal,
+		Protected: protectedVal,
 		Status:    statusVal,
 		Volume:    volumeVal,
 		state:     attr.ValueStateKnown,
@@ -4388,6 +4376,42 @@ func NewVolumeAttachmentsValue(attributeTypes map[string]attr.Type, attributes m
 			fmt.Sprintf(`device expected to be basetypes.StringValue, was: %T`, deviceAttribute))
 	}
 
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return NewVolumeAttachmentsValueUnknown(), diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	protectedAttribute, ok := attributes["protected"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`protected is missing from object`)
+
+		return NewVolumeAttachmentsValueUnknown(), diags
+	}
+
+	protectedVal, ok := protectedAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`protected expected to be basetypes.BoolValue, was: %T`, protectedAttribute))
+	}
+
 	statusAttribute, ok := attributes["status"]
 
 	if !ok {
@@ -4431,6 +4455,8 @@ func NewVolumeAttachmentsValue(attributeTypes map[string]attr.Type, attributes m
 	return VolumeAttachmentsValue{
 		CreatedAt: createdAtVal,
 		Device:    deviceVal,
+		Id:        idVal,
+		Protected: protectedVal,
 		Status:    statusVal,
 		Volume:    volumeVal,
 		state:     attr.ValueStateKnown,
@@ -4507,19 +4533,23 @@ var _ basetypes.ObjectValuable = VolumeAttachmentsValue{}
 type VolumeAttachmentsValue struct {
 	CreatedAt basetypes.StringValue `tfsdk:"created_at"`
 	Device    basetypes.StringValue `tfsdk:"device"`
+	Id        basetypes.Int64Value  `tfsdk:"id"`
+	Protected basetypes.BoolValue   `tfsdk:"protected"`
 	Status    basetypes.StringValue `tfsdk:"status"`
 	Volume    basetypes.ObjectValue `tfsdk:"volume"`
 	state     attr.ValueState
 }
 
 func (v VolumeAttachmentsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 4)
+	attrTypes := make(map[string]tftypes.Type, 6)
 
 	var val tftypes.Value
 	var err error
 
 	attrTypes["created_at"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["device"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["protected"] = basetypes.BoolType{}.TerraformType(ctx)
 	attrTypes["status"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["volume"] = basetypes.ObjectType{
 		AttrTypes: VolumeValue{}.AttributeTypes(ctx),
@@ -4529,7 +4559,7 @@ func (v VolumeAttachmentsValue) ToTerraformValue(ctx context.Context) (tftypes.V
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 4)
+		vals := make(map[string]tftypes.Value, 6)
 
 		val, err = v.CreatedAt.ToTerraformValue(ctx)
 
@@ -4546,6 +4576,22 @@ func (v VolumeAttachmentsValue) ToTerraformValue(ctx context.Context) (tftypes.V
 		}
 
 		vals["device"] = val
+
+		val, err = v.Id.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["id"] = val
+
+		val, err = v.Protected.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["protected"] = val
 
 		val, err = v.Status.ToTerraformValue(ctx)
 
@@ -4616,6 +4662,8 @@ func (v VolumeAttachmentsValue) ToObjectValue(ctx context.Context) (basetypes.Ob
 	attributeTypes := map[string]attr.Type{
 		"created_at": basetypes.StringType{},
 		"device":     basetypes.StringType{},
+		"id":         basetypes.Int64Type{},
+		"protected":  basetypes.BoolType{},
 		"status":     basetypes.StringType{},
 		"volume": basetypes.ObjectType{
 			AttrTypes: VolumeValue{}.AttributeTypes(ctx),
@@ -4635,6 +4683,8 @@ func (v VolumeAttachmentsValue) ToObjectValue(ctx context.Context) (basetypes.Ob
 		map[string]attr.Value{
 			"created_at": v.CreatedAt,
 			"device":     v.Device,
+			"id":         v.Id,
+			"protected":  v.Protected,
 			"status":     v.Status,
 			"volume":     volume,
 		})
@@ -4665,6 +4715,14 @@ func (v VolumeAttachmentsValue) Equal(o attr.Value) bool {
 		return false
 	}
 
+	if !v.Id.Equal(other.Id) {
+		return false
+	}
+
+	if !v.Protected.Equal(other.Protected) {
+		return false
+	}
+
 	if !v.Status.Equal(other.Status) {
 		return false
 	}
@@ -4688,6 +4746,8 @@ func (v VolumeAttachmentsValue) AttributeTypes(ctx context.Context) map[string]a
 	return map[string]attr.Type{
 		"created_at": basetypes.StringType{},
 		"device":     basetypes.StringType{},
+		"id":         basetypes.Int64Type{},
+		"protected":  basetypes.BoolType{},
 		"status":     basetypes.StringType{},
 		"volume": basetypes.ObjectType{
 			AttrTypes: VolumeValue{}.AttributeTypes(ctx),

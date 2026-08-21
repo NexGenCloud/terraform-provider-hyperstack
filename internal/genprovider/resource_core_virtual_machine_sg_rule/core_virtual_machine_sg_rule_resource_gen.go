@@ -112,7 +112,8 @@ func CoreVirtualMachineSgRuleResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"virtual_machine_id": schema.Int64Attribute{
-				Required: true,
+				Optional: true,
+				Computed: true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},

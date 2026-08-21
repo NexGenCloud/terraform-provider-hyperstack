@@ -5,8 +5,6 @@ package resource_core_cluster
 import (
 	"context"
 	"fmt"
-	"strings"
-
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -19,9 +17,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 )
 
 func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
@@ -33,6 +31,17 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 			"created_at": schema.StringAttribute{
 				Computed: true,
 			},
+			"deployment_mode": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Validators: []validator.String{
+					stringvalidator.OneOf(
+						"full",
+						"standard",
+					),
+				},
+				Default: stringdefault.StaticString("full"),
+			},
 			"environment_name": schema.StringAttribute{
 				Required: true,
 				PlanModifiers: []planmodifier.String{
@@ -42,8 +51,8 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 			"id": schema.Int64Attribute{
 				Computed: true,
 			},
-			"image_name": schema.StringAttribute{
-				Required: true,
+			"is_reconciling": schema.BoolAttribute{
+				Computed: true,
 			},
 			"keypair_name": schema.StringAttribute{
 				Required: true,
@@ -60,30 +69,14 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"master_flavor_name": schema.StringAttribute{
-				Required: true,
-			},
 			"master_count": schema.Int64Attribute{
 				Optional: true,
 				Computed: true,
 				Validators: []validator.Int64{
 					int64validator.Between(2, 3),
 				},
-				Default: int64default.StaticInt64(2),
 			},
-			"name": schema.StringAttribute{
-				Required: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"node_count": schema.Int64Attribute{
-				Required: true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
-				},
-			},
-			"node_flavor": schema.SingleNestedAttribute{
+			"master_flavor": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
 					"cpu": schema.Int64Attribute{
 						Computed: true,
@@ -92,15 +85,6 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 						Computed: true,
 					},
 					"ephemeral": schema.Int64Attribute{
-						Computed: true,
-					},
-					"features": schema.SingleNestedAttribute{
-						Attributes: map[string]schema.Attribute{},
-						CustomType: FeaturesType{
-							ObjectType: types.ObjectType{
-								AttrTypes: FeaturesValue{}.AttributeTypes(ctx),
-							},
-						},
 						Computed: true,
 					},
 					"gpu": schema.StringAttribute{
@@ -112,24 +96,6 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 					"id": schema.Int64Attribute{
 						Computed: true,
 					},
-					"labels": schema.ListNestedAttribute{
-						NestedObject: schema.NestedAttributeObject{
-							Attributes: map[string]schema.Attribute{
-								"id": schema.Int64Attribute{
-									Computed: true,
-								},
-								"label": schema.StringAttribute{
-									Computed: true,
-								},
-							},
-							CustomType: LabelsType{
-								ObjectType: types.ObjectType{
-									AttrTypes: LabelsValue{}.AttributeTypes(ctx),
-								},
-							},
-						},
-						Computed: true,
-					},
 					"name": schema.StringAttribute{
 						Computed: true,
 					},
@@ -137,23 +103,259 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 						Computed: true,
 					},
 				},
-				CustomType: NodeFlavorType{
+				CustomType: MasterFlavorType{
 					ObjectType: types.ObjectType{
-						AttrTypes: NodeFlavorValue{}.AttributeTypes(ctx),
+						AttrTypes: MasterFlavorValue{}.AttributeTypes(ctx),
 					},
 				},
 				Computed: true,
 			},
-			"node_flavor_name": schema.StringAttribute{
+			"master_flavor_name": schema.StringAttribute{
 				Required: true,
 			},
-			"deployment_mode": schema.StringAttribute{
+			"name": schema.StringAttribute{
+				Required: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"node_count": schema.Int64Attribute{
 				Optional: true,
 				Computed: true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("full", "standard"),
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
 				},
-				Default: stringdefault.StaticString("full"),
+			},
+			"node_flavor_name": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+			},
+			"node_groups": schema.ListNestedAttribute{
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"count": schema.Int64Attribute{
+							Optional: true,
+							Computed: true,
+							Validators: []validator.Int64{
+								int64validator.AtLeast(1),
+							},
+						},
+						"created_at": schema.StringAttribute{
+							Computed: true,
+						},
+						"firewall_ids": schema.ListAttribute{
+							ElementType:         types.Int64Type,
+							Optional:            true,
+							Computed:            true,
+							Description:         "IDs of the firewalls to apply to all nodes in this node group",
+							MarkdownDescription: "IDs of the firewalls to apply to all nodes in this node group",
+						},
+						"firewalls": schema.ListNestedAttribute{
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"id": schema.Int64Attribute{
+										Computed: true,
+									},
+									"name": schema.StringAttribute{
+										Computed: true,
+									},
+									"status": schema.StringAttribute{
+										Computed: true,
+									},
+								},
+								CustomType: FirewallsType{
+									ObjectType: types.ObjectType{
+										AttrTypes: FirewallsValue{}.AttributeTypes(ctx),
+									},
+								},
+							},
+							Computed: true,
+						},
+						"flavor": schema.SingleNestedAttribute{
+							Attributes: map[string]schema.Attribute{
+								"cpu": schema.Int64Attribute{
+									Computed: true,
+								},
+								"disk": schema.Int64Attribute{
+									Computed: true,
+								},
+								"ephemeral": schema.Int64Attribute{
+									Computed: true,
+								},
+								"features": schema.SingleNestedAttribute{
+									Attributes: map[string]schema.Attribute{},
+									CustomType: FeaturesType{
+										ObjectType: types.ObjectType{
+											AttrTypes: FeaturesValue{}.AttributeTypes(ctx),
+										},
+									},
+									Computed: true,
+								},
+								"gpu": schema.StringAttribute{
+									Computed: true,
+								},
+								"gpu_count": schema.Int64Attribute{
+									Computed: true,
+								},
+								"id": schema.Int64Attribute{
+									Computed: true,
+								},
+								"labels": schema.ListNestedAttribute{
+									NestedObject: schema.NestedAttributeObject{
+										Attributes: map[string]schema.Attribute{
+											"id": schema.Int64Attribute{
+												Computed: true,
+											},
+											"label": schema.StringAttribute{
+												Computed: true,
+											},
+										},
+										CustomType: LabelsType{
+											ObjectType: types.ObjectType{
+												AttrTypes: LabelsValue{}.AttributeTypes(ctx),
+											},
+										},
+									},
+									Computed: true,
+								},
+								"name": schema.StringAttribute{
+									Computed: true,
+								},
+								"ram": schema.NumberAttribute{
+									Computed: true,
+								},
+							},
+							CustomType: FlavorType{
+								ObjectType: types.ObjectType{
+									AttrTypes: FlavorValue{}.AttributeTypes(ctx),
+								},
+							},
+							Computed: true,
+						},
+						"flavor_name": schema.StringAttribute{
+							Required: true,
+						},
+						"id": schema.Int64Attribute{
+							Computed: true,
+						},
+						"max_count": schema.Int64Attribute{
+							Optional: true,
+							Computed: true,
+							Validators: []validator.Int64{
+								int64validator.AtMost(20),
+							},
+						},
+						"min_count": schema.Int64Attribute{
+							Optional: true,
+							Computed: true,
+							Validators: []validator.Int64{
+								int64validator.AtLeast(1),
+							},
+						},
+						"name": schema.StringAttribute{
+							Required: true,
+							Validators: []validator.String{
+								stringvalidator.LengthAtMost(20),
+							},
+						},
+						"role": schema.StringAttribute{
+							Optional: true,
+							Computed: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf(
+									"worker",
+								),
+							},
+							Default: stringdefault.StaticString("worker"),
+						},
+						"updated_at": schema.StringAttribute{
+							Computed: true,
+						},
+					},
+					CustomType: NodeGroupsType{
+						ObjectType: types.ObjectType{
+							AttrTypes: NodeGroupsValue{}.AttributeTypes(ctx),
+						},
+					},
+				},
+				Optional: true,
+				Computed: true,
+			},
+			"nodes": schema.ListNestedAttribute{
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"created_at": schema.StringAttribute{
+							Computed: true,
+						},
+						"id": schema.Int64Attribute{
+							Computed: true,
+						},
+						"instance": schema.SingleNestedAttribute{
+							Attributes: map[string]schema.Attribute{
+								"contract_id": schema.Int64Attribute{
+									Computed: true,
+								},
+								"fixed_ip": schema.StringAttribute{
+									Computed: true,
+								},
+								"floating_ip": schema.StringAttribute{
+									Computed: true,
+								},
+								"floating_ip_status": schema.StringAttribute{
+									Computed: true,
+								},
+								"id": schema.Int64Attribute{
+									Computed: true,
+								},
+								"image_id": schema.Int64Attribute{
+									Computed: true,
+								},
+								"name": schema.StringAttribute{
+									Computed: true,
+								},
+								"status": schema.StringAttribute{
+									Computed: true,
+								},
+							},
+							CustomType: InstanceType{
+								ObjectType: types.ObjectType{
+									AttrTypes: InstanceValue{}.AttributeTypes(ctx),
+								},
+							},
+							Computed: true,
+						},
+						"is_bastion": schema.BoolAttribute{
+							Computed: true,
+						},
+						"node_group_id": schema.Int64Attribute{
+							Computed: true,
+						},
+						"node_group_name": schema.StringAttribute{
+							Computed: true,
+						},
+						"requires_public_ip": schema.BoolAttribute{
+							Computed: true,
+						},
+						"role": schema.StringAttribute{
+							Computed: true,
+						},
+						"status": schema.StringAttribute{
+							Computed: true,
+						},
+						"status_reason": schema.StringAttribute{
+							Computed: true,
+						},
+						"updated_at": schema.StringAttribute{
+							Computed: true,
+						},
+					},
+					CustomType: NodesType{
+						ObjectType: types.ObjectType{
+							AttrTypes: NodesValue{}.AttributeTypes(ctx),
+						},
+					},
+				},
+				Computed: true,
 			},
 			"status": schema.StringAttribute{
 				Computed: true,
@@ -166,33 +368,35 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type CoreClusterModel struct {
-	ApiAddress        types.String    `tfsdk:"api_address"`
-	CreatedAt         types.String    `tfsdk:"created_at"`
-	EnvironmentName   types.String    `tfsdk:"environment_name"`
-	Id                types.Int64     `tfsdk:"id"`
-	ImageName         types.String    `tfsdk:"image_name"`
-	KeypairName       types.String    `tfsdk:"keypair_name"`
-	KubeConfig        types.String    `tfsdk:"kube_config"`
-	KubernetesVersion types.String    `tfsdk:"kubernetes_version"`
-	MasterFlavorName  types.String    `tfsdk:"master_flavor_name"`
-	MasterCount       types.Int64     `tfsdk:"master_count"`
-	Name              types.String    `tfsdk:"name"`
-	NodeCount         types.Int64     `tfsdk:"node_count"`
-	NodeFlavor        NodeFlavorValue `tfsdk:"node_flavor"`
-	NodeFlavorName    types.String    `tfsdk:"node_flavor_name"`
-	DeploymentMode    types.String    `tfsdk:"deployment_mode"`
-	Status            types.String    `tfsdk:"status"`
-	StatusReason      types.String    `tfsdk:"status_reason"`
+	ApiAddress        types.String      `tfsdk:"api_address"`
+	CreatedAt         types.String      `tfsdk:"created_at"`
+	DeploymentMode    types.String      `tfsdk:"deployment_mode"`
+	EnvironmentName   types.String      `tfsdk:"environment_name"`
+	Id                types.Int64       `tfsdk:"id"`
+	IsReconciling     types.Bool        `tfsdk:"is_reconciling"`
+	KeypairName       types.String      `tfsdk:"keypair_name"`
+	KubeConfig        types.String      `tfsdk:"kube_config"`
+	KubernetesVersion types.String      `tfsdk:"kubernetes_version"`
+	MasterCount       types.Int64       `tfsdk:"master_count"`
+	MasterFlavor      MasterFlavorValue `tfsdk:"master_flavor"`
+	MasterFlavorName  types.String      `tfsdk:"master_flavor_name"`
+	Name              types.String      `tfsdk:"name"`
+	NodeCount         types.Int64       `tfsdk:"node_count"`
+	NodeFlavorName    types.String      `tfsdk:"node_flavor_name"`
+	NodeGroups        types.List        `tfsdk:"node_groups"`
+	Nodes             types.List        `tfsdk:"nodes"`
+	Status            types.String      `tfsdk:"status"`
+	StatusReason      types.String      `tfsdk:"status_reason"`
 }
 
-var _ basetypes.ObjectTypable = NodeFlavorType{}
+var _ basetypes.ObjectTypable = MasterFlavorType{}
 
-type NodeFlavorType struct {
+type MasterFlavorType struct {
 	basetypes.ObjectType
 }
 
-func (t NodeFlavorType) Equal(o attr.Type) bool {
-	other, ok := o.(NodeFlavorType)
+func (t MasterFlavorType) Equal(o attr.Type) bool {
+	other, ok := o.(MasterFlavorType)
 
 	if !ok {
 		return false
@@ -201,11 +405,2186 @@ func (t NodeFlavorType) Equal(o attr.Type) bool {
 	return t.ObjectType.Equal(other.ObjectType)
 }
 
-func (t NodeFlavorType) String() string {
-	return "NodeFlavorType"
+func (t MasterFlavorType) String() string {
+	return "MasterFlavorType"
 }
 
-func (t NodeFlavorType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+func (t MasterFlavorType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	cpuAttribute, ok := attributes["cpu"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`cpu is missing from object`)
+
+		return nil, diags
+	}
+
+	cpuVal, ok := cpuAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`cpu expected to be basetypes.Int64Value, was: %T`, cpuAttribute))
+	}
+
+	diskAttribute, ok := attributes["disk"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`disk is missing from object`)
+
+		return nil, diags
+	}
+
+	diskVal, ok := diskAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`disk expected to be basetypes.Int64Value, was: %T`, diskAttribute))
+	}
+
+	ephemeralAttribute, ok := attributes["ephemeral"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`ephemeral is missing from object`)
+
+		return nil, diags
+	}
+
+	ephemeralVal, ok := ephemeralAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`ephemeral expected to be basetypes.Int64Value, was: %T`, ephemeralAttribute))
+	}
+
+	gpuAttribute, ok := attributes["gpu"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`gpu is missing from object`)
+
+		return nil, diags
+	}
+
+	gpuVal, ok := gpuAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`gpu expected to be basetypes.StringValue, was: %T`, gpuAttribute))
+	}
+
+	gpuCountAttribute, ok := attributes["gpu_count"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`gpu_count is missing from object`)
+
+		return nil, diags
+	}
+
+	gpuCountVal, ok := gpuCountAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`gpu_count expected to be basetypes.Int64Value, was: %T`, gpuCountAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return nil, diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	nameAttribute, ok := attributes["name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`name is missing from object`)
+
+		return nil, diags
+	}
+
+	nameVal, ok := nameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
+	}
+
+	ramAttribute, ok := attributes["ram"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`ram is missing from object`)
+
+		return nil, diags
+	}
+
+	ramVal, ok := ramAttribute.(basetypes.NumberValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`ram expected to be basetypes.NumberValue, was: %T`, ramAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return MasterFlavorValue{
+		Cpu:       cpuVal,
+		Disk:      diskVal,
+		Ephemeral: ephemeralVal,
+		Gpu:       gpuVal,
+		GpuCount:  gpuCountVal,
+		Id:        idVal,
+		Name:      nameVal,
+		Ram:       ramVal,
+		state:     attr.ValueStateKnown,
+	}, diags
+}
+
+func NewMasterFlavorValueNull() MasterFlavorValue {
+	return MasterFlavorValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewMasterFlavorValueUnknown() MasterFlavorValue {
+	return MasterFlavorValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewMasterFlavorValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (MasterFlavorValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing MasterFlavorValue Attribute Value",
+				"While creating a MasterFlavorValue value, a missing attribute value was detected. "+
+					"A MasterFlavorValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("MasterFlavorValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid MasterFlavorValue Attribute Type",
+				"While creating a MasterFlavorValue value, an invalid attribute value was detected. "+
+					"A MasterFlavorValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("MasterFlavorValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("MasterFlavorValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra MasterFlavorValue Attribute Value",
+				"While creating a MasterFlavorValue value, an extra attribute value was detected. "+
+					"A MasterFlavorValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra MasterFlavorValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewMasterFlavorValueUnknown(), diags
+	}
+
+	cpuAttribute, ok := attributes["cpu"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`cpu is missing from object`)
+
+		return NewMasterFlavorValueUnknown(), diags
+	}
+
+	cpuVal, ok := cpuAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`cpu expected to be basetypes.Int64Value, was: %T`, cpuAttribute))
+	}
+
+	diskAttribute, ok := attributes["disk"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`disk is missing from object`)
+
+		return NewMasterFlavorValueUnknown(), diags
+	}
+
+	diskVal, ok := diskAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`disk expected to be basetypes.Int64Value, was: %T`, diskAttribute))
+	}
+
+	ephemeralAttribute, ok := attributes["ephemeral"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`ephemeral is missing from object`)
+
+		return NewMasterFlavorValueUnknown(), diags
+	}
+
+	ephemeralVal, ok := ephemeralAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`ephemeral expected to be basetypes.Int64Value, was: %T`, ephemeralAttribute))
+	}
+
+	gpuAttribute, ok := attributes["gpu"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`gpu is missing from object`)
+
+		return NewMasterFlavorValueUnknown(), diags
+	}
+
+	gpuVal, ok := gpuAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`gpu expected to be basetypes.StringValue, was: %T`, gpuAttribute))
+	}
+
+	gpuCountAttribute, ok := attributes["gpu_count"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`gpu_count is missing from object`)
+
+		return NewMasterFlavorValueUnknown(), diags
+	}
+
+	gpuCountVal, ok := gpuCountAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`gpu_count expected to be basetypes.Int64Value, was: %T`, gpuCountAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return NewMasterFlavorValueUnknown(), diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	nameAttribute, ok := attributes["name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`name is missing from object`)
+
+		return NewMasterFlavorValueUnknown(), diags
+	}
+
+	nameVal, ok := nameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
+	}
+
+	ramAttribute, ok := attributes["ram"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`ram is missing from object`)
+
+		return NewMasterFlavorValueUnknown(), diags
+	}
+
+	ramVal, ok := ramAttribute.(basetypes.NumberValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`ram expected to be basetypes.NumberValue, was: %T`, ramAttribute))
+	}
+
+	if diags.HasError() {
+		return NewMasterFlavorValueUnknown(), diags
+	}
+
+	return MasterFlavorValue{
+		Cpu:       cpuVal,
+		Disk:      diskVal,
+		Ephemeral: ephemeralVal,
+		Gpu:       gpuVal,
+		GpuCount:  gpuCountVal,
+		Id:        idVal,
+		Name:      nameVal,
+		Ram:       ramVal,
+		state:     attr.ValueStateKnown,
+	}, diags
+}
+
+func NewMasterFlavorValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) MasterFlavorValue {
+	object, diags := NewMasterFlavorValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewMasterFlavorValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t MasterFlavorType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewMasterFlavorValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewMasterFlavorValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewMasterFlavorValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewMasterFlavorValueMust(MasterFlavorValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t MasterFlavorType) ValueType(ctx context.Context) attr.Value {
+	return MasterFlavorValue{}
+}
+
+var _ basetypes.ObjectValuable = MasterFlavorValue{}
+
+type MasterFlavorValue struct {
+	Cpu       basetypes.Int64Value  `tfsdk:"cpu"`
+	Disk      basetypes.Int64Value  `tfsdk:"disk"`
+	Ephemeral basetypes.Int64Value  `tfsdk:"ephemeral"`
+	Gpu       basetypes.StringValue `tfsdk:"gpu"`
+	GpuCount  basetypes.Int64Value  `tfsdk:"gpu_count"`
+	Id        basetypes.Int64Value  `tfsdk:"id"`
+	Name      basetypes.StringValue `tfsdk:"name"`
+	Ram       basetypes.NumberValue `tfsdk:"ram"`
+	state     attr.ValueState
+}
+
+func (v MasterFlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 8)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["cpu"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["disk"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["ephemeral"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["gpu"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["gpu_count"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["ram"] = basetypes.NumberType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 8)
+
+		val, err = v.Cpu.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["cpu"] = val
+
+		val, err = v.Disk.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["disk"] = val
+
+		val, err = v.Ephemeral.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["ephemeral"] = val
+
+		val, err = v.Gpu.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["gpu"] = val
+
+		val, err = v.GpuCount.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["gpu_count"] = val
+
+		val, err = v.Id.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["id"] = val
+
+		val, err = v.Name.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["name"] = val
+
+		val, err = v.Ram.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["ram"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v MasterFlavorValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v MasterFlavorValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v MasterFlavorValue) String() string {
+	return "MasterFlavorValue"
+}
+
+func (v MasterFlavorValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributeTypes := map[string]attr.Type{
+		"cpu":       basetypes.Int64Type{},
+		"disk":      basetypes.Int64Type{},
+		"ephemeral": basetypes.Int64Type{},
+		"gpu":       basetypes.StringType{},
+		"gpu_count": basetypes.Int64Type{},
+		"id":        basetypes.Int64Type{},
+		"name":      basetypes.StringType{},
+		"ram":       basetypes.NumberType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"cpu":       v.Cpu,
+			"disk":      v.Disk,
+			"ephemeral": v.Ephemeral,
+			"gpu":       v.Gpu,
+			"gpu_count": v.GpuCount,
+			"id":        v.Id,
+			"name":      v.Name,
+			"ram":       v.Ram,
+		})
+
+	return objVal, diags
+}
+
+func (v MasterFlavorValue) Equal(o attr.Value) bool {
+	other, ok := o.(MasterFlavorValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.Cpu.Equal(other.Cpu) {
+		return false
+	}
+
+	if !v.Disk.Equal(other.Disk) {
+		return false
+	}
+
+	if !v.Ephemeral.Equal(other.Ephemeral) {
+		return false
+	}
+
+	if !v.Gpu.Equal(other.Gpu) {
+		return false
+	}
+
+	if !v.GpuCount.Equal(other.GpuCount) {
+		return false
+	}
+
+	if !v.Id.Equal(other.Id) {
+		return false
+	}
+
+	if !v.Name.Equal(other.Name) {
+		return false
+	}
+
+	if !v.Ram.Equal(other.Ram) {
+		return false
+	}
+
+	return true
+}
+
+func (v MasterFlavorValue) Type(ctx context.Context) attr.Type {
+	return MasterFlavorType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v MasterFlavorValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"cpu":       basetypes.Int64Type{},
+		"disk":      basetypes.Int64Type{},
+		"ephemeral": basetypes.Int64Type{},
+		"gpu":       basetypes.StringType{},
+		"gpu_count": basetypes.Int64Type{},
+		"id":        basetypes.Int64Type{},
+		"name":      basetypes.StringType{},
+		"ram":       basetypes.NumberType{},
+	}
+}
+
+var _ basetypes.ObjectTypable = NodeGroupsType{}
+
+type NodeGroupsType struct {
+	basetypes.ObjectType
+}
+
+func (t NodeGroupsType) Equal(o attr.Type) bool {
+	other, ok := o.(NodeGroupsType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t NodeGroupsType) String() string {
+	return "NodeGroupsType"
+}
+
+func (t NodeGroupsType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	countAttribute, ok := attributes["count"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`count is missing from object`)
+
+		return nil, diags
+	}
+
+	countVal, ok := countAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`count expected to be basetypes.Int64Value, was: %T`, countAttribute))
+	}
+
+	createdAtAttribute, ok := attributes["created_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`created_at is missing from object`)
+
+		return nil, diags
+	}
+
+	createdAtVal, ok := createdAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
+	}
+
+	firewallIdsAttribute, ok := attributes["firewall_ids"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`firewall_ids is missing from object`)
+
+		return nil, diags
+	}
+
+	firewallIdsVal, ok := firewallIdsAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`firewall_ids expected to be basetypes.ListValue, was: %T`, firewallIdsAttribute))
+	}
+
+	firewallsAttribute, ok := attributes["firewalls"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`firewalls is missing from object`)
+
+		return nil, diags
+	}
+
+	firewallsVal, ok := firewallsAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`firewalls expected to be basetypes.ListValue, was: %T`, firewallsAttribute))
+	}
+
+	flavorAttribute, ok := attributes["flavor"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`flavor is missing from object`)
+
+		return nil, diags
+	}
+
+	flavorVal, ok := flavorAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`flavor expected to be basetypes.ObjectValue, was: %T`, flavorAttribute))
+	}
+
+	flavorNameAttribute, ok := attributes["flavor_name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`flavor_name is missing from object`)
+
+		return nil, diags
+	}
+
+	flavorNameVal, ok := flavorNameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`flavor_name expected to be basetypes.StringValue, was: %T`, flavorNameAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return nil, diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	maxCountAttribute, ok := attributes["max_count"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`max_count is missing from object`)
+
+		return nil, diags
+	}
+
+	maxCountVal, ok := maxCountAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`max_count expected to be basetypes.Int64Value, was: %T`, maxCountAttribute))
+	}
+
+	minCountAttribute, ok := attributes["min_count"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`min_count is missing from object`)
+
+		return nil, diags
+	}
+
+	minCountVal, ok := minCountAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`min_count expected to be basetypes.Int64Value, was: %T`, minCountAttribute))
+	}
+
+	nameAttribute, ok := attributes["name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`name is missing from object`)
+
+		return nil, diags
+	}
+
+	nameVal, ok := nameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
+	}
+
+	roleAttribute, ok := attributes["role"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`role is missing from object`)
+
+		return nil, diags
+	}
+
+	roleVal, ok := roleAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`role expected to be basetypes.StringValue, was: %T`, roleAttribute))
+	}
+
+	updatedAtAttribute, ok := attributes["updated_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`updated_at is missing from object`)
+
+		return nil, diags
+	}
+
+	updatedAtVal, ok := updatedAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`updated_at expected to be basetypes.StringValue, was: %T`, updatedAtAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return NodeGroupsValue{
+		Count:       countVal,
+		CreatedAt:   createdAtVal,
+		FirewallIds: firewallIdsVal,
+		Firewalls:   firewallsVal,
+		Flavor:      flavorVal,
+		FlavorName:  flavorNameVal,
+		Id:          idVal,
+		MaxCount:    maxCountVal,
+		MinCount:    minCountVal,
+		Name:        nameVal,
+		Role:        roleVal,
+		UpdatedAt:   updatedAtVal,
+		state:       attr.ValueStateKnown,
+	}, diags
+}
+
+func NewNodeGroupsValueNull() NodeGroupsValue {
+	return NodeGroupsValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewNodeGroupsValueUnknown() NodeGroupsValue {
+	return NodeGroupsValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewNodeGroupsValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (NodeGroupsValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing NodeGroupsValue Attribute Value",
+				"While creating a NodeGroupsValue value, a missing attribute value was detected. "+
+					"A NodeGroupsValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("NodeGroupsValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid NodeGroupsValue Attribute Type",
+				"While creating a NodeGroupsValue value, an invalid attribute value was detected. "+
+					"A NodeGroupsValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("NodeGroupsValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("NodeGroupsValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra NodeGroupsValue Attribute Value",
+				"While creating a NodeGroupsValue value, an extra attribute value was detected. "+
+					"A NodeGroupsValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra NodeGroupsValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	countAttribute, ok := attributes["count"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`count is missing from object`)
+
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	countVal, ok := countAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`count expected to be basetypes.Int64Value, was: %T`, countAttribute))
+	}
+
+	createdAtAttribute, ok := attributes["created_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`created_at is missing from object`)
+
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	createdAtVal, ok := createdAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
+	}
+
+	firewallIdsAttribute, ok := attributes["firewall_ids"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`firewall_ids is missing from object`)
+
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	firewallIdsVal, ok := firewallIdsAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`firewall_ids expected to be basetypes.ListValue, was: %T`, firewallIdsAttribute))
+	}
+
+	firewallsAttribute, ok := attributes["firewalls"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`firewalls is missing from object`)
+
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	firewallsVal, ok := firewallsAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`firewalls expected to be basetypes.ListValue, was: %T`, firewallsAttribute))
+	}
+
+	flavorAttribute, ok := attributes["flavor"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`flavor is missing from object`)
+
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	flavorVal, ok := flavorAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`flavor expected to be basetypes.ObjectValue, was: %T`, flavorAttribute))
+	}
+
+	flavorNameAttribute, ok := attributes["flavor_name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`flavor_name is missing from object`)
+
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	flavorNameVal, ok := flavorNameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`flavor_name expected to be basetypes.StringValue, was: %T`, flavorNameAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	maxCountAttribute, ok := attributes["max_count"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`max_count is missing from object`)
+
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	maxCountVal, ok := maxCountAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`max_count expected to be basetypes.Int64Value, was: %T`, maxCountAttribute))
+	}
+
+	minCountAttribute, ok := attributes["min_count"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`min_count is missing from object`)
+
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	minCountVal, ok := minCountAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`min_count expected to be basetypes.Int64Value, was: %T`, minCountAttribute))
+	}
+
+	nameAttribute, ok := attributes["name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`name is missing from object`)
+
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	nameVal, ok := nameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
+	}
+
+	roleAttribute, ok := attributes["role"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`role is missing from object`)
+
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	roleVal, ok := roleAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`role expected to be basetypes.StringValue, was: %T`, roleAttribute))
+	}
+
+	updatedAtAttribute, ok := attributes["updated_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`updated_at is missing from object`)
+
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	updatedAtVal, ok := updatedAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`updated_at expected to be basetypes.StringValue, was: %T`, updatedAtAttribute))
+	}
+
+	if diags.HasError() {
+		return NewNodeGroupsValueUnknown(), diags
+	}
+
+	return NodeGroupsValue{
+		Count:       countVal,
+		CreatedAt:   createdAtVal,
+		FirewallIds: firewallIdsVal,
+		Firewalls:   firewallsVal,
+		Flavor:      flavorVal,
+		FlavorName:  flavorNameVal,
+		Id:          idVal,
+		MaxCount:    maxCountVal,
+		MinCount:    minCountVal,
+		Name:        nameVal,
+		Role:        roleVal,
+		UpdatedAt:   updatedAtVal,
+		state:       attr.ValueStateKnown,
+	}, diags
+}
+
+func NewNodeGroupsValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) NodeGroupsValue {
+	object, diags := NewNodeGroupsValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewNodeGroupsValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t NodeGroupsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewNodeGroupsValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewNodeGroupsValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewNodeGroupsValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewNodeGroupsValueMust(NodeGroupsValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t NodeGroupsType) ValueType(ctx context.Context) attr.Value {
+	return NodeGroupsValue{}
+}
+
+var _ basetypes.ObjectValuable = NodeGroupsValue{}
+
+type NodeGroupsValue struct {
+	Count       basetypes.Int64Value  `tfsdk:"count"`
+	CreatedAt   basetypes.StringValue `tfsdk:"created_at"`
+	FirewallIds basetypes.ListValue   `tfsdk:"firewall_ids"`
+	Firewalls   basetypes.ListValue   `tfsdk:"firewalls"`
+	Flavor      basetypes.ObjectValue `tfsdk:"flavor"`
+	FlavorName  basetypes.StringValue `tfsdk:"flavor_name"`
+	Id          basetypes.Int64Value  `tfsdk:"id"`
+	MaxCount    basetypes.Int64Value  `tfsdk:"max_count"`
+	MinCount    basetypes.Int64Value  `tfsdk:"min_count"`
+	Name        basetypes.StringValue `tfsdk:"name"`
+	Role        basetypes.StringValue `tfsdk:"role"`
+	UpdatedAt   basetypes.StringValue `tfsdk:"updated_at"`
+	state       attr.ValueState
+}
+
+func (v NodeGroupsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 12)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["count"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["created_at"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["firewall_ids"] = basetypes.ListType{
+		ElemType: types.Int64Type,
+	}.TerraformType(ctx)
+	attrTypes["firewalls"] = basetypes.ListType{
+		ElemType: FirewallsValue{}.Type(ctx),
+	}.TerraformType(ctx)
+	attrTypes["flavor"] = basetypes.ObjectType{
+		AttrTypes: FlavorValue{}.AttributeTypes(ctx),
+	}.TerraformType(ctx)
+	attrTypes["flavor_name"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["max_count"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["min_count"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["role"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["updated_at"] = basetypes.StringType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 12)
+
+		val, err = v.Count.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["count"] = val
+
+		val, err = v.CreatedAt.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["created_at"] = val
+
+		val, err = v.FirewallIds.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["firewall_ids"] = val
+
+		val, err = v.Firewalls.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["firewalls"] = val
+
+		val, err = v.Flavor.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["flavor"] = val
+
+		val, err = v.FlavorName.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["flavor_name"] = val
+
+		val, err = v.Id.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["id"] = val
+
+		val, err = v.MaxCount.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["max_count"] = val
+
+		val, err = v.MinCount.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["min_count"] = val
+
+		val, err = v.Name.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["name"] = val
+
+		val, err = v.Role.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["role"] = val
+
+		val, err = v.UpdatedAt.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["updated_at"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v NodeGroupsValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v NodeGroupsValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v NodeGroupsValue) String() string {
+	return "NodeGroupsValue"
+}
+
+func (v NodeGroupsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	firewalls := types.ListValueMust(
+		FirewallsType{
+			basetypes.ObjectType{
+				AttrTypes: FirewallsValue{}.AttributeTypes(ctx),
+			},
+		},
+		v.Firewalls.Elements(),
+	)
+
+	if v.Firewalls.IsNull() {
+		firewalls = types.ListNull(
+			FirewallsType{
+				basetypes.ObjectType{
+					AttrTypes: FirewallsValue{}.AttributeTypes(ctx),
+				},
+			},
+		)
+	}
+
+	if v.Firewalls.IsUnknown() {
+		firewalls = types.ListUnknown(
+			FirewallsType{
+				basetypes.ObjectType{
+					AttrTypes: FirewallsValue{}.AttributeTypes(ctx),
+				},
+			},
+		)
+	}
+
+	var flavor basetypes.ObjectValue
+
+	if v.Flavor.IsNull() {
+		flavor = types.ObjectNull(
+			FlavorValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if v.Flavor.IsUnknown() {
+		flavor = types.ObjectUnknown(
+			FlavorValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if !v.Flavor.IsNull() && !v.Flavor.IsUnknown() {
+		flavor = types.ObjectValueMust(
+			FlavorValue{}.AttributeTypes(ctx),
+			v.Flavor.Attributes(),
+		)
+	}
+
+	var firewallIdsVal basetypes.ListValue
+	switch {
+	case v.FirewallIds.IsUnknown():
+		firewallIdsVal = types.ListUnknown(types.Int64Type)
+	case v.FirewallIds.IsNull():
+		firewallIdsVal = types.ListNull(types.Int64Type)
+	default:
+		var d diag.Diagnostics
+		firewallIdsVal, d = types.ListValue(types.Int64Type, v.FirewallIds.Elements())
+		diags.Append(d...)
+	}
+
+	if diags.HasError() {
+		return types.ObjectUnknown(map[string]attr.Type{
+			"count":      basetypes.Int64Type{},
+			"created_at": basetypes.StringType{},
+			"firewall_ids": basetypes.ListType{
+				ElemType: types.Int64Type,
+			},
+			"firewalls": basetypes.ListType{
+				ElemType: FirewallsValue{}.Type(ctx),
+			},
+			"flavor": basetypes.ObjectType{
+				AttrTypes: FlavorValue{}.AttributeTypes(ctx),
+			},
+			"flavor_name": basetypes.StringType{},
+			"id":          basetypes.Int64Type{},
+			"max_count":   basetypes.Int64Type{},
+			"min_count":   basetypes.Int64Type{},
+			"name":        basetypes.StringType{},
+			"role":        basetypes.StringType{},
+			"updated_at":  basetypes.StringType{},
+		}), diags
+	}
+
+	attributeTypes := map[string]attr.Type{
+		"count":      basetypes.Int64Type{},
+		"created_at": basetypes.StringType{},
+		"firewall_ids": basetypes.ListType{
+			ElemType: types.Int64Type,
+		},
+		"firewalls": basetypes.ListType{
+			ElemType: FirewallsValue{}.Type(ctx),
+		},
+		"flavor": basetypes.ObjectType{
+			AttrTypes: FlavorValue{}.AttributeTypes(ctx),
+		},
+		"flavor_name": basetypes.StringType{},
+		"id":          basetypes.Int64Type{},
+		"max_count":   basetypes.Int64Type{},
+		"min_count":   basetypes.Int64Type{},
+		"name":        basetypes.StringType{},
+		"role":        basetypes.StringType{},
+		"updated_at":  basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"count":        v.Count,
+			"created_at":   v.CreatedAt,
+			"firewall_ids": firewallIdsVal,
+			"firewalls":    firewalls,
+			"flavor":       flavor,
+			"flavor_name":  v.FlavorName,
+			"id":           v.Id,
+			"max_count":    v.MaxCount,
+			"min_count":    v.MinCount,
+			"name":         v.Name,
+			"role":         v.Role,
+			"updated_at":   v.UpdatedAt,
+		})
+
+	return objVal, diags
+}
+
+func (v NodeGroupsValue) Equal(o attr.Value) bool {
+	other, ok := o.(NodeGroupsValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.Count.Equal(other.Count) {
+		return false
+	}
+
+	if !v.CreatedAt.Equal(other.CreatedAt) {
+		return false
+	}
+
+	if !v.FirewallIds.Equal(other.FirewallIds) {
+		return false
+	}
+
+	if !v.Firewalls.Equal(other.Firewalls) {
+		return false
+	}
+
+	if !v.Flavor.Equal(other.Flavor) {
+		return false
+	}
+
+	if !v.FlavorName.Equal(other.FlavorName) {
+		return false
+	}
+
+	if !v.Id.Equal(other.Id) {
+		return false
+	}
+
+	if !v.MaxCount.Equal(other.MaxCount) {
+		return false
+	}
+
+	if !v.MinCount.Equal(other.MinCount) {
+		return false
+	}
+
+	if !v.Name.Equal(other.Name) {
+		return false
+	}
+
+	if !v.Role.Equal(other.Role) {
+		return false
+	}
+
+	if !v.UpdatedAt.Equal(other.UpdatedAt) {
+		return false
+	}
+
+	return true
+}
+
+func (v NodeGroupsValue) Type(ctx context.Context) attr.Type {
+	return NodeGroupsType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v NodeGroupsValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"count":      basetypes.Int64Type{},
+		"created_at": basetypes.StringType{},
+		"firewall_ids": basetypes.ListType{
+			ElemType: types.Int64Type,
+		},
+		"firewalls": basetypes.ListType{
+			ElemType: FirewallsValue{}.Type(ctx),
+		},
+		"flavor": basetypes.ObjectType{
+			AttrTypes: FlavorValue{}.AttributeTypes(ctx),
+		},
+		"flavor_name": basetypes.StringType{},
+		"id":          basetypes.Int64Type{},
+		"max_count":   basetypes.Int64Type{},
+		"min_count":   basetypes.Int64Type{},
+		"name":        basetypes.StringType{},
+		"role":        basetypes.StringType{},
+		"updated_at":  basetypes.StringType{},
+	}
+}
+
+var _ basetypes.ObjectTypable = FirewallsType{}
+
+type FirewallsType struct {
+	basetypes.ObjectType
+}
+
+func (t FirewallsType) Equal(o attr.Type) bool {
+	other, ok := o.(FirewallsType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t FirewallsType) String() string {
+	return "FirewallsType"
+}
+
+func (t FirewallsType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return nil, diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	nameAttribute, ok := attributes["name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`name is missing from object`)
+
+		return nil, diags
+	}
+
+	nameVal, ok := nameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
+	}
+
+	statusAttribute, ok := attributes["status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`status is missing from object`)
+
+		return nil, diags
+	}
+
+	statusVal, ok := statusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return FirewallsValue{
+		Id:     idVal,
+		Name:   nameVal,
+		Status: statusVal,
+		state:  attr.ValueStateKnown,
+	}, diags
+}
+
+func NewFirewallsValueNull() FirewallsValue {
+	return FirewallsValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewFirewallsValueUnknown() FirewallsValue {
+	return FirewallsValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewFirewallsValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (FirewallsValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing FirewallsValue Attribute Value",
+				"While creating a FirewallsValue value, a missing attribute value was detected. "+
+					"A FirewallsValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("FirewallsValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid FirewallsValue Attribute Type",
+				"While creating a FirewallsValue value, an invalid attribute value was detected. "+
+					"A FirewallsValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("FirewallsValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("FirewallsValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra FirewallsValue Attribute Value",
+				"While creating a FirewallsValue value, an extra attribute value was detected. "+
+					"A FirewallsValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra FirewallsValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewFirewallsValueUnknown(), diags
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return NewFirewallsValueUnknown(), diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	nameAttribute, ok := attributes["name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`name is missing from object`)
+
+		return NewFirewallsValueUnknown(), diags
+	}
+
+	nameVal, ok := nameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
+	}
+
+	statusAttribute, ok := attributes["status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`status is missing from object`)
+
+		return NewFirewallsValueUnknown(), diags
+	}
+
+	statusVal, ok := statusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
+	}
+
+	if diags.HasError() {
+		return NewFirewallsValueUnknown(), diags
+	}
+
+	return FirewallsValue{
+		Id:     idVal,
+		Name:   nameVal,
+		Status: statusVal,
+		state:  attr.ValueStateKnown,
+	}, diags
+}
+
+func NewFirewallsValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) FirewallsValue {
+	object, diags := NewFirewallsValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewFirewallsValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t FirewallsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewFirewallsValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewFirewallsValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewFirewallsValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewFirewallsValueMust(FirewallsValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t FirewallsType) ValueType(ctx context.Context) attr.Value {
+	return FirewallsValue{}
+}
+
+var _ basetypes.ObjectValuable = FirewallsValue{}
+
+type FirewallsValue struct {
+	Id     basetypes.Int64Value  `tfsdk:"id"`
+	Name   basetypes.StringValue `tfsdk:"name"`
+	Status basetypes.StringValue `tfsdk:"status"`
+	state  attr.ValueState
+}
+
+func (v FirewallsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 3)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["status"] = basetypes.StringType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 3)
+
+		val, err = v.Id.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["id"] = val
+
+		val, err = v.Name.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["name"] = val
+
+		val, err = v.Status.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["status"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v FirewallsValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v FirewallsValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v FirewallsValue) String() string {
+	return "FirewallsValue"
+}
+
+func (v FirewallsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributeTypes := map[string]attr.Type{
+		"id":     basetypes.Int64Type{},
+		"name":   basetypes.StringType{},
+		"status": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"id":     v.Id,
+			"name":   v.Name,
+			"status": v.Status,
+		})
+
+	return objVal, diags
+}
+
+func (v FirewallsValue) Equal(o attr.Value) bool {
+	other, ok := o.(FirewallsValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.Id.Equal(other.Id) {
+		return false
+	}
+
+	if !v.Name.Equal(other.Name) {
+		return false
+	}
+
+	if !v.Status.Equal(other.Status) {
+		return false
+	}
+
+	return true
+}
+
+func (v FirewallsValue) Type(ctx context.Context) attr.Type {
+	return FirewallsType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v FirewallsValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"id":     basetypes.Int64Type{},
+		"name":   basetypes.StringType{},
+		"status": basetypes.StringType{},
+	}
+}
+
+var _ basetypes.ObjectTypable = FlavorType{}
+
+type FlavorType struct {
+	basetypes.ObjectType
+}
+
+func (t FlavorType) Equal(o attr.Type) bool {
+	other, ok := o.(FlavorType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t FlavorType) String() string {
+	return "FlavorType"
+}
+
+func (t FlavorType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	attributes := in.Attributes()
@@ -394,7 +2773,7 @@ func (t NodeFlavorType) ValueFromObject(ctx context.Context, in basetypes.Object
 		return nil, diags
 	}
 
-	return NodeFlavorValue{
+	return FlavorValue{
 		Cpu:       cpuVal,
 		Disk:      diskVal,
 		Ephemeral: ephemeralVal,
@@ -409,19 +2788,19 @@ func (t NodeFlavorType) ValueFromObject(ctx context.Context, in basetypes.Object
 	}, diags
 }
 
-func NewNodeFlavorValueNull() NodeFlavorValue {
-	return NodeFlavorValue{
+func NewFlavorValueNull() FlavorValue {
+	return FlavorValue{
 		state: attr.ValueStateNull,
 	}
 }
 
-func NewNodeFlavorValueUnknown() NodeFlavorValue {
-	return NodeFlavorValue{
+func NewFlavorValueUnknown() FlavorValue {
+	return FlavorValue{
 		state: attr.ValueStateUnknown,
 	}
 }
 
-func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (NodeFlavorValue, diag.Diagnostics) {
+func NewFlavorValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (FlavorValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
@@ -432,11 +2811,11 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 
 		if !ok {
 			diags.AddError(
-				"Missing NodeFlavorValue Attribute Value",
-				"While creating a NodeFlavorValue value, a missing attribute value was detected. "+
-					"A NodeFlavorValue must contain values for all attributes, even if null or unknown. "+
+				"Missing FlavorValue Attribute Value",
+				"While creating a FlavorValue value, a missing attribute value was detected. "+
+					"A FlavorValue must contain values for all attributes, even if null or unknown. "+
 					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("NodeFlavorValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+					fmt.Sprintf("FlavorValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
 			)
 
 			continue
@@ -444,12 +2823,12 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 
 		if !attributeType.Equal(attribute.Type(ctx)) {
 			diags.AddError(
-				"Invalid NodeFlavorValue Attribute Type",
-				"While creating a NodeFlavorValue value, an invalid attribute value was detected. "+
-					"A NodeFlavorValue must use a matching attribute type for the value. "+
+				"Invalid FlavorValue Attribute Type",
+				"While creating a FlavorValue value, an invalid attribute value was detected. "+
+					"A FlavorValue must use a matching attribute type for the value. "+
 					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("NodeFlavorValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
-					fmt.Sprintf("NodeFlavorValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+					fmt.Sprintf("FlavorValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("FlavorValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
 			)
 		}
 	}
@@ -459,17 +2838,17 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 
 		if !ok {
 			diags.AddError(
-				"Extra NodeFlavorValue Attribute Value",
-				"While creating a NodeFlavorValue value, an extra attribute value was detected. "+
-					"A NodeFlavorValue must not contain values beyond the expected attribute types. "+
+				"Extra FlavorValue Attribute Value",
+				"While creating a FlavorValue value, an extra attribute value was detected. "+
+					"A FlavorValue must not contain values beyond the expected attribute types. "+
 					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
-					fmt.Sprintf("Extra NodeFlavorValue Attribute Name: %s", name),
+					fmt.Sprintf("Extra FlavorValue Attribute Name: %s", name),
 			)
 		}
 	}
 
 	if diags.HasError() {
-		return NewNodeFlavorValueUnknown(), diags
+		return NewFlavorValueUnknown(), diags
 	}
 
 	cpuAttribute, ok := attributes["cpu"]
@@ -479,7 +2858,7 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 			"Attribute Missing",
 			`cpu is missing from object`)
 
-		return NewNodeFlavorValueUnknown(), diags
+		return NewFlavorValueUnknown(), diags
 	}
 
 	cpuVal, ok := cpuAttribute.(basetypes.Int64Value)
@@ -497,7 +2876,7 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 			"Attribute Missing",
 			`disk is missing from object`)
 
-		return NewNodeFlavorValueUnknown(), diags
+		return NewFlavorValueUnknown(), diags
 	}
 
 	diskVal, ok := diskAttribute.(basetypes.Int64Value)
@@ -515,7 +2894,7 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 			"Attribute Missing",
 			`ephemeral is missing from object`)
 
-		return NewNodeFlavorValueUnknown(), diags
+		return NewFlavorValueUnknown(), diags
 	}
 
 	ephemeralVal, ok := ephemeralAttribute.(basetypes.Int64Value)
@@ -533,7 +2912,7 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 			"Attribute Missing",
 			`features is missing from object`)
 
-		return NewNodeFlavorValueUnknown(), diags
+		return NewFlavorValueUnknown(), diags
 	}
 
 	featuresVal, ok := featuresAttribute.(basetypes.ObjectValue)
@@ -551,7 +2930,7 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 			"Attribute Missing",
 			`gpu is missing from object`)
 
-		return NewNodeFlavorValueUnknown(), diags
+		return NewFlavorValueUnknown(), diags
 	}
 
 	gpuVal, ok := gpuAttribute.(basetypes.StringValue)
@@ -569,7 +2948,7 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 			"Attribute Missing",
 			`gpu_count is missing from object`)
 
-		return NewNodeFlavorValueUnknown(), diags
+		return NewFlavorValueUnknown(), diags
 	}
 
 	gpuCountVal, ok := gpuCountAttribute.(basetypes.Int64Value)
@@ -587,7 +2966,7 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 			"Attribute Missing",
 			`id is missing from object`)
 
-		return NewNodeFlavorValueUnknown(), diags
+		return NewFlavorValueUnknown(), diags
 	}
 
 	idVal, ok := idAttribute.(basetypes.Int64Value)
@@ -605,7 +2984,7 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 			"Attribute Missing",
 			`labels is missing from object`)
 
-		return NewNodeFlavorValueUnknown(), diags
+		return NewFlavorValueUnknown(), diags
 	}
 
 	labelsVal, ok := labelsAttribute.(basetypes.ListValue)
@@ -623,7 +3002,7 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 			"Attribute Missing",
 			`name is missing from object`)
 
-		return NewNodeFlavorValueUnknown(), diags
+		return NewFlavorValueUnknown(), diags
 	}
 
 	nameVal, ok := nameAttribute.(basetypes.StringValue)
@@ -641,7 +3020,7 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 			"Attribute Missing",
 			`ram is missing from object`)
 
-		return NewNodeFlavorValueUnknown(), diags
+		return NewFlavorValueUnknown(), diags
 	}
 
 	ramVal, ok := ramAttribute.(basetypes.NumberValue)
@@ -653,10 +3032,10 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 	}
 
 	if diags.HasError() {
-		return NewNodeFlavorValueUnknown(), diags
+		return NewFlavorValueUnknown(), diags
 	}
 
-	return NodeFlavorValue{
+	return FlavorValue{
 		Cpu:       cpuVal,
 		Disk:      diskVal,
 		Ephemeral: ephemeralVal,
@@ -671,8 +3050,8 @@ func NewNodeFlavorValue(attributeTypes map[string]attr.Type, attributes map[stri
 	}, diags
 }
 
-func NewNodeFlavorValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) NodeFlavorValue {
-	object, diags := NewNodeFlavorValue(attributeTypes, attributes)
+func NewFlavorValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) FlavorValue {
+	object, diags := NewFlavorValue(attributeTypes, attributes)
 
 	if diags.HasError() {
 		// This could potentially be added to the diag package.
@@ -686,15 +3065,15 @@ func NewNodeFlavorValueMust(attributeTypes map[string]attr.Type, attributes map[
 				diagnostic.Detail()))
 		}
 
-		panic("NewNodeFlavorValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+		panic("NewFlavorValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
 	}
 
 	return object
 }
 
-func (t NodeFlavorType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+func (t FlavorType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
 	if in.Type() == nil {
-		return NewNodeFlavorValueNull(), nil
+		return NewFlavorValueNull(), nil
 	}
 
 	if !in.Type().Equal(t.TerraformType(ctx)) {
@@ -702,11 +3081,11 @@ func (t NodeFlavorType) ValueFromTerraform(ctx context.Context, in tftypes.Value
 	}
 
 	if !in.IsKnown() {
-		return NewNodeFlavorValueUnknown(), nil
+		return NewFlavorValueUnknown(), nil
 	}
 
 	if in.IsNull() {
-		return NewNodeFlavorValueNull(), nil
+		return NewFlavorValueNull(), nil
 	}
 
 	attributes := map[string]attr.Value{}
@@ -729,16 +3108,16 @@ func (t NodeFlavorType) ValueFromTerraform(ctx context.Context, in tftypes.Value
 		attributes[k] = a
 	}
 
-	return NewNodeFlavorValueMust(NodeFlavorValue{}.AttributeTypes(ctx), attributes), nil
+	return NewFlavorValueMust(FlavorValue{}.AttributeTypes(ctx), attributes), nil
 }
 
-func (t NodeFlavorType) ValueType(ctx context.Context) attr.Value {
-	return NodeFlavorValue{}
+func (t FlavorType) ValueType(ctx context.Context) attr.Value {
+	return FlavorValue{}
 }
 
-var _ basetypes.ObjectValuable = NodeFlavorValue{}
+var _ basetypes.ObjectValuable = FlavorValue{}
 
-type NodeFlavorValue struct {
+type FlavorValue struct {
 	Cpu       basetypes.Int64Value  `tfsdk:"cpu"`
 	Disk      basetypes.Int64Value  `tfsdk:"disk"`
 	Ephemeral basetypes.Int64Value  `tfsdk:"ephemeral"`
@@ -752,7 +3131,7 @@ type NodeFlavorValue struct {
 	state     attr.ValueState
 }
 
-func (v NodeFlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+func (v FlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
 	attrTypes := make(map[string]tftypes.Type, 10)
 
 	var val tftypes.Value
@@ -873,19 +3252,19 @@ func (v NodeFlavorValue) ToTerraformValue(ctx context.Context) (tftypes.Value, e
 	}
 }
 
-func (v NodeFlavorValue) IsNull() bool {
+func (v FlavorValue) IsNull() bool {
 	return v.state == attr.ValueStateNull
 }
 
-func (v NodeFlavorValue) IsUnknown() bool {
+func (v FlavorValue) IsUnknown() bool {
 	return v.state == attr.ValueStateUnknown
 }
 
-func (v NodeFlavorValue) String() string {
-	return "NodeFlavorValue"
+func (v FlavorValue) String() string {
+	return "FlavorValue"
 }
 
-func (v NodeFlavorValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+func (v FlavorValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	var features basetypes.ObjectValue
@@ -981,8 +3360,8 @@ func (v NodeFlavorValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVal
 	return objVal, diags
 }
 
-func (v NodeFlavorValue) Equal(o attr.Value) bool {
-	other, ok := o.(NodeFlavorValue)
+func (v FlavorValue) Equal(o attr.Value) bool {
+	other, ok := o.(FlavorValue)
 
 	if !ok {
 		return false
@@ -1039,15 +3418,15 @@ func (v NodeFlavorValue) Equal(o attr.Value) bool {
 	return true
 }
 
-func (v NodeFlavorValue) Type(ctx context.Context) attr.Type {
-	return NodeFlavorType{
+func (v FlavorValue) Type(ctx context.Context) attr.Type {
+	return FlavorType{
 		basetypes.ObjectType{
 			AttrTypes: v.AttributeTypes(ctx),
 		},
 	}
 }
 
-func (v NodeFlavorValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+func (v FlavorValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
 		"cpu":       basetypes.Int64Type{},
 		"disk":      basetypes.Int64Type{},
@@ -1702,5 +4081,1615 @@ func (v LabelsValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
 		"id":    basetypes.Int64Type{},
 		"label": basetypes.StringType{},
+	}
+}
+
+var _ basetypes.ObjectTypable = NodesType{}
+
+type NodesType struct {
+	basetypes.ObjectType
+}
+
+func (t NodesType) Equal(o attr.Type) bool {
+	other, ok := o.(NodesType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t NodesType) String() string {
+	return "NodesType"
+}
+
+func (t NodesType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	createdAtAttribute, ok := attributes["created_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`created_at is missing from object`)
+
+		return nil, diags
+	}
+
+	createdAtVal, ok := createdAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return nil, diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	instanceAttribute, ok := attributes["instance"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`instance is missing from object`)
+
+		return nil, diags
+	}
+
+	instanceVal, ok := instanceAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`instance expected to be basetypes.ObjectValue, was: %T`, instanceAttribute))
+	}
+
+	isBastionAttribute, ok := attributes["is_bastion"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`is_bastion is missing from object`)
+
+		return nil, diags
+	}
+
+	isBastionVal, ok := isBastionAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`is_bastion expected to be basetypes.BoolValue, was: %T`, isBastionAttribute))
+	}
+
+	nodeGroupIdAttribute, ok := attributes["node_group_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`node_group_id is missing from object`)
+
+		return nil, diags
+	}
+
+	nodeGroupIdVal, ok := nodeGroupIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`node_group_id expected to be basetypes.Int64Value, was: %T`, nodeGroupIdAttribute))
+	}
+
+	nodeGroupNameAttribute, ok := attributes["node_group_name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`node_group_name is missing from object`)
+
+		return nil, diags
+	}
+
+	nodeGroupNameVal, ok := nodeGroupNameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`node_group_name expected to be basetypes.StringValue, was: %T`, nodeGroupNameAttribute))
+	}
+
+	requiresPublicIpAttribute, ok := attributes["requires_public_ip"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`requires_public_ip is missing from object`)
+
+		return nil, diags
+	}
+
+	requiresPublicIpVal, ok := requiresPublicIpAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`requires_public_ip expected to be basetypes.BoolValue, was: %T`, requiresPublicIpAttribute))
+	}
+
+	roleAttribute, ok := attributes["role"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`role is missing from object`)
+
+		return nil, diags
+	}
+
+	roleVal, ok := roleAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`role expected to be basetypes.StringValue, was: %T`, roleAttribute))
+	}
+
+	statusAttribute, ok := attributes["status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`status is missing from object`)
+
+		return nil, diags
+	}
+
+	statusVal, ok := statusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
+	}
+
+	statusReasonAttribute, ok := attributes["status_reason"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`status_reason is missing from object`)
+
+		return nil, diags
+	}
+
+	statusReasonVal, ok := statusReasonAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`status_reason expected to be basetypes.StringValue, was: %T`, statusReasonAttribute))
+	}
+
+	updatedAtAttribute, ok := attributes["updated_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`updated_at is missing from object`)
+
+		return nil, diags
+	}
+
+	updatedAtVal, ok := updatedAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`updated_at expected to be basetypes.StringValue, was: %T`, updatedAtAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return NodesValue{
+		CreatedAt:        createdAtVal,
+		Id:               idVal,
+		Instance:         instanceVal,
+		IsBastion:        isBastionVal,
+		NodeGroupId:      nodeGroupIdVal,
+		NodeGroupName:    nodeGroupNameVal,
+		RequiresPublicIp: requiresPublicIpVal,
+		Role:             roleVal,
+		Status:           statusVal,
+		StatusReason:     statusReasonVal,
+		UpdatedAt:        updatedAtVal,
+		state:            attr.ValueStateKnown,
+	}, diags
+}
+
+func NewNodesValueNull() NodesValue {
+	return NodesValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewNodesValueUnknown() NodesValue {
+	return NodesValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewNodesValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (NodesValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing NodesValue Attribute Value",
+				"While creating a NodesValue value, a missing attribute value was detected. "+
+					"A NodesValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("NodesValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid NodesValue Attribute Type",
+				"While creating a NodesValue value, an invalid attribute value was detected. "+
+					"A NodesValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("NodesValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("NodesValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra NodesValue Attribute Value",
+				"While creating a NodesValue value, an extra attribute value was detected. "+
+					"A NodesValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra NodesValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewNodesValueUnknown(), diags
+	}
+
+	createdAtAttribute, ok := attributes["created_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`created_at is missing from object`)
+
+		return NewNodesValueUnknown(), diags
+	}
+
+	createdAtVal, ok := createdAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`created_at expected to be basetypes.StringValue, was: %T`, createdAtAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return NewNodesValueUnknown(), diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	instanceAttribute, ok := attributes["instance"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`instance is missing from object`)
+
+		return NewNodesValueUnknown(), diags
+	}
+
+	instanceVal, ok := instanceAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`instance expected to be basetypes.ObjectValue, was: %T`, instanceAttribute))
+	}
+
+	isBastionAttribute, ok := attributes["is_bastion"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`is_bastion is missing from object`)
+
+		return NewNodesValueUnknown(), diags
+	}
+
+	isBastionVal, ok := isBastionAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`is_bastion expected to be basetypes.BoolValue, was: %T`, isBastionAttribute))
+	}
+
+	nodeGroupIdAttribute, ok := attributes["node_group_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`node_group_id is missing from object`)
+
+		return NewNodesValueUnknown(), diags
+	}
+
+	nodeGroupIdVal, ok := nodeGroupIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`node_group_id expected to be basetypes.Int64Value, was: %T`, nodeGroupIdAttribute))
+	}
+
+	nodeGroupNameAttribute, ok := attributes["node_group_name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`node_group_name is missing from object`)
+
+		return NewNodesValueUnknown(), diags
+	}
+
+	nodeGroupNameVal, ok := nodeGroupNameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`node_group_name expected to be basetypes.StringValue, was: %T`, nodeGroupNameAttribute))
+	}
+
+	requiresPublicIpAttribute, ok := attributes["requires_public_ip"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`requires_public_ip is missing from object`)
+
+		return NewNodesValueUnknown(), diags
+	}
+
+	requiresPublicIpVal, ok := requiresPublicIpAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`requires_public_ip expected to be basetypes.BoolValue, was: %T`, requiresPublicIpAttribute))
+	}
+
+	roleAttribute, ok := attributes["role"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`role is missing from object`)
+
+		return NewNodesValueUnknown(), diags
+	}
+
+	roleVal, ok := roleAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`role expected to be basetypes.StringValue, was: %T`, roleAttribute))
+	}
+
+	statusAttribute, ok := attributes["status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`status is missing from object`)
+
+		return NewNodesValueUnknown(), diags
+	}
+
+	statusVal, ok := statusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
+	}
+
+	statusReasonAttribute, ok := attributes["status_reason"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`status_reason is missing from object`)
+
+		return NewNodesValueUnknown(), diags
+	}
+
+	statusReasonVal, ok := statusReasonAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`status_reason expected to be basetypes.StringValue, was: %T`, statusReasonAttribute))
+	}
+
+	updatedAtAttribute, ok := attributes["updated_at"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`updated_at is missing from object`)
+
+		return NewNodesValueUnknown(), diags
+	}
+
+	updatedAtVal, ok := updatedAtAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`updated_at expected to be basetypes.StringValue, was: %T`, updatedAtAttribute))
+	}
+
+	if diags.HasError() {
+		return NewNodesValueUnknown(), diags
+	}
+
+	return NodesValue{
+		CreatedAt:        createdAtVal,
+		Id:               idVal,
+		Instance:         instanceVal,
+		IsBastion:        isBastionVal,
+		NodeGroupId:      nodeGroupIdVal,
+		NodeGroupName:    nodeGroupNameVal,
+		RequiresPublicIp: requiresPublicIpVal,
+		Role:             roleVal,
+		Status:           statusVal,
+		StatusReason:     statusReasonVal,
+		UpdatedAt:        updatedAtVal,
+		state:            attr.ValueStateKnown,
+	}, diags
+}
+
+func NewNodesValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) NodesValue {
+	object, diags := NewNodesValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewNodesValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t NodesType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewNodesValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewNodesValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewNodesValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewNodesValueMust(NodesValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t NodesType) ValueType(ctx context.Context) attr.Value {
+	return NodesValue{}
+}
+
+var _ basetypes.ObjectValuable = NodesValue{}
+
+type NodesValue struct {
+	CreatedAt        basetypes.StringValue `tfsdk:"created_at"`
+	Id               basetypes.Int64Value  `tfsdk:"id"`
+	Instance         basetypes.ObjectValue `tfsdk:"instance"`
+	IsBastion        basetypes.BoolValue   `tfsdk:"is_bastion"`
+	NodeGroupId      basetypes.Int64Value  `tfsdk:"node_group_id"`
+	NodeGroupName    basetypes.StringValue `tfsdk:"node_group_name"`
+	RequiresPublicIp basetypes.BoolValue   `tfsdk:"requires_public_ip"`
+	Role             basetypes.StringValue `tfsdk:"role"`
+	Status           basetypes.StringValue `tfsdk:"status"`
+	StatusReason     basetypes.StringValue `tfsdk:"status_reason"`
+	UpdatedAt        basetypes.StringValue `tfsdk:"updated_at"`
+	state            attr.ValueState
+}
+
+func (v NodesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 11)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["created_at"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["instance"] = basetypes.ObjectType{
+		AttrTypes: InstanceValue{}.AttributeTypes(ctx),
+	}.TerraformType(ctx)
+	attrTypes["is_bastion"] = basetypes.BoolType{}.TerraformType(ctx)
+	attrTypes["node_group_id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["node_group_name"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["requires_public_ip"] = basetypes.BoolType{}.TerraformType(ctx)
+	attrTypes["role"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["status"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["status_reason"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["updated_at"] = basetypes.StringType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 11)
+
+		val, err = v.CreatedAt.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["created_at"] = val
+
+		val, err = v.Id.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["id"] = val
+
+		val, err = v.Instance.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["instance"] = val
+
+		val, err = v.IsBastion.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["is_bastion"] = val
+
+		val, err = v.NodeGroupId.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["node_group_id"] = val
+
+		val, err = v.NodeGroupName.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["node_group_name"] = val
+
+		val, err = v.RequiresPublicIp.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["requires_public_ip"] = val
+
+		val, err = v.Role.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["role"] = val
+
+		val, err = v.Status.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["status"] = val
+
+		val, err = v.StatusReason.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["status_reason"] = val
+
+		val, err = v.UpdatedAt.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["updated_at"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v NodesValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v NodesValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v NodesValue) String() string {
+	return "NodesValue"
+}
+
+func (v NodesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var instance basetypes.ObjectValue
+
+	if v.Instance.IsNull() {
+		instance = types.ObjectNull(
+			InstanceValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if v.Instance.IsUnknown() {
+		instance = types.ObjectUnknown(
+			InstanceValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if !v.Instance.IsNull() && !v.Instance.IsUnknown() {
+		instance = types.ObjectValueMust(
+			InstanceValue{}.AttributeTypes(ctx),
+			v.Instance.Attributes(),
+		)
+	}
+
+	attributeTypes := map[string]attr.Type{
+		"created_at": basetypes.StringType{},
+		"id":         basetypes.Int64Type{},
+		"instance": basetypes.ObjectType{
+			AttrTypes: InstanceValue{}.AttributeTypes(ctx),
+		},
+		"is_bastion":         basetypes.BoolType{},
+		"node_group_id":      basetypes.Int64Type{},
+		"node_group_name":    basetypes.StringType{},
+		"requires_public_ip": basetypes.BoolType{},
+		"role":               basetypes.StringType{},
+		"status":             basetypes.StringType{},
+		"status_reason":      basetypes.StringType{},
+		"updated_at":         basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"created_at":         v.CreatedAt,
+			"id":                 v.Id,
+			"instance":           instance,
+			"is_bastion":         v.IsBastion,
+			"node_group_id":      v.NodeGroupId,
+			"node_group_name":    v.NodeGroupName,
+			"requires_public_ip": v.RequiresPublicIp,
+			"role":               v.Role,
+			"status":             v.Status,
+			"status_reason":      v.StatusReason,
+			"updated_at":         v.UpdatedAt,
+		})
+
+	return objVal, diags
+}
+
+func (v NodesValue) Equal(o attr.Value) bool {
+	other, ok := o.(NodesValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.CreatedAt.Equal(other.CreatedAt) {
+		return false
+	}
+
+	if !v.Id.Equal(other.Id) {
+		return false
+	}
+
+	if !v.Instance.Equal(other.Instance) {
+		return false
+	}
+
+	if !v.IsBastion.Equal(other.IsBastion) {
+		return false
+	}
+
+	if !v.NodeGroupId.Equal(other.NodeGroupId) {
+		return false
+	}
+
+	if !v.NodeGroupName.Equal(other.NodeGroupName) {
+		return false
+	}
+
+	if !v.RequiresPublicIp.Equal(other.RequiresPublicIp) {
+		return false
+	}
+
+	if !v.Role.Equal(other.Role) {
+		return false
+	}
+
+	if !v.Status.Equal(other.Status) {
+		return false
+	}
+
+	if !v.StatusReason.Equal(other.StatusReason) {
+		return false
+	}
+
+	if !v.UpdatedAt.Equal(other.UpdatedAt) {
+		return false
+	}
+
+	return true
+}
+
+func (v NodesValue) Type(ctx context.Context) attr.Type {
+	return NodesType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v NodesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"created_at": basetypes.StringType{},
+		"id":         basetypes.Int64Type{},
+		"instance": basetypes.ObjectType{
+			AttrTypes: InstanceValue{}.AttributeTypes(ctx),
+		},
+		"is_bastion":         basetypes.BoolType{},
+		"node_group_id":      basetypes.Int64Type{},
+		"node_group_name":    basetypes.StringType{},
+		"requires_public_ip": basetypes.BoolType{},
+		"role":               basetypes.StringType{},
+		"status":             basetypes.StringType{},
+		"status_reason":      basetypes.StringType{},
+		"updated_at":         basetypes.StringType{},
+	}
+}
+
+var _ basetypes.ObjectTypable = InstanceType{}
+
+type InstanceType struct {
+	basetypes.ObjectType
+}
+
+func (t InstanceType) Equal(o attr.Type) bool {
+	other, ok := o.(InstanceType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t InstanceType) String() string {
+	return "InstanceType"
+}
+
+func (t InstanceType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	contractIdAttribute, ok := attributes["contract_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`contract_id is missing from object`)
+
+		return nil, diags
+	}
+
+	contractIdVal, ok := contractIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`contract_id expected to be basetypes.Int64Value, was: %T`, contractIdAttribute))
+	}
+
+	fixedIpAttribute, ok := attributes["fixed_ip"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`fixed_ip is missing from object`)
+
+		return nil, diags
+	}
+
+	fixedIpVal, ok := fixedIpAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`fixed_ip expected to be basetypes.StringValue, was: %T`, fixedIpAttribute))
+	}
+
+	floatingIpAttribute, ok := attributes["floating_ip"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`floating_ip is missing from object`)
+
+		return nil, diags
+	}
+
+	floatingIpVal, ok := floatingIpAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`floating_ip expected to be basetypes.StringValue, was: %T`, floatingIpAttribute))
+	}
+
+	floatingIpStatusAttribute, ok := attributes["floating_ip_status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`floating_ip_status is missing from object`)
+
+		return nil, diags
+	}
+
+	floatingIpStatusVal, ok := floatingIpStatusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`floating_ip_status expected to be basetypes.StringValue, was: %T`, floatingIpStatusAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return nil, diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	imageIdAttribute, ok := attributes["image_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`image_id is missing from object`)
+
+		return nil, diags
+	}
+
+	imageIdVal, ok := imageIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`image_id expected to be basetypes.Int64Value, was: %T`, imageIdAttribute))
+	}
+
+	nameAttribute, ok := attributes["name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`name is missing from object`)
+
+		return nil, diags
+	}
+
+	nameVal, ok := nameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
+	}
+
+	statusAttribute, ok := attributes["status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`status is missing from object`)
+
+		return nil, diags
+	}
+
+	statusVal, ok := statusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return InstanceValue{
+		ContractId:       contractIdVal,
+		FixedIp:          fixedIpVal,
+		FloatingIp:       floatingIpVal,
+		FloatingIpStatus: floatingIpStatusVal,
+		Id:               idVal,
+		ImageId:          imageIdVal,
+		Name:             nameVal,
+		Status:           statusVal,
+		state:            attr.ValueStateKnown,
+	}, diags
+}
+
+func NewInstanceValueNull() InstanceValue {
+	return InstanceValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewInstanceValueUnknown() InstanceValue {
+	return InstanceValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewInstanceValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (InstanceValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing InstanceValue Attribute Value",
+				"While creating a InstanceValue value, a missing attribute value was detected. "+
+					"A InstanceValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("InstanceValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid InstanceValue Attribute Type",
+				"While creating a InstanceValue value, an invalid attribute value was detected. "+
+					"A InstanceValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("InstanceValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("InstanceValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra InstanceValue Attribute Value",
+				"While creating a InstanceValue value, an extra attribute value was detected. "+
+					"A InstanceValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra InstanceValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewInstanceValueUnknown(), diags
+	}
+
+	contractIdAttribute, ok := attributes["contract_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`contract_id is missing from object`)
+
+		return NewInstanceValueUnknown(), diags
+	}
+
+	contractIdVal, ok := contractIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`contract_id expected to be basetypes.Int64Value, was: %T`, contractIdAttribute))
+	}
+
+	fixedIpAttribute, ok := attributes["fixed_ip"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`fixed_ip is missing from object`)
+
+		return NewInstanceValueUnknown(), diags
+	}
+
+	fixedIpVal, ok := fixedIpAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`fixed_ip expected to be basetypes.StringValue, was: %T`, fixedIpAttribute))
+	}
+
+	floatingIpAttribute, ok := attributes["floating_ip"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`floating_ip is missing from object`)
+
+		return NewInstanceValueUnknown(), diags
+	}
+
+	floatingIpVal, ok := floatingIpAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`floating_ip expected to be basetypes.StringValue, was: %T`, floatingIpAttribute))
+	}
+
+	floatingIpStatusAttribute, ok := attributes["floating_ip_status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`floating_ip_status is missing from object`)
+
+		return NewInstanceValueUnknown(), diags
+	}
+
+	floatingIpStatusVal, ok := floatingIpStatusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`floating_ip_status expected to be basetypes.StringValue, was: %T`, floatingIpStatusAttribute))
+	}
+
+	idAttribute, ok := attributes["id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`id is missing from object`)
+
+		return NewInstanceValueUnknown(), diags
+	}
+
+	idVal, ok := idAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
+	}
+
+	imageIdAttribute, ok := attributes["image_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`image_id is missing from object`)
+
+		return NewInstanceValueUnknown(), diags
+	}
+
+	imageIdVal, ok := imageIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`image_id expected to be basetypes.Int64Value, was: %T`, imageIdAttribute))
+	}
+
+	nameAttribute, ok := attributes["name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`name is missing from object`)
+
+		return NewInstanceValueUnknown(), diags
+	}
+
+	nameVal, ok := nameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`name expected to be basetypes.StringValue, was: %T`, nameAttribute))
+	}
+
+	statusAttribute, ok := attributes["status"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`status is missing from object`)
+
+		return NewInstanceValueUnknown(), diags
+	}
+
+	statusVal, ok := statusAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`status expected to be basetypes.StringValue, was: %T`, statusAttribute))
+	}
+
+	if diags.HasError() {
+		return NewInstanceValueUnknown(), diags
+	}
+
+	return InstanceValue{
+		ContractId:       contractIdVal,
+		FixedIp:          fixedIpVal,
+		FloatingIp:       floatingIpVal,
+		FloatingIpStatus: floatingIpStatusVal,
+		Id:               idVal,
+		ImageId:          imageIdVal,
+		Name:             nameVal,
+		Status:           statusVal,
+		state:            attr.ValueStateKnown,
+	}, diags
+}
+
+func NewInstanceValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) InstanceValue {
+	object, diags := NewInstanceValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewInstanceValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t InstanceType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewInstanceValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewInstanceValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewInstanceValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewInstanceValueMust(InstanceValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t InstanceType) ValueType(ctx context.Context) attr.Value {
+	return InstanceValue{}
+}
+
+var _ basetypes.ObjectValuable = InstanceValue{}
+
+type InstanceValue struct {
+	ContractId       basetypes.Int64Value  `tfsdk:"contract_id"`
+	FixedIp          basetypes.StringValue `tfsdk:"fixed_ip"`
+	FloatingIp       basetypes.StringValue `tfsdk:"floating_ip"`
+	FloatingIpStatus basetypes.StringValue `tfsdk:"floating_ip_status"`
+	Id               basetypes.Int64Value  `tfsdk:"id"`
+	ImageId          basetypes.Int64Value  `tfsdk:"image_id"`
+	Name             basetypes.StringValue `tfsdk:"name"`
+	Status           basetypes.StringValue `tfsdk:"status"`
+	state            attr.ValueState
+}
+
+func (v InstanceValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 8)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["contract_id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["fixed_ip"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["floating_ip"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["floating_ip_status"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["image_id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["name"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["status"] = basetypes.StringType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 8)
+
+		val, err = v.ContractId.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["contract_id"] = val
+
+		val, err = v.FixedIp.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["fixed_ip"] = val
+
+		val, err = v.FloatingIp.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["floating_ip"] = val
+
+		val, err = v.FloatingIpStatus.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["floating_ip_status"] = val
+
+		val, err = v.Id.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["id"] = val
+
+		val, err = v.ImageId.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["image_id"] = val
+
+		val, err = v.Name.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["name"] = val
+
+		val, err = v.Status.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["status"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v InstanceValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v InstanceValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v InstanceValue) String() string {
+	return "InstanceValue"
+}
+
+func (v InstanceValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributeTypes := map[string]attr.Type{
+		"contract_id":        basetypes.Int64Type{},
+		"fixed_ip":           basetypes.StringType{},
+		"floating_ip":        basetypes.StringType{},
+		"floating_ip_status": basetypes.StringType{},
+		"id":                 basetypes.Int64Type{},
+		"image_id":           basetypes.Int64Type{},
+		"name":               basetypes.StringType{},
+		"status":             basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"contract_id":        v.ContractId,
+			"fixed_ip":           v.FixedIp,
+			"floating_ip":        v.FloatingIp,
+			"floating_ip_status": v.FloatingIpStatus,
+			"id":                 v.Id,
+			"image_id":           v.ImageId,
+			"name":               v.Name,
+			"status":             v.Status,
+		})
+
+	return objVal, diags
+}
+
+func (v InstanceValue) Equal(o attr.Value) bool {
+	other, ok := o.(InstanceValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.ContractId.Equal(other.ContractId) {
+		return false
+	}
+
+	if !v.FixedIp.Equal(other.FixedIp) {
+		return false
+	}
+
+	if !v.FloatingIp.Equal(other.FloatingIp) {
+		return false
+	}
+
+	if !v.FloatingIpStatus.Equal(other.FloatingIpStatus) {
+		return false
+	}
+
+	if !v.Id.Equal(other.Id) {
+		return false
+	}
+
+	if !v.ImageId.Equal(other.ImageId) {
+		return false
+	}
+
+	if !v.Name.Equal(other.Name) {
+		return false
+	}
+
+	if !v.Status.Equal(other.Status) {
+		return false
+	}
+
+	return true
+}
+
+func (v InstanceValue) Type(ctx context.Context) attr.Type {
+	return InstanceType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v InstanceValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"contract_id":        basetypes.Int64Type{},
+		"fixed_ip":           basetypes.StringType{},
+		"floating_ip":        basetypes.StringType{},
+		"floating_ip_status": basetypes.StringType{},
+		"id":                 basetypes.Int64Type{},
+		"image_id":           basetypes.Int64Type{},
+		"name":               basetypes.StringType{},
+		"status":             basetypes.StringType{},
 	}
 }
