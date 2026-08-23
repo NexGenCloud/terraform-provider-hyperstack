@@ -29,7 +29,7 @@ terraform {
   required_providers {
     hyperstack = {
       source  = "NexGenCloud/hyperstack"
-      version = "1.50.2-alpha"
+      version = "1.54.13-alpha"
     }
   }
 }
@@ -44,7 +44,7 @@ terraform {
   required_providers {
     hyperstack = {
       source = "app.terraform.io/nexgencloud/hyperstack"
-      version = "1.50.2-alpha"
+      version = "1.54.13-alpha"
     }
     tls = {
       source = "hashicorp/tls"
