@@ -95,6 +95,7 @@ func (p *hyperstackProvider) Configure(ctx context.Context, req provider.Configu
 	hyperstack := client.NewHyperstackClient(
 		apiToken,
 		apiAddress,
+		p.version,
 	)
 	resp.DataSourceData = hyperstack
 	resp.ResourceData = hyperstack
