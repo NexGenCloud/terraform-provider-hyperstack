@@ -47,8 +47,35 @@ func (c HyperstackClient) GetAddHeadersFn() func(ctx context.Context, req *http.
 		req.Header.Add("api_key", c.ApiToken)
 		// TODO: do we need to support it?
 		//req.Header.Add("Authorization", "Bearer "+token)
-		req.Header.Set("Hyperstack-Client", c.clientID)
-		req.Header.Set("User-Agent", c.userAgent)
 		return nil
+	}
+}
+
+// identityTransport stamps the provider's identity onto every outgoing request.
+type identityTransport struct {
+	base      http.RoundTripper
+	clientID  string
+	userAgent string
+}
+
+func (t identityTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set("Hyperstack-Client", t.clientID)
+	req.Header.Set("User-Agent", t.userAgent)
+	return t.base.RoundTrip(req)
+}
+
+// InstallIdentityTransport wraps http.DefaultTransport so every SDK client
+// picks it up.
+func (c HyperstackClient) InstallIdentityTransport() {
+	if t, ok := http.DefaultTransport.(identityTransport); ok {
+		t.clientID = c.clientID
+		t.userAgent = c.userAgent
+		http.DefaultTransport = t
+		return
+	}
+	http.DefaultTransport = identityTransport{
+		base:      http.DefaultTransport,
+		clientID:  c.clientID,
+		userAgent: c.userAgent,
 	}
 }

@@ -97,6 +97,7 @@ func (p *hyperstackProvider) Configure(ctx context.Context, req provider.Configu
 		apiAddress,
 		p.version,
 	)
+	hyperstack.InstallIdentityTransport()
 	resp.DataSourceData = hyperstack
 	resp.ResourceData = hyperstack
 }
