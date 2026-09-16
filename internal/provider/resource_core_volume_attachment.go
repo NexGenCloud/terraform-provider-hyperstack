@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NexGenCloud/hyperstack-sdk-go/lib/virtual_machine"
 	"github.com/NexGenCloud/hyperstack-sdk-go/lib/volume_attachment"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/client"
 	"github.com/NexGenCloud/terraform-provider-hyperstack/internal/genprovider/resource_core_volume_attachment"
@@ -28,6 +29,7 @@ func NewResourceCoreVolumeAttachment() resource.Resource {
 type ResourceCoreVolumeAttachment struct {
 	hyperstack *client.HyperstackClient
 	client     *volume_attachment.ClientWithResponses
+	vmClient   *virtual_machine.ClientWithResponses
 }
 
 func (r *ResourceCoreVolumeAttachment) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -49,6 +51,19 @@ func (r *ResourceCoreVolumeAttachment) Configure(ctx context.Context, req resour
 	r.client, err = volume_attachment.NewClientWithResponses(
 		r.hyperstack.ApiServer,
 		volume_attachment.WithRequestEditorFn(r.hyperstack.GetAddHeadersFn()),
+	)
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unexpected error",
+			fmt.Sprintf("%s", err),
+		)
+		return
+	}
+
+	r.vmClient, err = virtual_machine.NewClientWithResponses(
+		r.hyperstack.ApiServer,
+		virtual_machine.WithRequestEditorFn(r.hyperstack.GetAddHeadersFn()),
 	)
 
 	if err != nil {
@@ -133,7 +148,7 @@ func (r *ResourceCoreVolumeAttachment) Create(
 
 	// Map the API response to the model
 	data.Id = types.StringValue(fmt.Sprintf("vm-%d-volumes", vmId))
-	
+
 	// Convert volume attachments to types.List
 	attachmentsList, diags := r.mapVolumeAttachments(ctx, *callResult.VolumeAttachments)
 	resp.Diagnostics.Append(diags...)
@@ -286,19 +301,47 @@ func (r *ResourceCoreVolumeAttachment) ImportState(
 	// Import format: vm-{vm_id}-volumes
 	// or just the vm_id
 	idParts := strings.Split(req.ID, "-")
-	
+
 	var vmIdStr string
 	if len(idParts) == 3 && idParts[0] == "vm" && idParts[2] == "volumes" {
 		vmIdStr = idParts[1]
 	} else {
 		vmIdStr = req.ID
 	}
-	
+
 	vmId, err := strconv.ParseInt(vmIdStr, 10, 64)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Invalid import ID",
 			fmt.Sprintf("Expected format: vm-{vm_id}-volumes or just {vm_id}, got: %s", req.ID),
+		)
+		return
+	}
+
+	if r.vmClient == nil {
+		resp.Diagnostics.AddError(
+			"Provider not configured",
+			"The provider must be configured before importing this resource.",
+		)
+		return
+	}
+
+	vmResult, err := r.vmClient.GetVMWithResponse(ctx, int(vmId))
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"API request error",
+			fmt.Sprintf("Could not verify VM %d: %s", vmId, err),
+		)
+		return
+	}
+
+	if vmResult.JSON200 == nil {
+		resp.Diagnostics.AddError(
+			"Import validation failed",
+			fmt.Sprintf(
+				"VM %d does not exist or is not accessible with the configured API key (HTTP %d).",
+				vmId, vmResult.StatusCode(),
+			),
 		)
 		return
 	}
@@ -323,7 +366,7 @@ func (r *ResourceCoreVolumeAttachment) waitForAttachments(
 		"volume_ids": volumeIds,
 		"timeout":    timeout,
 	})
-	
+
 	time.Sleep(5 * time.Second)
 	return nil
 }
@@ -342,7 +385,7 @@ func (r *ResourceCoreVolumeAttachment) waitForDetachments(
 		"volume_ids": volumeIds,
 		"timeout":    timeout,
 	})
-	
+
 	// Wait longer for detachment as it may take more time than attachment
 	time.Sleep(100 * time.Second)
 	return nil
@@ -353,7 +396,7 @@ func (r *ResourceCoreVolumeAttachment) mapVolumeAttachments(
 	attachments []volume_attachment.AttachVolumeFields,
 ) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	
+
 	// Create element type for the list
 	elementType := types.ObjectType{
 		AttrTypes: map[string]attr.Type{
@@ -366,15 +409,15 @@ func (r *ResourceCoreVolumeAttachment) mapVolumeAttachments(
 			"created_at":  types.StringType,
 		},
 	}
-	
+
 	// If no attachments, return empty list
 	if len(attachments) == 0 {
 		return types.ListValueMust(elementType, []attr.Value{}), diags
 	}
-	
+
 	// Build list of attachment objects
 	elements := make([]attr.Value, 0, len(attachments))
-	
+
 	for _, att := range attachments {
 		obj, d := types.ObjectValue(
 			elementType.AttrTypes,
@@ -429,9 +472,9 @@ func (r *ResourceCoreVolumeAttachment) mapVolumeAttachments(
 		}
 		elements = append(elements, obj)
 	}
-	
+
 	list, d := types.ListValue(elementType, elements)
 	diags.Append(d...)
-	
+
 	return list, diags
 }
