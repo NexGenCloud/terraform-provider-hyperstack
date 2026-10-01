@@ -117,7 +117,7 @@ func (r *ResourceCoreKeypair) Update(ctx context.Context, req resource.UpdateReq
 	// Find the keypair with the matching name and get its ID
 	var id int64 = -1
 	for _, row := range *searchCallResult {
-		if strings.Contains(*row.Name, strings.TrimSpace(data.Name.ValueString())) {
+		if *row.Name == strings.TrimSpace(data.Name.ValueString()) {
 			id = int64(*row.Id)
 			break
 		}
@@ -261,7 +261,7 @@ func (r *ResourceCoreKeypair) Read(
 	// Find the keypair with the matching name and get its ID
 	var keypairResult *keypair.KeypairFields
 	for _, row := range *searchCallResult {
-		if strings.Contains(*row.Name, strings.TrimSpace(data.Name.ValueString())) {
+		if *row.Name == strings.TrimSpace(data.Name.ValueString()) {
 			keypairResult = &row
 			break
 		}
@@ -319,12 +319,19 @@ func (r *ResourceCoreKeypair) Delete(ctx context.Context, req resource.DeleteReq
 	}
 
 	// Find the keypair with the matching name and get its ID
-	var id int64
+	var id int64 = -1
 	for _, row := range *callResult {
-		if strings.Contains(*row.Name, strings.TrimSpace(data.Name.ValueString())) {
+		if *row.Name == strings.TrimSpace(data.Name.ValueString()) {
 			id = int64(*row.Id)
 			break
 		}
+	}
+
+	// Nothing found: the keypair was already removed elsewhere, so there is
+	// nothing left to delete and destroy has effectively succeeded.
+	if id == -1 {
+		resp.State.RemoveResource(ctx)
+		return
 	}
 
 	// Now proceed with the Delete operation using the ID
