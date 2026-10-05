@@ -57,6 +57,67 @@ func CoreFlavorsDataSourceSchema(ctx context.Context) schema.Schema {
 									"id": schema.Int64Attribute{
 										Computed: true,
 									},
+									"image_restrictions": schema.SingleNestedAttribute{
+										Attributes: map[string]schema.Attribute{
+											"compatible_images": schema.ListNestedAttribute{
+												NestedObject: schema.NestedAttributeObject{
+													Attributes: map[string]schema.Attribute{
+														"constraints": schema.SingleNestedAttribute{
+															Attributes: map[string]schema.Attribute{},
+															CustomType: ConstraintsType{
+																ObjectType: types.ObjectType{
+																	AttrTypes: ConstraintsValue{}.AttributeTypes(ctx),
+																},
+															},
+															Computed:            true,
+															Description:         "JSON constraints object",
+															MarkdownDescription: "JSON constraints object",
+														},
+														"image_id": schema.Int64Attribute{
+															Computed: true,
+														},
+														"image_name": schema.StringAttribute{
+															Computed: true,
+														},
+														"link_type": schema.StringAttribute{
+															Computed:            true,
+															Description:         "Either 'hard' or 'soft'",
+															MarkdownDescription: "Either 'hard' or 'soft'",
+														},
+														"reason": schema.StringAttribute{
+															Computed: true,
+														},
+													},
+													CustomType: CompatibleImagesType{
+														ObjectType: types.ObjectType{
+															AttrTypes: CompatibleImagesValue{}.AttributeTypes(ctx),
+														},
+													},
+												},
+												Computed:            true,
+												Description:         "List of images this flavor is allowed to launch, with link metadata",
+												MarkdownDescription: "List of images this flavor is allowed to launch, with link metadata",
+											},
+											"has_image_restrictions": schema.BoolAttribute{
+												Computed:            true,
+												Description:         "Whether the flavor is restricted to a set of images",
+												MarkdownDescription: "Whether the flavor is restricted to a set of images",
+											},
+											"restriction_type": schema.StringAttribute{
+												Computed:            true,
+												Description:         "Either 'hard', 'soft', or null if no restrictions",
+												MarkdownDescription: "Either 'hard', 'soft', or null if no restrictions",
+											},
+										},
+										CustomType: ImageRestrictionsType{
+											ObjectType: types.ObjectType{
+												AttrTypes: ImageRestrictionsValue{}.AttributeTypes(ctx),
+											},
+										},
+										Computed:            true,
+										Description:         "Image compatibility restrictions for this flavor (flavor → image links)",
+										MarkdownDescription: "Image compatibility restrictions for this flavor (flavor → image links)",
+									},
 									"labels": schema.ListNestedAttribute{
 										NestedObject: schema.NestedAttributeObject{
 											Attributes: map[string]schema.Attribute{
@@ -782,6 +843,24 @@ func (t FlavorsType) ValueFromObject(ctx context.Context, in basetypes.ObjectVal
 			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
 	}
 
+	imageRestrictionsAttribute, ok := attributes["image_restrictions"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`image_restrictions is missing from object`)
+
+		return nil, diags
+	}
+
+	imageRestrictionsVal, ok := imageRestrictionsAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`image_restrictions expected to be basetypes.ObjectValue, was: %T`, imageRestrictionsAttribute))
+	}
+
 	labelsAttribute, ok := attributes["labels"]
 
 	if !ok {
@@ -877,21 +956,22 @@ func (t FlavorsType) ValueFromObject(ctx context.Context, in basetypes.ObjectVal
 	}
 
 	return FlavorsValue{
-		Cpu:            cpuVal,
-		CreatedAt:      createdAtVal,
-		Disk:           diskVal,
-		DisplayName:    displayNameVal,
-		Ephemeral:      ephemeralVal,
-		Features:       featuresVal,
-		Gpu:            gpuVal,
-		GpuCount:       gpuCountVal,
-		Id:             idVal,
-		Labels:         labelsVal,
-		Name:           nameVal,
-		Ram:            ramVal,
-		RegionName:     regionNameVal,
-		StockAvailable: stockAvailableVal,
-		state:          attr.ValueStateKnown,
+		Cpu:               cpuVal,
+		CreatedAt:         createdAtVal,
+		Disk:              diskVal,
+		DisplayName:       displayNameVal,
+		Ephemeral:         ephemeralVal,
+		Features:          featuresVal,
+		Gpu:               gpuVal,
+		GpuCount:          gpuCountVal,
+		Id:                idVal,
+		ImageRestrictions: imageRestrictionsVal,
+		Labels:            labelsVal,
+		Name:              nameVal,
+		Ram:               ramVal,
+		RegionName:        regionNameVal,
+		StockAvailable:    stockAvailableVal,
+		state:             attr.ValueStateKnown,
 	}, diags
 }
 
@@ -1120,6 +1200,24 @@ func NewFlavorsValue(attributeTypes map[string]attr.Type, attributes map[string]
 			fmt.Sprintf(`id expected to be basetypes.Int64Value, was: %T`, idAttribute))
 	}
 
+	imageRestrictionsAttribute, ok := attributes["image_restrictions"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`image_restrictions is missing from object`)
+
+		return NewFlavorsValueUnknown(), diags
+	}
+
+	imageRestrictionsVal, ok := imageRestrictionsAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`image_restrictions expected to be basetypes.ObjectValue, was: %T`, imageRestrictionsAttribute))
+	}
+
 	labelsAttribute, ok := attributes["labels"]
 
 	if !ok {
@@ -1215,21 +1313,22 @@ func NewFlavorsValue(attributeTypes map[string]attr.Type, attributes map[string]
 	}
 
 	return FlavorsValue{
-		Cpu:            cpuVal,
-		CreatedAt:      createdAtVal,
-		Disk:           diskVal,
-		DisplayName:    displayNameVal,
-		Ephemeral:      ephemeralVal,
-		Features:       featuresVal,
-		Gpu:            gpuVal,
-		GpuCount:       gpuCountVal,
-		Id:             idVal,
-		Labels:         labelsVal,
-		Name:           nameVal,
-		Ram:            ramVal,
-		RegionName:     regionNameVal,
-		StockAvailable: stockAvailableVal,
-		state:          attr.ValueStateKnown,
+		Cpu:               cpuVal,
+		CreatedAt:         createdAtVal,
+		Disk:              diskVal,
+		DisplayName:       displayNameVal,
+		Ephemeral:         ephemeralVal,
+		Features:          featuresVal,
+		Gpu:               gpuVal,
+		GpuCount:          gpuCountVal,
+		Id:                idVal,
+		ImageRestrictions: imageRestrictionsVal,
+		Labels:            labelsVal,
+		Name:              nameVal,
+		Ram:               ramVal,
+		RegionName:        regionNameVal,
+		StockAvailable:    stockAvailableVal,
+		state:             attr.ValueStateKnown,
 	}, diags
 }
 
@@ -1301,25 +1400,26 @@ func (t FlavorsType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = FlavorsValue{}
 
 type FlavorsValue struct {
-	Cpu            basetypes.Int64Value  `tfsdk:"cpu"`
-	CreatedAt      basetypes.StringValue `tfsdk:"created_at"`
-	Disk           basetypes.Int64Value  `tfsdk:"disk"`
-	DisplayName    basetypes.StringValue `tfsdk:"display_name"`
-	Ephemeral      basetypes.Int64Value  `tfsdk:"ephemeral"`
-	Features       basetypes.ObjectValue `tfsdk:"features"`
-	Gpu            basetypes.StringValue `tfsdk:"gpu"`
-	GpuCount       basetypes.Int64Value  `tfsdk:"gpu_count"`
-	Id             basetypes.Int64Value  `tfsdk:"id"`
-	Labels         basetypes.ListValue   `tfsdk:"labels"`
-	Name           basetypes.StringValue `tfsdk:"name"`
-	Ram            basetypes.NumberValue `tfsdk:"ram"`
-	RegionName     basetypes.StringValue `tfsdk:"region_name"`
-	StockAvailable basetypes.BoolValue   `tfsdk:"stock_available"`
-	state          attr.ValueState
+	Cpu               basetypes.Int64Value  `tfsdk:"cpu"`
+	CreatedAt         basetypes.StringValue `tfsdk:"created_at"`
+	Disk              basetypes.Int64Value  `tfsdk:"disk"`
+	DisplayName       basetypes.StringValue `tfsdk:"display_name"`
+	Ephemeral         basetypes.Int64Value  `tfsdk:"ephemeral"`
+	Features          basetypes.ObjectValue `tfsdk:"features"`
+	Gpu               basetypes.StringValue `tfsdk:"gpu"`
+	GpuCount          basetypes.Int64Value  `tfsdk:"gpu_count"`
+	Id                basetypes.Int64Value  `tfsdk:"id"`
+	ImageRestrictions basetypes.ObjectValue `tfsdk:"image_restrictions"`
+	Labels            basetypes.ListValue   `tfsdk:"labels"`
+	Name              basetypes.StringValue `tfsdk:"name"`
+	Ram               basetypes.NumberValue `tfsdk:"ram"`
+	RegionName        basetypes.StringValue `tfsdk:"region_name"`
+	StockAvailable    basetypes.BoolValue   `tfsdk:"stock_available"`
+	state             attr.ValueState
 }
 
 func (v FlavorsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 14)
+	attrTypes := make(map[string]tftypes.Type, 15)
 
 	var val tftypes.Value
 	var err error
@@ -1335,6 +1435,9 @@ func (v FlavorsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, erro
 	attrTypes["gpu"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["gpu_count"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["image_restrictions"] = basetypes.ObjectType{
+		AttrTypes: ImageRestrictionsValue{}.AttributeTypes(ctx),
+	}.TerraformType(ctx)
 	attrTypes["labels"] = basetypes.ListType{
 		ElemType: LabelsValue{}.Type(ctx),
 	}.TerraformType(ctx)
@@ -1347,7 +1450,7 @@ func (v FlavorsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, erro
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 14)
+		vals := make(map[string]tftypes.Value, 15)
 
 		val, err = v.Cpu.ToTerraformValue(ctx)
 
@@ -1420,6 +1523,14 @@ func (v FlavorsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, erro
 		}
 
 		vals["id"] = val
+
+		val, err = v.ImageRestrictions.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["image_restrictions"] = val
 
 		val, err = v.Labels.ToTerraformValue(ctx)
 
@@ -1511,6 +1622,27 @@ func (v FlavorsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue,
 		)
 	}
 
+	var imageRestrictions basetypes.ObjectValue
+
+	if v.ImageRestrictions.IsNull() {
+		imageRestrictions = types.ObjectNull(
+			ImageRestrictionsValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if v.ImageRestrictions.IsUnknown() {
+		imageRestrictions = types.ObjectUnknown(
+			ImageRestrictionsValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if !v.ImageRestrictions.IsNull() && !v.ImageRestrictions.IsUnknown() {
+		imageRestrictions = types.ObjectValueMust(
+			ImageRestrictionsValue{}.AttributeTypes(ctx),
+			v.ImageRestrictions.Attributes(),
+		)
+	}
+
 	labels := types.ListValueMust(
 		LabelsType{
 			basetypes.ObjectType{
@@ -1552,6 +1684,9 @@ func (v FlavorsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue,
 		"gpu":       basetypes.StringType{},
 		"gpu_count": basetypes.Int64Type{},
 		"id":        basetypes.Int64Type{},
+		"image_restrictions": basetypes.ObjectType{
+			AttrTypes: ImageRestrictionsValue{}.AttributeTypes(ctx),
+		},
 		"labels": basetypes.ListType{
 			ElemType: LabelsValue{}.Type(ctx),
 		},
@@ -1572,20 +1707,21 @@ func (v FlavorsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue,
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
-			"cpu":             v.Cpu,
-			"created_at":      v.CreatedAt,
-			"disk":            v.Disk,
-			"display_name":    v.DisplayName,
-			"ephemeral":       v.Ephemeral,
-			"features":        features,
-			"gpu":             v.Gpu,
-			"gpu_count":       v.GpuCount,
-			"id":              v.Id,
-			"labels":          labels,
-			"name":            v.Name,
-			"ram":             v.Ram,
-			"region_name":     v.RegionName,
-			"stock_available": v.StockAvailable,
+			"cpu":                v.Cpu,
+			"created_at":         v.CreatedAt,
+			"disk":               v.Disk,
+			"display_name":       v.DisplayName,
+			"ephemeral":          v.Ephemeral,
+			"features":           features,
+			"gpu":                v.Gpu,
+			"gpu_count":          v.GpuCount,
+			"id":                 v.Id,
+			"image_restrictions": imageRestrictions,
+			"labels":             labels,
+			"name":               v.Name,
+			"ram":                v.Ram,
+			"region_name":        v.RegionName,
+			"stock_available":    v.StockAvailable,
 		})
 
 	return objVal, diags
@@ -1642,6 +1778,10 @@ func (v FlavorsValue) Equal(o attr.Value) bool {
 		return false
 	}
 
+	if !v.ImageRestrictions.Equal(other.ImageRestrictions) {
+		return false
+	}
+
 	if !v.Labels.Equal(other.Labels) {
 		return false
 	}
@@ -1686,6 +1826,9 @@ func (v FlavorsValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 		"gpu":       basetypes.StringType{},
 		"gpu_count": basetypes.Int64Type{},
 		"id":        basetypes.Int64Type{},
+		"image_restrictions": basetypes.ObjectType{
+			AttrTypes: ImageRestrictionsValue{}.AttributeTypes(ctx),
+		},
 		"labels": basetypes.ListType{
 			ElemType: LabelsValue{}.Type(ctx),
 		},
@@ -1953,6 +2096,1306 @@ func (v FeaturesValue) Type(ctx context.Context) attr.Type {
 }
 
 func (v FeaturesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{}
+}
+
+var _ basetypes.ObjectTypable = ImageRestrictionsType{}
+
+type ImageRestrictionsType struct {
+	basetypes.ObjectType
+}
+
+func (t ImageRestrictionsType) Equal(o attr.Type) bool {
+	other, ok := o.(ImageRestrictionsType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t ImageRestrictionsType) String() string {
+	return "ImageRestrictionsType"
+}
+
+func (t ImageRestrictionsType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	compatibleImagesAttribute, ok := attributes["compatible_images"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`compatible_images is missing from object`)
+
+		return nil, diags
+	}
+
+	compatibleImagesVal, ok := compatibleImagesAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`compatible_images expected to be basetypes.ListValue, was: %T`, compatibleImagesAttribute))
+	}
+
+	hasImageRestrictionsAttribute, ok := attributes["has_image_restrictions"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`has_image_restrictions is missing from object`)
+
+		return nil, diags
+	}
+
+	hasImageRestrictionsVal, ok := hasImageRestrictionsAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`has_image_restrictions expected to be basetypes.BoolValue, was: %T`, hasImageRestrictionsAttribute))
+	}
+
+	restrictionTypeAttribute, ok := attributes["restriction_type"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`restriction_type is missing from object`)
+
+		return nil, diags
+	}
+
+	restrictionTypeVal, ok := restrictionTypeAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`restriction_type expected to be basetypes.StringValue, was: %T`, restrictionTypeAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return ImageRestrictionsValue{
+		CompatibleImages:     compatibleImagesVal,
+		HasImageRestrictions: hasImageRestrictionsVal,
+		RestrictionType:      restrictionTypeVal,
+		state:                attr.ValueStateKnown,
+	}, diags
+}
+
+func NewImageRestrictionsValueNull() ImageRestrictionsValue {
+	return ImageRestrictionsValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewImageRestrictionsValueUnknown() ImageRestrictionsValue {
+	return ImageRestrictionsValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewImageRestrictionsValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (ImageRestrictionsValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing ImageRestrictionsValue Attribute Value",
+				"While creating a ImageRestrictionsValue value, a missing attribute value was detected. "+
+					"A ImageRestrictionsValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("ImageRestrictionsValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid ImageRestrictionsValue Attribute Type",
+				"While creating a ImageRestrictionsValue value, an invalid attribute value was detected. "+
+					"A ImageRestrictionsValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("ImageRestrictionsValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("ImageRestrictionsValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra ImageRestrictionsValue Attribute Value",
+				"While creating a ImageRestrictionsValue value, an extra attribute value was detected. "+
+					"A ImageRestrictionsValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra ImageRestrictionsValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewImageRestrictionsValueUnknown(), diags
+	}
+
+	compatibleImagesAttribute, ok := attributes["compatible_images"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`compatible_images is missing from object`)
+
+		return NewImageRestrictionsValueUnknown(), diags
+	}
+
+	compatibleImagesVal, ok := compatibleImagesAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`compatible_images expected to be basetypes.ListValue, was: %T`, compatibleImagesAttribute))
+	}
+
+	hasImageRestrictionsAttribute, ok := attributes["has_image_restrictions"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`has_image_restrictions is missing from object`)
+
+		return NewImageRestrictionsValueUnknown(), diags
+	}
+
+	hasImageRestrictionsVal, ok := hasImageRestrictionsAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`has_image_restrictions expected to be basetypes.BoolValue, was: %T`, hasImageRestrictionsAttribute))
+	}
+
+	restrictionTypeAttribute, ok := attributes["restriction_type"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`restriction_type is missing from object`)
+
+		return NewImageRestrictionsValueUnknown(), diags
+	}
+
+	restrictionTypeVal, ok := restrictionTypeAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`restriction_type expected to be basetypes.StringValue, was: %T`, restrictionTypeAttribute))
+	}
+
+	if diags.HasError() {
+		return NewImageRestrictionsValueUnknown(), diags
+	}
+
+	return ImageRestrictionsValue{
+		CompatibleImages:     compatibleImagesVal,
+		HasImageRestrictions: hasImageRestrictionsVal,
+		RestrictionType:      restrictionTypeVal,
+		state:                attr.ValueStateKnown,
+	}, diags
+}
+
+func NewImageRestrictionsValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) ImageRestrictionsValue {
+	object, diags := NewImageRestrictionsValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewImageRestrictionsValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t ImageRestrictionsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewImageRestrictionsValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewImageRestrictionsValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewImageRestrictionsValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewImageRestrictionsValueMust(ImageRestrictionsValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t ImageRestrictionsType) ValueType(ctx context.Context) attr.Value {
+	return ImageRestrictionsValue{}
+}
+
+var _ basetypes.ObjectValuable = ImageRestrictionsValue{}
+
+type ImageRestrictionsValue struct {
+	CompatibleImages     basetypes.ListValue   `tfsdk:"compatible_images"`
+	HasImageRestrictions basetypes.BoolValue   `tfsdk:"has_image_restrictions"`
+	RestrictionType      basetypes.StringValue `tfsdk:"restriction_type"`
+	state                attr.ValueState
+}
+
+func (v ImageRestrictionsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 3)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["compatible_images"] = basetypes.ListType{
+		ElemType: CompatibleImagesValue{}.Type(ctx),
+	}.TerraformType(ctx)
+	attrTypes["has_image_restrictions"] = basetypes.BoolType{}.TerraformType(ctx)
+	attrTypes["restriction_type"] = basetypes.StringType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 3)
+
+		val, err = v.CompatibleImages.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["compatible_images"] = val
+
+		val, err = v.HasImageRestrictions.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["has_image_restrictions"] = val
+
+		val, err = v.RestrictionType.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["restriction_type"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v ImageRestrictionsValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v ImageRestrictionsValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v ImageRestrictionsValue) String() string {
+	return "ImageRestrictionsValue"
+}
+
+func (v ImageRestrictionsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	compatibleImages := types.ListValueMust(
+		CompatibleImagesType{
+			basetypes.ObjectType{
+				AttrTypes: CompatibleImagesValue{}.AttributeTypes(ctx),
+			},
+		},
+		v.CompatibleImages.Elements(),
+	)
+
+	if v.CompatibleImages.IsNull() {
+		compatibleImages = types.ListNull(
+			CompatibleImagesType{
+				basetypes.ObjectType{
+					AttrTypes: CompatibleImagesValue{}.AttributeTypes(ctx),
+				},
+			},
+		)
+	}
+
+	if v.CompatibleImages.IsUnknown() {
+		compatibleImages = types.ListUnknown(
+			CompatibleImagesType{
+				basetypes.ObjectType{
+					AttrTypes: CompatibleImagesValue{}.AttributeTypes(ctx),
+				},
+			},
+		)
+	}
+
+	attributeTypes := map[string]attr.Type{
+		"compatible_images": basetypes.ListType{
+			ElemType: CompatibleImagesValue{}.Type(ctx),
+		},
+		"has_image_restrictions": basetypes.BoolType{},
+		"restriction_type":       basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"compatible_images":      compatibleImages,
+			"has_image_restrictions": v.HasImageRestrictions,
+			"restriction_type":       v.RestrictionType,
+		})
+
+	return objVal, diags
+}
+
+func (v ImageRestrictionsValue) Equal(o attr.Value) bool {
+	other, ok := o.(ImageRestrictionsValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.CompatibleImages.Equal(other.CompatibleImages) {
+		return false
+	}
+
+	if !v.HasImageRestrictions.Equal(other.HasImageRestrictions) {
+		return false
+	}
+
+	if !v.RestrictionType.Equal(other.RestrictionType) {
+		return false
+	}
+
+	return true
+}
+
+func (v ImageRestrictionsValue) Type(ctx context.Context) attr.Type {
+	return ImageRestrictionsType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v ImageRestrictionsValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"compatible_images": basetypes.ListType{
+			ElemType: CompatibleImagesValue{}.Type(ctx),
+		},
+		"has_image_restrictions": basetypes.BoolType{},
+		"restriction_type":       basetypes.StringType{},
+	}
+}
+
+var _ basetypes.ObjectTypable = CompatibleImagesType{}
+
+type CompatibleImagesType struct {
+	basetypes.ObjectType
+}
+
+func (t CompatibleImagesType) Equal(o attr.Type) bool {
+	other, ok := o.(CompatibleImagesType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t CompatibleImagesType) String() string {
+	return "CompatibleImagesType"
+}
+
+func (t CompatibleImagesType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	constraintsAttribute, ok := attributes["constraints"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`constraints is missing from object`)
+
+		return nil, diags
+	}
+
+	constraintsVal, ok := constraintsAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`constraints expected to be basetypes.ObjectValue, was: %T`, constraintsAttribute))
+	}
+
+	imageIdAttribute, ok := attributes["image_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`image_id is missing from object`)
+
+		return nil, diags
+	}
+
+	imageIdVal, ok := imageIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`image_id expected to be basetypes.Int64Value, was: %T`, imageIdAttribute))
+	}
+
+	imageNameAttribute, ok := attributes["image_name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`image_name is missing from object`)
+
+		return nil, diags
+	}
+
+	imageNameVal, ok := imageNameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`image_name expected to be basetypes.StringValue, was: %T`, imageNameAttribute))
+	}
+
+	linkTypeAttribute, ok := attributes["link_type"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`link_type is missing from object`)
+
+		return nil, diags
+	}
+
+	linkTypeVal, ok := linkTypeAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`link_type expected to be basetypes.StringValue, was: %T`, linkTypeAttribute))
+	}
+
+	reasonAttribute, ok := attributes["reason"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`reason is missing from object`)
+
+		return nil, diags
+	}
+
+	reasonVal, ok := reasonAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`reason expected to be basetypes.StringValue, was: %T`, reasonAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return CompatibleImagesValue{
+		Constraints: constraintsVal,
+		ImageId:     imageIdVal,
+		ImageName:   imageNameVal,
+		LinkType:    linkTypeVal,
+		Reason:      reasonVal,
+		state:       attr.ValueStateKnown,
+	}, diags
+}
+
+func NewCompatibleImagesValueNull() CompatibleImagesValue {
+	return CompatibleImagesValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewCompatibleImagesValueUnknown() CompatibleImagesValue {
+	return CompatibleImagesValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewCompatibleImagesValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (CompatibleImagesValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing CompatibleImagesValue Attribute Value",
+				"While creating a CompatibleImagesValue value, a missing attribute value was detected. "+
+					"A CompatibleImagesValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("CompatibleImagesValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid CompatibleImagesValue Attribute Type",
+				"While creating a CompatibleImagesValue value, an invalid attribute value was detected. "+
+					"A CompatibleImagesValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("CompatibleImagesValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("CompatibleImagesValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra CompatibleImagesValue Attribute Value",
+				"While creating a CompatibleImagesValue value, an extra attribute value was detected. "+
+					"A CompatibleImagesValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra CompatibleImagesValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewCompatibleImagesValueUnknown(), diags
+	}
+
+	constraintsAttribute, ok := attributes["constraints"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`constraints is missing from object`)
+
+		return NewCompatibleImagesValueUnknown(), diags
+	}
+
+	constraintsVal, ok := constraintsAttribute.(basetypes.ObjectValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`constraints expected to be basetypes.ObjectValue, was: %T`, constraintsAttribute))
+	}
+
+	imageIdAttribute, ok := attributes["image_id"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`image_id is missing from object`)
+
+		return NewCompatibleImagesValueUnknown(), diags
+	}
+
+	imageIdVal, ok := imageIdAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`image_id expected to be basetypes.Int64Value, was: %T`, imageIdAttribute))
+	}
+
+	imageNameAttribute, ok := attributes["image_name"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`image_name is missing from object`)
+
+		return NewCompatibleImagesValueUnknown(), diags
+	}
+
+	imageNameVal, ok := imageNameAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`image_name expected to be basetypes.StringValue, was: %T`, imageNameAttribute))
+	}
+
+	linkTypeAttribute, ok := attributes["link_type"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`link_type is missing from object`)
+
+		return NewCompatibleImagesValueUnknown(), diags
+	}
+
+	linkTypeVal, ok := linkTypeAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`link_type expected to be basetypes.StringValue, was: %T`, linkTypeAttribute))
+	}
+
+	reasonAttribute, ok := attributes["reason"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`reason is missing from object`)
+
+		return NewCompatibleImagesValueUnknown(), diags
+	}
+
+	reasonVal, ok := reasonAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`reason expected to be basetypes.StringValue, was: %T`, reasonAttribute))
+	}
+
+	if diags.HasError() {
+		return NewCompatibleImagesValueUnknown(), diags
+	}
+
+	return CompatibleImagesValue{
+		Constraints: constraintsVal,
+		ImageId:     imageIdVal,
+		ImageName:   imageNameVal,
+		LinkType:    linkTypeVal,
+		Reason:      reasonVal,
+		state:       attr.ValueStateKnown,
+	}, diags
+}
+
+func NewCompatibleImagesValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) CompatibleImagesValue {
+	object, diags := NewCompatibleImagesValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewCompatibleImagesValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t CompatibleImagesType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewCompatibleImagesValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewCompatibleImagesValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewCompatibleImagesValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewCompatibleImagesValueMust(CompatibleImagesValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t CompatibleImagesType) ValueType(ctx context.Context) attr.Value {
+	return CompatibleImagesValue{}
+}
+
+var _ basetypes.ObjectValuable = CompatibleImagesValue{}
+
+type CompatibleImagesValue struct {
+	Constraints basetypes.ObjectValue `tfsdk:"constraints"`
+	ImageId     basetypes.Int64Value  `tfsdk:"image_id"`
+	ImageName   basetypes.StringValue `tfsdk:"image_name"`
+	LinkType    basetypes.StringValue `tfsdk:"link_type"`
+	Reason      basetypes.StringValue `tfsdk:"reason"`
+	state       attr.ValueState
+}
+
+func (v CompatibleImagesValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 5)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["constraints"] = basetypes.ObjectType{
+		AttrTypes: ConstraintsValue{}.AttributeTypes(ctx),
+	}.TerraformType(ctx)
+	attrTypes["image_id"] = basetypes.Int64Type{}.TerraformType(ctx)
+	attrTypes["image_name"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["link_type"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["reason"] = basetypes.StringType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 5)
+
+		val, err = v.Constraints.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["constraints"] = val
+
+		val, err = v.ImageId.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["image_id"] = val
+
+		val, err = v.ImageName.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["image_name"] = val
+
+		val, err = v.LinkType.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["link_type"] = val
+
+		val, err = v.Reason.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["reason"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v CompatibleImagesValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v CompatibleImagesValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v CompatibleImagesValue) String() string {
+	return "CompatibleImagesValue"
+}
+
+func (v CompatibleImagesValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var constraints basetypes.ObjectValue
+
+	if v.Constraints.IsNull() {
+		constraints = types.ObjectNull(
+			ConstraintsValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if v.Constraints.IsUnknown() {
+		constraints = types.ObjectUnknown(
+			ConstraintsValue{}.AttributeTypes(ctx),
+		)
+	}
+
+	if !v.Constraints.IsNull() && !v.Constraints.IsUnknown() {
+		constraints = types.ObjectValueMust(
+			ConstraintsValue{}.AttributeTypes(ctx),
+			v.Constraints.Attributes(),
+		)
+	}
+
+	attributeTypes := map[string]attr.Type{
+		"constraints": basetypes.ObjectType{
+			AttrTypes: ConstraintsValue{}.AttributeTypes(ctx),
+		},
+		"image_id":   basetypes.Int64Type{},
+		"image_name": basetypes.StringType{},
+		"link_type":  basetypes.StringType{},
+		"reason":     basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"constraints": constraints,
+			"image_id":    v.ImageId,
+			"image_name":  v.ImageName,
+			"link_type":   v.LinkType,
+			"reason":      v.Reason,
+		})
+
+	return objVal, diags
+}
+
+func (v CompatibleImagesValue) Equal(o attr.Value) bool {
+	other, ok := o.(CompatibleImagesValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.Constraints.Equal(other.Constraints) {
+		return false
+	}
+
+	if !v.ImageId.Equal(other.ImageId) {
+		return false
+	}
+
+	if !v.ImageName.Equal(other.ImageName) {
+		return false
+	}
+
+	if !v.LinkType.Equal(other.LinkType) {
+		return false
+	}
+
+	if !v.Reason.Equal(other.Reason) {
+		return false
+	}
+
+	return true
+}
+
+func (v CompatibleImagesValue) Type(ctx context.Context) attr.Type {
+	return CompatibleImagesType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v CompatibleImagesValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"constraints": basetypes.ObjectType{
+			AttrTypes: ConstraintsValue{}.AttributeTypes(ctx),
+		},
+		"image_id":   basetypes.Int64Type{},
+		"image_name": basetypes.StringType{},
+		"link_type":  basetypes.StringType{},
+		"reason":     basetypes.StringType{},
+	}
+}
+
+var _ basetypes.ObjectTypable = ConstraintsType{}
+
+type ConstraintsType struct {
+	basetypes.ObjectType
+}
+
+func (t ConstraintsType) Equal(o attr.Type) bool {
+	other, ok := o.(ConstraintsType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t ConstraintsType) String() string {
+	return "ConstraintsType"
+}
+
+func (t ConstraintsType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return ConstraintsValue{
+		state: attr.ValueStateKnown,
+	}, diags
+}
+
+func NewConstraintsValueNull() ConstraintsValue {
+	return ConstraintsValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewConstraintsValueUnknown() ConstraintsValue {
+	return ConstraintsValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewConstraintsValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (ConstraintsValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing ConstraintsValue Attribute Value",
+				"While creating a ConstraintsValue value, a missing attribute value was detected. "+
+					"A ConstraintsValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("ConstraintsValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid ConstraintsValue Attribute Type",
+				"While creating a ConstraintsValue value, an invalid attribute value was detected. "+
+					"A ConstraintsValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("ConstraintsValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("ConstraintsValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra ConstraintsValue Attribute Value",
+				"While creating a ConstraintsValue value, an extra attribute value was detected. "+
+					"A ConstraintsValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra ConstraintsValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewConstraintsValueUnknown(), diags
+	}
+
+	if diags.HasError() {
+		return NewConstraintsValueUnknown(), diags
+	}
+
+	return ConstraintsValue{
+		state: attr.ValueStateKnown,
+	}, diags
+}
+
+func NewConstraintsValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) ConstraintsValue {
+	object, diags := NewConstraintsValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewConstraintsValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t ConstraintsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewConstraintsValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewConstraintsValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewConstraintsValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewConstraintsValueMust(ConstraintsValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t ConstraintsType) ValueType(ctx context.Context) attr.Value {
+	return ConstraintsValue{}
+}
+
+var _ basetypes.ObjectValuable = ConstraintsValue{}
+
+type ConstraintsValue struct {
+	state attr.ValueState
+}
+
+func (v ConstraintsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 0)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 0)
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v ConstraintsValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v ConstraintsValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v ConstraintsValue) String() string {
+	return "ConstraintsValue"
+}
+
+func (v ConstraintsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributeTypes := map[string]attr.Type{}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{})
+
+	return objVal, diags
+}
+
+func (v ConstraintsValue) Equal(o attr.Value) bool {
+	other, ok := o.(ConstraintsValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	return true
+}
+
+func (v ConstraintsValue) Type(ctx context.Context) attr.Type {
+	return ConstraintsType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v ConstraintsValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{}
 }
 

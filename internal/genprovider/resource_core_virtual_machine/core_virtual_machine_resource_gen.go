@@ -49,6 +49,11 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 					stringvalidator.LengthAtMost(250),
 				},
 			},
+			"cluster_id": schema.Int64Attribute{
+				Computed:            true,
+				Description:         "The COE cluster this VM is a node of, or null.",
+				MarkdownDescription: "The COE cluster this VM is a node of, or null.",
+			},
 			"create_bootable_volume": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -65,12 +70,37 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"dedicated_inference_id": schema.Int64Attribute{
+				Computed:            true,
+				Description:         "The dedicated inference endpoint this VM serves, or null.",
+				MarkdownDescription: "The dedicated inference endpoint this VM serves, or null.",
+			},
 			"enable_port_randomization": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
 				Description:         "Indicates whether to enable port randomization.This setting is only effective if 'assign_floating_ip' is true. Defaults to true.",
 				MarkdownDescription: "Indicates whether to enable port randomization.This setting is only effective if 'assign_floating_ip' is true. Defaults to true.",
 				Default:             booldefault.StaticBool(true),
+			},
+			"enhanced_metrics": schema.SingleNestedAttribute{
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Computed: true,
+					},
+				},
+				CustomType: EnhancedMetricsType{
+					ObjectType: types.ObjectType{
+						AttrTypes: EnhancedMetricsValue{}.AttributeTypes(ctx),
+					},
+				},
+				Computed: true,
+			},
+			"enhanced_monitoring_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "When true, the Hyperstack VM Agent is opted in for this VM and metrics ingestion is allowed by the prom-gateway. The agent must still be installed on the VM (typically via user_data cloud-init).",
+				MarkdownDescription: "When true, the Hyperstack VM Agent is opted in for this VM and metrics ingestion is allowed by the prom-gateway. The agent must still be installed on the VM (typically via user_data cloud-init).",
+				Default:             booldefault.StaticBool(false),
 			},
 			"environment": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
@@ -554,39 +584,367 @@ func CoreVirtualMachineResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type CoreVirtualMachineModel struct {
-	AssignFloatingIp        types.Bool       `tfsdk:"assign_floating_ip"`
-	CallbackUrl             types.String     `tfsdk:"callback_url"`
-	CreateBootableVolume    types.Bool       `tfsdk:"create_bootable_volume"`
-	CreatedAt               types.String     `tfsdk:"created_at"`
-	EnablePortRandomization types.Bool       `tfsdk:"enable_port_randomization"`
-	Environment             EnvironmentValue `tfsdk:"environment"`
-	EnvironmentName         types.String     `tfsdk:"environment_name"`
-	FixedIp                 types.String     `tfsdk:"fixed_ip"`
-	Flavor                  FlavorValue      `tfsdk:"flavor"`
-	FlavorName              types.String     `tfsdk:"flavor_name"`
-	FloatingIp              types.String     `tfsdk:"floating_ip"`
-	FloatingIpStatus        types.String     `tfsdk:"floating_ip_status"`
-	Id                      types.Int64      `tfsdk:"id"`
-	Image                   ImageValue       `tfsdk:"image"`
-	ImageName               types.String     `tfsdk:"image_name"`
-	KeyName                 types.String     `tfsdk:"key_name"`
-	Keypair                 KeypairValue     `tfsdk:"keypair"`
-	Labels                  types.List       `tfsdk:"labels"`
-	Locked                  types.Bool       `tfsdk:"locked"`
-	Name                    types.String     `tfsdk:"name"`
-	Os                      types.String     `tfsdk:"os"`
-	PortRandomization       types.Bool       `tfsdk:"port_randomization"`
-	PortRandomizationStatus types.String     `tfsdk:"port_randomization_status"`
-	PowerState              types.String     `tfsdk:"power_state"`
-	RequiresPublicIp        types.Bool       `tfsdk:"requires_public_ip"`
-	SecurityRules           types.List       `tfsdk:"security_rules"`
-	Status                  types.String     `tfsdk:"status"`
-	UserData                types.String     `tfsdk:"user_data"`
-	VmId                    types.Int64      `tfsdk:"vm_id"`
-	VmState                 types.String     `tfsdk:"vm_state"`
-	VolumeAttachments       types.List       `tfsdk:"volume_attachments"`
-	VolumeName              types.String     `tfsdk:"volume_name"`
-	Profile                 types.List       `tfsdk:"profile"`
+	AssignFloatingIp          types.Bool           `tfsdk:"assign_floating_ip"`
+	CallbackUrl               types.String         `tfsdk:"callback_url"`
+	ClusterId                 types.Int64          `tfsdk:"cluster_id"`
+	CreateBootableVolume      types.Bool           `tfsdk:"create_bootable_volume"`
+	CreatedAt                 types.String         `tfsdk:"created_at"`
+	DedicatedInferenceId      types.Int64          `tfsdk:"dedicated_inference_id"`
+	EnablePortRandomization   types.Bool           `tfsdk:"enable_port_randomization"`
+	EnhancedMetrics           EnhancedMetricsValue `tfsdk:"enhanced_metrics"`
+	EnhancedMonitoringEnabled types.Bool           `tfsdk:"enhanced_monitoring_enabled"`
+	Environment               EnvironmentValue     `tfsdk:"environment"`
+	EnvironmentName           types.String         `tfsdk:"environment_name"`
+	FixedIp                   types.String         `tfsdk:"fixed_ip"`
+	Flavor                    FlavorValue          `tfsdk:"flavor"`
+	FlavorName                types.String         `tfsdk:"flavor_name"`
+	FloatingIp                types.String         `tfsdk:"floating_ip"`
+	FloatingIpStatus          types.String         `tfsdk:"floating_ip_status"`
+	Id                        types.Int64          `tfsdk:"id"`
+	Image                     ImageValue           `tfsdk:"image"`
+	ImageName                 types.String         `tfsdk:"image_name"`
+	KeyName                   types.String         `tfsdk:"key_name"`
+	Keypair                   KeypairValue         `tfsdk:"keypair"`
+	Labels                    types.List           `tfsdk:"labels"`
+	Locked                    types.Bool           `tfsdk:"locked"`
+	Name                      types.String         `tfsdk:"name"`
+	Os                        types.String         `tfsdk:"os"`
+	PortRandomization         types.Bool           `tfsdk:"port_randomization"`
+	PortRandomizationStatus   types.String         `tfsdk:"port_randomization_status"`
+	PowerState                types.String         `tfsdk:"power_state"`
+	RequiresPublicIp          types.Bool           `tfsdk:"requires_public_ip"`
+	SecurityRules             types.List           `tfsdk:"security_rules"`
+	Status                    types.String         `tfsdk:"status"`
+	UserData                  types.String         `tfsdk:"user_data"`
+	VmId                      types.Int64          `tfsdk:"vm_id"`
+	VmState                   types.String         `tfsdk:"vm_state"`
+	VolumeAttachments         types.List           `tfsdk:"volume_attachments"`
+	VolumeName                types.String         `tfsdk:"volume_name"`
+	Profile                   types.List           `tfsdk:"profile"`
+}
+
+var _ basetypes.ObjectTypable = EnhancedMetricsType{}
+
+type EnhancedMetricsType struct {
+	basetypes.ObjectType
+}
+
+func (t EnhancedMetricsType) Equal(o attr.Type) bool {
+	other, ok := o.(EnhancedMetricsType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t EnhancedMetricsType) String() string {
+	return "EnhancedMetricsType"
+}
+
+func (t EnhancedMetricsType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	enabledAttribute, ok := attributes["enabled"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`enabled is missing from object`)
+
+		return nil, diags
+	}
+
+	enabledVal, ok := enabledAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`enabled expected to be basetypes.BoolValue, was: %T`, enabledAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return EnhancedMetricsValue{
+		Enabled: enabledVal,
+		state:   attr.ValueStateKnown,
+	}, diags
+}
+
+func NewEnhancedMetricsValueNull() EnhancedMetricsValue {
+	return EnhancedMetricsValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewEnhancedMetricsValueUnknown() EnhancedMetricsValue {
+	return EnhancedMetricsValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewEnhancedMetricsValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (EnhancedMetricsValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing EnhancedMetricsValue Attribute Value",
+				"While creating a EnhancedMetricsValue value, a missing attribute value was detected. "+
+					"A EnhancedMetricsValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("EnhancedMetricsValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid EnhancedMetricsValue Attribute Type",
+				"While creating a EnhancedMetricsValue value, an invalid attribute value was detected. "+
+					"A EnhancedMetricsValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("EnhancedMetricsValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("EnhancedMetricsValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra EnhancedMetricsValue Attribute Value",
+				"While creating a EnhancedMetricsValue value, an extra attribute value was detected. "+
+					"A EnhancedMetricsValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra EnhancedMetricsValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewEnhancedMetricsValueUnknown(), diags
+	}
+
+	enabledAttribute, ok := attributes["enabled"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`enabled is missing from object`)
+
+		return NewEnhancedMetricsValueUnknown(), diags
+	}
+
+	enabledVal, ok := enabledAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`enabled expected to be basetypes.BoolValue, was: %T`, enabledAttribute))
+	}
+
+	if diags.HasError() {
+		return NewEnhancedMetricsValueUnknown(), diags
+	}
+
+	return EnhancedMetricsValue{
+		Enabled: enabledVal,
+		state:   attr.ValueStateKnown,
+	}, diags
+}
+
+func NewEnhancedMetricsValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) EnhancedMetricsValue {
+	object, diags := NewEnhancedMetricsValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewEnhancedMetricsValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t EnhancedMetricsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewEnhancedMetricsValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewEnhancedMetricsValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewEnhancedMetricsValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewEnhancedMetricsValueMust(EnhancedMetricsValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t EnhancedMetricsType) ValueType(ctx context.Context) attr.Value {
+	return EnhancedMetricsValue{}
+}
+
+var _ basetypes.ObjectValuable = EnhancedMetricsValue{}
+
+type EnhancedMetricsValue struct {
+	Enabled basetypes.BoolValue `tfsdk:"enabled"`
+	state   attr.ValueState
+}
+
+func (v EnhancedMetricsValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 1)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["enabled"] = basetypes.BoolType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 1)
+
+		val, err = v.Enabled.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["enabled"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v EnhancedMetricsValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v EnhancedMetricsValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v EnhancedMetricsValue) String() string {
+	return "EnhancedMetricsValue"
+}
+
+func (v EnhancedMetricsValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributeTypes := map[string]attr.Type{
+		"enabled": basetypes.BoolType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"enabled": v.Enabled,
+		})
+
+	return objVal, diags
+}
+
+func (v EnhancedMetricsValue) Equal(o attr.Value) bool {
+	other, ok := o.(EnhancedMetricsValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.Enabled.Equal(other.Enabled) {
+		return false
+	}
+
+	return true
+}
+
+func (v EnhancedMetricsValue) Type(ctx context.Context) attr.Type {
+	return EnhancedMetricsType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v EnhancedMetricsValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"enabled": basetypes.BoolType{},
+	}
 }
 
 var _ basetypes.ObjectTypable = EnvironmentType{}

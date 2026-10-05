@@ -5,7 +5,7 @@ go 1.25.0
 toolchain go1.26.6
 
 require (
-	github.com/NexGenCloud/hyperstack-sdk-go v1.55.7-alpha
+	github.com/NexGenCloud/hyperstack-sdk-go v1.55.10-alpha
 	github.com/hashicorp/terraform-plugin-framework v1.13.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.16.0
 	github.com/hashicorp/terraform-plugin-go v0.25.0
