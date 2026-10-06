@@ -97,12 +97,9 @@ def attr_fix_components(data: AttrType) -> None:
   del schemas["RbacRoleDetailResponseModelFixed"]["properties"]["role"]
   paths["/auth/roles/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["$ref"] = "#/components/schemas/RbacRoleDetailResponseModelFixed"
 
-  schemas["Flavor_Fields"]["properties"]["ram"]["type"] = "number"
-
-  schemas["Instance_Overview_Fields"]["properties"]["ram"]["type"] = "number"
-  schemas["Container_Overview_Fields"]["properties"]["ram"]["type"] = "number"
-  schemas["Instance_Flavor_Fields"]["properties"]["ram"]["type"] = "number"
-  schemas["Cluster_Flavor_Fields"]["properties"]["ram"]["type"] = "number"
+  for schema_name in ("Flavor_Fields", "Instance_Overview_Fields", "Container_Overview_Fields", "Instance_Flavor_Fields", "Cluster_Flavor_Fields"):
+    if schema_name in schemas:
+      schemas[schema_name]["properties"]["ram"]["type"] = "number"
 
   # TODO: UNSYNCED see tf provider
   #schemas["ImportKeypairPayload"]["properties"]["environment"] = schemas["ImportKeypairPayload"]["properties"]["environment_name"]

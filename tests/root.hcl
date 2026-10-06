@@ -1,5 +1,3 @@
-skip = true
-
 locals {
   artifacts_dir = "${get_env("ARTIFACTS_DIR")}/${path_relative_to_include("root")}"
   log_suffix = get_env("LOG_SUFFIX", "default")
@@ -97,9 +95,9 @@ generate "local-provider" {
   contents  = <<EOF
 provider_installation {
   filesystem_mirror {
-    # Path from subfolder
-    path    = "${path_relative_from_include()}/../artifacts/provider-mirror"
-    #path    = "${get_repo_root()}/artifacts/provider-mirror"
+    # Absolute: Terragrunt runs terraform from .terragrunt-cache/, not the unit
+    # directory, so a unit-relative path resolves from the cache and misses.
+    path    = "${get_repo_root()}/artifacts/provider-mirror"
     include = ["nexgencloud/*"]
   }
 

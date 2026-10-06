@@ -190,11 +190,12 @@ tasks:
       RUN_DESTROY: '{{ .RUN_DESTROY | default "true" }}'
     env:
       ARTIFACTS_DIR: '{{ .DIR_ARTIFACTS_TESTS }}'
-      TERRAGRUNT_LOG_LEVEL: "warn"
-      #TERRAGRUNT_DEBUG: "1"
-      TERRAGRUNT_NO_AUTO_INIT: "false"
-      TERRAGRUNT_NON_INTERACTIVE: "true"
-      TERRAGRUNT_PARALLELISM: "1"
+      # Terragrunt v1 renamed every TERRAGRUNT_* variable to TG_*.
+      TG_LOG_LEVEL: "warn"
+      #TG_DEBUG: "1"
+      TG_NO_AUTO_INIT: "false"
+      TG_NON_INTERACTIVE: "true"
+      TG_PARALLELISM: "1"
     cmds:
       # language=bash
       - |
@@ -208,10 +209,11 @@ tasks:
         # PURE DEBUG LINE, KEEPING FOR FUTURE REFERENCE ON IMPORTING
         # cd cluster && terragrunt import module.cluster[\"a6000-2\"].hyperstack_core_cluster.this 138; exit 1
 
-        LOG_SUFFIX=apply terragrunt run-all apply
+        # `run-all` was removed in Terragrunt v1; `run --all` replaces it.
+        LOG_SUFFIX=apply terragrunt run --all apply
 
         if [[ "{{ .RUN_DESTROY }}" == "true" ]]; then
-          LOG_SUFFIX=destroy terragrunt run-all destroy
+          LOG_SUFFIX=destroy terragrunt run --all destroy
         fi
 
   test-unit:

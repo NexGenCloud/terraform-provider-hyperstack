@@ -6,7 +6,6 @@ resource "hyperstack_core_cluster" "this" {
   keypair_name     = hyperstack_core_keypair.this.name
 
   kubernetes_version = var.kubernetes_version
-  image_name         = local.image_name
   master_flavor_name = var.master_flavor
   node_flavor_name   = var.node_flavor
 

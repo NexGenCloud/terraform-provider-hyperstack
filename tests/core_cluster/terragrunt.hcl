@@ -1,2 +1,5 @@
 # Root module is not needed
-skip = true
+exclude {
+  if      = true
+  actions = ["all"]
+}

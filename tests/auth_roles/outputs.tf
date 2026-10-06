@@ -40,7 +40,7 @@ output "roles" {
       id          = v.id
       name        = v.name
       description = v.description
-      policies    = [
+      policies = [
         for policy in v.policies : {
           id          = policy.id
           name        = policy.name
@@ -64,7 +64,7 @@ output "role" {
     id          = data.hyperstack_auth_role.this.id
     name        = data.hyperstack_auth_role.this.name
     description = data.hyperstack_auth_role.this.description
-    policies    = [
+    policies = [
       for policy in data.hyperstack_auth_role.this.policies : {
         id          = policy.id
         name        = policy.name

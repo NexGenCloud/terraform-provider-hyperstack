@@ -1,9 +1,9 @@
 variable "region" {
-  type    = string
+  type = string
 }
 
 variable "name_prefix" {
-  type    = string
+  type = string
 }
 
 variable "public_key" {

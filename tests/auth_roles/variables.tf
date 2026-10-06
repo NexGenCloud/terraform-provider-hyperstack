@@ -1,5 +1,5 @@
 variable "name_prefix" {
-  type    = string
+  type = string
 }
 
 variable "role_source" {
@@ -13,7 +13,7 @@ variable "role_description" {
 }
 
 variable "role_policies" {
-  type    = list(string)
+  type = list(string)
   default = [
     "policy:ReadPermissions",
     "policy:VirtualMachinePermissions",
@@ -21,7 +21,7 @@ variable "role_policies" {
 }
 
 variable "role_permissions" {
-  type    = list(string)
+  type = list(string)
   default = [
     "environment:update",
   ]

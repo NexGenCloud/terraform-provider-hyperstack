@@ -1,8 +1,8 @@
 output "gpus" {
   value = [
     for v in data.hyperstack_core_gpus.this.core_gpus : {
-      id      = v.id
-      name    = v.name
+      id   = v.id
+      name = v.name
       regions = [
         for region in v.regions : {
           id   = region.id

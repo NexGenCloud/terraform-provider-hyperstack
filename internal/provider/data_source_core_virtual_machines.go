@@ -65,7 +65,7 @@ func (d *DataSourceCoreVirtualMachines) Read(ctx context.Context, req datasource
 		return
 	}
 
-	result, err := d.client.ListVMsWithResponse(ctx, func() *virtual_machine.ListVMsParams{
+	result, err := d.client.ListVMsWithResponse(ctx, func() *virtual_machine.ListVMsParams {
 		return &virtual_machine.ListVMsParams{
 			Page:     nil,
 			PageSize: nil,
@@ -97,20 +97,11 @@ func (d *DataSourceCoreVirtualMachines) Read(ctx context.Context, req datasource
 		return
 	}
 
-	data = d.ApiToModel(ctx, &resp.Diagnostics, callResult)
+	// Only the computed set is replaced. Overwriting the whole model would drop
+	// every config-supplied filter, and a zero types.List carries no element
+	// type, which the framework rejects when it writes exclude_firewalls back.
+	data.CoreVirtualMachines = d.MapInstances(ctx, &resp.Diagnostics, *callResult)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-}
-
-func (d *DataSourceCoreVirtualMachines) ApiToModel(
-	ctx context.Context,
-	diags *diag.Diagnostics,
-	response *[]virtual_machine.InstanceFields,
-) datasource_core_virtual_machines.CoreVirtualMachinesModel {
-	return datasource_core_virtual_machines.CoreVirtualMachinesModel{
-		CoreVirtualMachines: func() types.Set {
-			return d.MapInstances(ctx, diags, *response)
-		}(),
-	}
 }
 
 func (d *DataSourceCoreVirtualMachines) MapInstances(
@@ -216,6 +207,24 @@ func (d *DataSourceCoreVirtualMachines) MapInstances(
 							}
 							return types.StringValue(*row.Os)
 						}(),
+						"cluster_id": func() attr.Value {
+							if row.ClusterId == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.ClusterId))
+						}(),
+						"dedicated_inference_id": func() attr.Value {
+							if row.DedicatedInferenceId == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.DedicatedInferenceId))
+						}(),
+						"enhanced_metrics": func() attr.Value {
+							if row.EnhancedMetrics == nil {
+								return types.ObjectNull(datasource_core_virtual_machines.EnhancedMetricsValue{}.AttributeTypes(ctx))
+							}
+							return d.MapEnhancedMetrics(ctx, diags, *row.EnhancedMetrics)
+						}(),
 						"environment":        d.MapEnvironment(ctx, diags, *row.Environment),
 						"labels":             d.MapLabels(ctx, diags, *row.Labels),
 						"image":              d.MapImage(ctx, diags, *row.Image),
@@ -239,6 +248,25 @@ func (d *DataSourceCoreVirtualMachines) MapInstances(
 	)
 	diags.Append(diagnostic...)
 	return model
+}
+
+func (d *DataSourceCoreVirtualMachines) MapEnhancedMetrics(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data virtual_machine.InstanceEnhancedMetricsFields,
+) attr.Value {
+	model, diagnostic := datasource_core_virtual_machines.NewEnhancedMetricsValue(
+		datasource_core_virtual_machines.EnhancedMetricsValue{}.AttributeTypes(ctx),
+		map[string]attr.Value{
+			"enabled": types.BoolPointerValue(data.Enabled),
+		},
+	)
+	diags.Append(diagnostic...)
+
+	result, diagnostic := model.ToObjectValue(ctx)
+	diags.Append(diagnostic...)
+
+	return result
 }
 
 func (d *DataSourceCoreVirtualMachines) MapEnvironment(
@@ -399,8 +427,15 @@ func (d *DataSourceCoreVirtualMachines) MapVolumeAttachments(
 				model, diagnostic := datasource_core_virtual_machines.NewVolumeAttachmentsValue(
 					datasource_core_virtual_machines.VolumeAttachmentsValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
-						"status": types.StringValue(*row.Status),
-						"device": types.StringValue(*row.Device),
+						"id": func() attr.Value {
+							if row.Id == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.Id))
+						}(),
+						"protected": types.BoolPointerValue(row.Protected),
+						"status":    types.StringValue(*row.Status),
+						"device":    types.StringValue(*row.Device),
 						"created_at": func() attr.Value {
 							if row.CreatedAt == nil {
 								return types.StringNull()

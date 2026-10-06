@@ -104,35 +104,52 @@ func (d *DataSourceCoreClustersVersions) ApiToModel(
 ) datasource_core_clusters_versions.CoreClustersVersionsModel {
 	return datasource_core_clusters_versions.CoreClustersVersionsModel{
 		CoreClustersVersions: func() types.Set {
-			return d.MapProtocols(ctx, diags, *response)
+			return d.MapVersions(ctx, diags, *response)
 		}(),
 	}
 }
 
-func (d *DataSourceCoreClustersVersions) MapProtocols(
+func (d *DataSourceCoreClustersVersions) MapVersions(
 	ctx context.Context,
 	diags *diag.Diagnostics,
 	data []clusters.ClusterVersion,
 ) types.Set {
 	model, diagnostic := types.SetValue(
-		types.StringType,
+		datasource_core_clusters_versions.CoreClustersVersionsValue{}.Type(ctx),
 		func() []attr.Value {
-			// Use a map to deduplicate version strings
-			versionMap := make(map[string]bool)
-			protocols := make([]attr.Value, 0)
-			
+			versions := make([]attr.Value, 0, len(data))
 			for _, row := range data {
-				if row.Version != nil {
-					version := *row.Version
-					// Only add if we haven't seen this version before
-					if !versionMap[version] {
-						versionMap[version] = true
-						model := types.StringValue(version)
-						protocols = append(protocols, model)
-					}
-				}
+				model, diagnostic := datasource_core_clusters_versions.NewCoreClustersVersionsValue(
+					datasource_core_clusters_versions.CoreClustersVersionsValue{}.AttributeTypes(ctx),
+					map[string]attr.Value{
+						"id": func() attr.Value {
+							if row.Id == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.Id))
+						}(),
+						"version": types.StringPointerValue(row.Version),
+						"created_at": func() attr.Value {
+							if row.CreatedAt == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(row.CreatedAt.String())
+						}(),
+						"updated_at": func() attr.Value {
+							if row.UpdatedAt == nil {
+								return types.StringNull()
+							}
+							return types.StringValue(row.UpdatedAt.String())
+						}(),
+						// Free-form objects in the spec; nothing to carry over.
+						"image":  types.ObjectNull(datasource_core_clusters_versions.ImageValue{}.AttributeTypes(ctx)),
+						"region": types.ObjectNull(datasource_core_clusters_versions.RegionValue{}.AttributeTypes(ctx)),
+					},
+				)
+				diags.Append(diagnostic...)
+				versions = append(versions, model)
 			}
-			return protocols
+			return versions
 		}(),
 	)
 	diags.Append(diagnostic...)

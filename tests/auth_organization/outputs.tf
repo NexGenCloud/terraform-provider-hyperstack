@@ -33,12 +33,12 @@ output "total_clusters" {
 output "users" {
   value = {
     for v in data.hyperstack_auth_organization.this.users : v.id => {
-      id         = v.id
-      sub        = v.sub
-      email      = v.email
-      username   = v.username
-      name       = v.name
-      role       = v.role
+      id       = v.id
+      sub      = v.sub
+      email    = v.email
+      username = v.username
+      name     = v.name
+      role     = v.role
       rbac_roles = [
         for role in v.rbac_roles : {
           name = role.name

@@ -1,5 +1,5 @@
 variable "region" {
-  type    = string
+  type = string
 }
 
 variable "artifacts_dir" {
@@ -7,7 +7,7 @@ variable "artifacts_dir" {
 }
 
 variable "name_prefix" {
-  type    = string
+  type = string
 }
 
 variable "instance_gpu" {
@@ -27,7 +27,7 @@ variable "image_type" {
 
 variable "image_version" {
   type    = string
-  default = "Server 20.04 LTS"
+  default = "Server 24.04 LTS R570 CUDA 12.8"
 }
 
 variable "volume_size" {

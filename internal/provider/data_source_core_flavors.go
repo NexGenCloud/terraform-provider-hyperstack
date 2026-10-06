@@ -203,6 +203,15 @@ func (d *DataSourceCoreFlavors) MapFlavors(
 									"display_name":    types.StringValue(displayName),
 									"stock_available": types.BoolValue(stockAvailable),
 									"labels":          d.MapLabels(ctx, diags, *flavorItem.Labels),
+									// Free-form object in the spec: the generated schema has no
+									// attributes under it, so there is nothing to carry over.
+									"features": types.ObjectNull(datasource_core_flavors.FeaturesValue{}.AttributeTypes(ctx)),
+									"image_restrictions": func() attr.Value {
+										if flavorItem.ImageRestrictions == nil {
+											return types.ObjectNull(datasource_core_flavors.ImageRestrictionsValue{}.AttributeTypes(ctx))
+										}
+										return d.MapImageRestrictions(ctx, diags, *flavorItem.ImageRestrictions)
+									}(),
 								},
 							)
 							flavors = append(flavors, modelFlavor)
@@ -253,4 +262,66 @@ func (d *DataSourceCoreFlavors) MapLabels(
 	)
 	diags.Append(diagnostic...)
 	return model
+}
+
+func (d *DataSourceCoreFlavors) MapImageRestrictions(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data flavor.ImageRestrictions,
+) attr.Value {
+	model, diagnostic := datasource_core_flavors.NewImageRestrictionsValue(
+		datasource_core_flavors.ImageRestrictionsValue{}.AttributeTypes(ctx),
+		map[string]attr.Value{
+			"has_image_restrictions": types.BoolPointerValue(data.HasImageRestrictions),
+			"restriction_type":       types.StringPointerValue(data.RestrictionType),
+			"compatible_images": func() attr.Value {
+				if data.CompatibleImages == nil {
+					return types.ListNull(datasource_core_flavors.CompatibleImagesValue{}.Type(ctx))
+				}
+				return d.MapCompatibleImages(ctx, diags, *data.CompatibleImages)
+			}(),
+		},
+	)
+	diags.Append(diagnostic...)
+
+	result, diagnostic := model.ToObjectValue(ctx)
+	diags.Append(diagnostic...)
+
+	return result
+}
+
+func (d *DataSourceCoreFlavors) MapCompatibleImages(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data []flavor.CompatibleImage,
+) attr.Value {
+	result, diagnostic := types.ListValue(
+		datasource_core_flavors.CompatibleImagesValue{}.Type(ctx),
+		func() []attr.Value {
+			images := make([]attr.Value, 0, len(data))
+			for _, row := range data {
+				model, diagnostic := datasource_core_flavors.NewCompatibleImagesValue(
+					datasource_core_flavors.CompatibleImagesValue{}.AttributeTypes(ctx),
+					map[string]attr.Value{
+						"image_id": func() attr.Value {
+							if row.ImageId == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.ImageId))
+						}(),
+						"image_name":  types.StringPointerValue(row.ImageName),
+						"link_type":   types.StringPointerValue(row.LinkType),
+						"reason":      types.StringPointerValue(row.Reason),
+						"constraints": types.ObjectNull(datasource_core_flavors.ConstraintsValue{}.AttributeTypes(ctx)),
+					},
+				)
+				diags.Append(diagnostic...)
+				images = append(images, model)
+			}
+			return images
+		}(),
+	)
+	diags.Append(diagnostic...)
+
+	return result
 }

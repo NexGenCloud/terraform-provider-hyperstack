@@ -3,7 +3,7 @@ output "flavors" {
     for v in data.hyperstack_core_flavors.this.core_flavors : {
       gpu         = v.gpu
       region_name = v.region_name
-      flavors     = [
+      flavors = [
         for flavor in v.flavors : {
           id              = flavor.id
           name            = flavor.name

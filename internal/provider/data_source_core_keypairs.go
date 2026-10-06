@@ -125,7 +125,7 @@ func (d *DataSourceCoreKeypairs) MapKeypairs(
 			for _, row := range data {
 				environment, diagnostic := d.MapEnvironment(ctx, diags, *row.Environment).ToObjectValue(ctx)
 				diags.Append(diagnostic...)
-				
+
 				model, diagnostic := datasource_core_keypairs.NewCoreKeypairsValue(
 					datasource_core_keypairs.CoreKeypairsValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{

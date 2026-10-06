@@ -239,7 +239,7 @@ func (r *ResourceCoreVolume) Create(
 					UpdatedAt:   volumeResult.UpdatedAt,
 					VolumeType:  volumeResult.VolumeType,
 				}
-				return true, nil  // done!
+				return true, nil // done!
 			case "error", "deleted", "deleteed":
 				return false, fmt.Errorf("Volume in error or deleted state: %s", status)
 			default:
@@ -504,6 +504,14 @@ func (r *ResourceCoreVolume) ApiToModel(
 	response *volume.VolumesFields,
 ) resource_core_volume.CoreVolumeModel {
 	return resource_core_volume.CoreVolumeModel{
+		// Left unset this was a zero types.List, which carries no element type
+		// and the framework rejects when it writes state back.
+		Attachments: func() types.List {
+			if response.Attachments == nil {
+				return types.ListNull(resource_core_volume.AttachmentsValue{}.Type(ctx))
+			}
+			return r.MapAttachments(ctx, diags, *response.Attachments)
+		}(),
 		Bootable:        types.BoolPointerValue(response.Bootable),
 		CallbackUrl:     types.StringPointerValue(response.CallbackUrl),
 		Description:     types.StringPointerValue(response.Description),
@@ -553,10 +561,54 @@ func (r *ResourceCoreVolume) MapEnvironment(
 	model, diagnostic := resource_core_volume.NewEnvironmentValue(
 		resource_core_volume.EnvironmentValue{}.AttributeTypes(ctx),
 		map[string]attr.Value{
-			"name": types.StringValue(*data.Name),
+			"name":   types.StringValue(*data.Name),
+			"region": types.StringPointerValue(data.Region),
+			// Free-form object in the spec; nothing to carry over.
+			"features": types.ObjectNull(resource_core_volume.FeaturesValue{}.AttributeTypes(ctx)),
 		},
 	)
 	diags.Append(diagnostic...)
 
 	return model
+}
+
+func (r *ResourceCoreVolume) MapAttachments(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data []volume.AttachmentsFieldsForVolume,
+) types.List {
+	result, diagnostic := types.ListValue(
+		resource_core_volume.AttachmentsValue{}.Type(ctx),
+		func() []attr.Value {
+			attachments := make([]attr.Value, 0, len(data))
+			for _, row := range data {
+				model, diagnostic := resource_core_volume.NewAttachmentsValue(
+					resource_core_volume.AttachmentsValue{}.AttributeTypes(ctx),
+					map[string]attr.Value{
+						"id": func() attr.Value {
+							if row.Id == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.Id))
+						}(),
+						"instance_id": func() attr.Value {
+							if row.InstanceId == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.InstanceId))
+						}(),
+						"device":    types.StringPointerValue(row.Device),
+						"status":    types.StringPointerValue(row.Status),
+						"protected": types.BoolPointerValue(row.Protected),
+					},
+				)
+				diags.Append(diagnostic...)
+				attachments = append(attachments, model)
+			}
+			return attachments
+		}(),
+	)
+	diags.Append(diagnostic...)
+
+	return result
 }

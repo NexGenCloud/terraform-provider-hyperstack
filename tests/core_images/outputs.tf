@@ -4,7 +4,7 @@ output "images" {
       region_name = v.region_name
       type        = v.type
       logo        = v.logo
-      images      = [
+      images = [
         for image in v.images : {
           id           = image.id
           name         = image.name
@@ -14,7 +14,7 @@ output "images" {
           size         = image.size
           display_size = image.display_size
           description  = image.description
-          labels       = [
+          labels = [
             for label in image.labels : {
               id    = label.id
               label = label.label
