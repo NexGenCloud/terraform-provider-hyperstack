@@ -23,7 +23,7 @@ variable "image_name" {
 }
 
 variable "ingress_ports" {
-  type = list(number)
+  type    = list(number)
   default = []
 }
 

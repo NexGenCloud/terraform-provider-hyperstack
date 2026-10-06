@@ -3,7 +3,7 @@ output "stocks" {
     for v in data.hyperstack_core_stocks.this.stocks : {
       region    = v.region
       stocktype = v.stocktype
-      models    = [
+      models = [
         for model in v.models : {
           model            = model.model
           available        = model.available

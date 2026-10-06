@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 var _ datasource.DataSource = &DataSourceCoreVolumes{}
@@ -124,30 +123,53 @@ func (d *DataSourceCoreVolumes) MapVolumes(
 		func() []attr.Value {
 			volumes := make([]attr.Value, 0)
 			for _, row := range data {
-				// TODO: simplify
+				// The schema declares name, region and features; a cut-down object
+				// type does not match it.
 				environment, diagnostic := types.ObjectValue(
-					map[string]attr.Type{
-						"name": basetypes.StringType{},
-					},
+					datasource_core_volumes.EnvironmentValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
-						"name": types.StringPointerValue(row.Environment.Name),
+						"name":   types.StringPointerValue(row.Environment.Name),
+						"region": types.StringPointerValue(row.Environment.Region),
+						// Free-form object in the spec; nothing to carry over.
+						"features": types.ObjectNull(datasource_core_volumes.FeaturesValue{}.AttributeTypes(ctx)),
 					},
 				)
 				diags.Append(diagnostic...)
 				model, diagnostic := datasource_core_volumes.NewCoreVolumesValue(
 					datasource_core_volumes.CoreVolumesValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
-						"id":           types.Int64Value(int64(*row.Id)),
-						"name":         types.StringPointerValue(row.Name),
-						"environment":  environment,
-						"description":  types.StringPointerValue(row.Description),
-						"volume_type":  types.StringPointerValue(row.VolumeType),
-						"size":         types.Int64Value(int64(*row.Size)),
-						"status":       types.StringPointerValue(row.Status),
-						"bootable":     types.BoolPointerValue(row.Bootable),
-						"image_id":     types.Int64Value(int64(*row.ImageId)),
+						"id": func() attr.Value {
+							if row.Id == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.Id))
+						}(),
+						"name":        types.StringPointerValue(row.Name),
+						"environment": environment,
+						"description": types.StringPointerValue(row.Description),
+						"volume_type": types.StringPointerValue(row.VolumeType),
+						"size": func() attr.Value {
+							if row.Size == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.Size))
+						}(),
+						"status":   types.StringPointerValue(row.Status),
+						"bootable": types.BoolPointerValue(row.Bootable),
+						"image_id": func() attr.Value {
+							// A volume created without an image has no image_id.
+							if row.ImageId == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.ImageId))
+						}(),
 						"callback_url": types.StringPointerValue(row.CallbackUrl),
-						"os_image":     types.StringNull(), // OsImage field not available in VolumesFields
+						"attachments": func() attr.Value {
+							if row.Attachments == nil {
+								return types.ListNull(datasource_core_volumes.AttachmentsValue{}.Type(ctx))
+							}
+							return d.MapAttachments(ctx, diags, *row.Attachments)
+						}(),
 						"created_at": func() attr.Value {
 							if row.CreatedAt == nil {
 								return types.StringNull()
@@ -170,4 +192,45 @@ func (d *DataSourceCoreVolumes) MapVolumes(
 	)
 	diags.Append(diagnostic...)
 	return model
+}
+
+func (d *DataSourceCoreVolumes) MapAttachments(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data []volume.AttachmentsFieldsForVolume,
+) attr.Value {
+	result, diagnostic := types.ListValue(
+		datasource_core_volumes.AttachmentsValue{}.Type(ctx),
+		func() []attr.Value {
+			attachments := make([]attr.Value, 0, len(data))
+			for _, row := range data {
+				model, diagnostic := datasource_core_volumes.NewAttachmentsValue(
+					datasource_core_volumes.AttachmentsValue{}.AttributeTypes(ctx),
+					map[string]attr.Value{
+						"id": func() attr.Value {
+							if row.Id == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.Id))
+						}(),
+						"instance_id": func() attr.Value {
+							if row.InstanceId == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.InstanceId))
+						}(),
+						"device":    types.StringPointerValue(row.Device),
+						"status":    types.StringPointerValue(row.Status),
+						"protected": types.BoolPointerValue(row.Protected),
+					},
+				)
+				diags.Append(diagnostic...)
+				attachments = append(attachments, model)
+			}
+			return attachments
+		}(),
+	)
+	diags.Append(diagnostic...)
+
+	return result
 }

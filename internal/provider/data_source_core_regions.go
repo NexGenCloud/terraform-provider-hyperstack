@@ -138,6 +138,8 @@ func (d *DataSourceCoreRegions) MapRegions(
 							}
 							return types.StringValue(*row.Description)
 						}(),
+						// Free-form object in the spec; nothing to carry over.
+						"features": types.ObjectNull(datasource_core_regions.FeaturesValue{}.AttributeTypes(ctx)),
 						"country": func() attr.Value {
 							if row.Country == nil {
 								return types.StringNull()

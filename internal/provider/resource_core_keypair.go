@@ -43,12 +43,6 @@ func (r *ResourceCoreKeypair) Schema(ctx context.Context, req resource.SchemaReq
 			stringplanmodifier.RequiresReplace(),
 		},
 	}
-	resp.Schema.Attributes["environment"] = schema.StringAttribute{
-		Required: true,
-		PlanModifiers: []planmodifier.String{
-			stringplanmodifier.RequiresReplace(),
-		},
-	}
 }
 
 func (r *ResourceCoreKeypair) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {

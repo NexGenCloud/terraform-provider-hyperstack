@@ -23,7 +23,7 @@ variable "vms" {
     })
 
     image_type    = optional(string, "Ubuntu")
-    image_version = optional(string, "Server 20.04 LTS")
+    image_version = optional(string, "Server 24.04 LTS R570 CUDA 12.8")
 
     count = optional(number, 1)
   }))

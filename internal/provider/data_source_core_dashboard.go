@@ -107,10 +107,6 @@ func (d *DataSourceCoreDashboard) ApiToModel(
 			Ram:         types.NumberValue(big.NewFloat(float64(*response.Instance.Ram))),
 			Vcpus:       types.Int64Value(int64(*response.Instance.Vcpus)),
 		},
-		// The API dropped Container_Overview_Fields, so OverviewInfo no longer
-		// carries it. The generated schema still declares the attribute until
-		// the next `task gen`, so it is returned as null rather than removed.
-		Container: datasource_core_dashboard.NewContainerValueNull(),
 		Volume: datasource_core_dashboard.VolumeValue{
 			CostPerHour: types.NumberValue(big.NewFloat(float64(*response.Volume.CostPerHour))),
 			Count:       types.Int64Value(int64(*response.Volume.Count)),

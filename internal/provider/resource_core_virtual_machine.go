@@ -416,6 +416,14 @@ func (r *ResourceCoreVirtualMachine) MergeData(
 	data.ImageName = dataOld.ImageName
 	data.KeyName = dataOld.KeyName
 	data.Profile = dataOld.Profile
+	// Create-only: the API accepts it on CreateInstancesPayload but never
+	// returns it on InstanceFields, so reading it back yields null.
+	data.EnhancedMonitoringEnabled = dataOld.EnhancedMonitoringEnabled
+	// The API returns labels in its own order and the schema models them as an
+	// ordered list, so reading them back reorders state against the config.
+	if !dataOld.Labels.IsUnknown() {
+		data.Labels = dataOld.Labels
+	}
 
 	// TODO: not implemented as there is no field in output
 	if !dataOld.CallbackUrl.IsUnknown() {
@@ -473,6 +481,24 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 			}
 			return types.StringValue(*response.FloatingIpStatus)
 		}(),
+		ClusterId: func() types.Int64 {
+			if response.ClusterId == nil {
+				return types.Int64Null()
+			}
+			return types.Int64Value(int64(*response.ClusterId))
+		}(),
+		DedicatedInferenceId: func() types.Int64 {
+			if response.DedicatedInferenceId == nil {
+				return types.Int64Null()
+			}
+			return types.Int64Value(int64(*response.DedicatedInferenceId))
+		}(),
+		EnhancedMetrics: func() resource_core_virtual_machine.EnhancedMetricsValue {
+			if response.EnhancedMetrics == nil {
+				return resource_core_virtual_machine.NewEnhancedMetricsValueNull()
+			}
+			return r.MapEnhancedMetrics(ctx, diags, *response.EnhancedMetrics)
+		}(),
 		Keypair:     r.MapKeypair(ctx, diags, *response.Keypair),
 		Environment: r.MapEnvironment(ctx, diags, *response.Environment),
 		Image:       r.MapImage(ctx, diags, *response.Image),
@@ -484,7 +510,7 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 		}(),
 		Flavor:            r.MapFlavor(ctx, diags, *response.Flavor),
 		VolumeAttachments: r.MapVolumeAttachments(ctx, diags, *response.VolumeAttachments),
-		SecurityRules:     r.MapSecurityRules(ctx, diags, *response.SecurityRules, int64(*response.Id)),
+		SecurityRules:     r.MapSecurityRules(ctx, diags, *response.SecurityRules),
 		CreatedAt: func() types.String {
 			if response.CreatedAt == nil {
 				return types.StringNull()
@@ -507,6 +533,21 @@ func (r *ResourceCoreVirtualMachine) ApiToModel(
 		CallbackUrl: types.StringUnknown(),
 		UserData:    types.StringUnknown(),
 	}
+}
+
+func (r *ResourceCoreVirtualMachine) MapEnhancedMetrics(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+	data virtual_machine.InstanceEnhancedMetricsFields,
+) resource_core_virtual_machine.EnhancedMetricsValue {
+	model, diagnostic := resource_core_virtual_machine.NewEnhancedMetricsValue(
+		resource_core_virtual_machine.EnhancedMetricsValue{}.AttributeTypes(ctx),
+		map[string]attr.Value{
+			"enabled": types.BoolPointerValue(data.Enabled),
+		},
+	)
+	diags.Append(diagnostic...)
+	return model
 }
 
 func (r *ResourceCoreVirtualMachine) MapEnvironment(
@@ -690,7 +731,14 @@ func (r *ResourceCoreVirtualMachine) MapVolumeAttachments(
 							}
 							return types.StringValue(row.CreatedAt.String())
 						}(),
-						"volume": r.MapVolume(ctx, diags, *row.Volume),
+						"id": func() attr.Value {
+							if row.Id == nil {
+								return types.Int64Null()
+							}
+							return types.Int64Value(int64(*row.Id))
+						}(),
+						"protected": types.BoolPointerValue(row.Protected),
+						"volume":    r.MapVolume(ctx, diags, *row.Volume),
 					},
 				)
 				diags.Append(diagnostic...)
@@ -741,7 +789,6 @@ func (r *ResourceCoreVirtualMachine) MapSecurityRules(
 	ctx context.Context,
 	diags *diag.Diagnostics,
 	data []virtual_machine.SecurityRulesFieldsForInstance,
-	vmId int64,
 ) types.List {
 	model, diagnostic := types.ListValue(
 		resource_core_virtual_machine.SecurityRulesValue{}.Type(ctx),
@@ -751,10 +798,9 @@ func (r *ResourceCoreVirtualMachine) MapSecurityRules(
 				model, diagnostic := resource_core_virtual_machine.NewSecurityRulesValue(
 					resource_core_virtual_machine.SecurityRulesValue{}.AttributeTypes(ctx),
 					map[string]attr.Value{
-						"id":                 types.Int64Value(int64(*row.Id)),
-						"virtual_machine_id": types.Int64Value(vmId),
-						"direction":          types.StringValue(*row.Direction),
-						"protocol":           types.StringValue(*row.Protocol),
+						"id":        types.Int64Value(int64(*row.Id)),
+						"direction": types.StringValue(*row.Direction),
+						"protocol":  types.StringValue(*row.Protocol),
 						"port_range_min": func() attr.Value {
 							if row.PortRangeMin == nil {
 								return types.Int64Null()
