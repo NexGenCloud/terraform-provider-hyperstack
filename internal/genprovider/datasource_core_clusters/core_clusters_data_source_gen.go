@@ -30,6 +30,9 @@ func CoreClustersDataSourceSchema(ctx context.Context) schema.Schema {
 						"environment_name": schema.StringAttribute{
 							Computed: true,
 						},
+						"has_persistent_storage": schema.BoolAttribute{
+							Computed: true,
+						},
 						"id": schema.Int64Attribute{
 							Computed: true,
 						},
@@ -410,6 +413,24 @@ func (t CoreClustersType) ValueFromObject(ctx context.Context, in basetypes.Obje
 			fmt.Sprintf(`environment_name expected to be basetypes.StringValue, was: %T`, environmentNameAttribute))
 	}
 
+	hasPersistentStorageAttribute, ok := attributes["has_persistent_storage"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`has_persistent_storage is missing from object`)
+
+		return nil, diags
+	}
+
+	hasPersistentStorageVal, ok := hasPersistentStorageAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`has_persistent_storage expected to be basetypes.BoolValue, was: %T`, hasPersistentStorageAttribute))
+	}
+
 	idAttribute, ok := attributes["id"]
 
 	if !ok {
@@ -613,21 +634,22 @@ func (t CoreClustersType) ValueFromObject(ctx context.Context, in basetypes.Obje
 	}
 
 	return CoreClustersValue{
-		ApiAddress:        apiAddressVal,
-		CreatedAt:         createdAtVal,
-		EnvironmentName:   environmentNameVal,
-		Id:                idVal,
-		IsReconciling:     isReconcilingVal,
-		KeypairName:       keypairNameVal,
-		KubeConfig:        kubeConfigVal,
-		KubernetesVersion: kubernetesVersionVal,
-		MasterFlavor:      masterFlavorVal,
-		Name:              nameVal,
-		NodeGroups:        nodeGroupsVal,
-		Nodes:             nodesVal,
-		Status:            statusVal,
-		StatusReason:      statusReasonVal,
-		state:             attr.ValueStateKnown,
+		ApiAddress:           apiAddressVal,
+		CreatedAt:            createdAtVal,
+		EnvironmentName:      environmentNameVal,
+		HasPersistentStorage: hasPersistentStorageVal,
+		Id:                   idVal,
+		IsReconciling:        isReconcilingVal,
+		KeypairName:          keypairNameVal,
+		KubeConfig:           kubeConfigVal,
+		KubernetesVersion:    kubernetesVersionVal,
+		MasterFlavor:         masterFlavorVal,
+		Name:                 nameVal,
+		NodeGroups:           nodeGroupsVal,
+		Nodes:                nodesVal,
+		Status:               statusVal,
+		StatusReason:         statusReasonVal,
+		state:                attr.ValueStateKnown,
 	}, diags
 }
 
@@ -748,6 +770,24 @@ func NewCoreClustersValue(attributeTypes map[string]attr.Type, attributes map[st
 			fmt.Sprintf(`environment_name expected to be basetypes.StringValue, was: %T`, environmentNameAttribute))
 	}
 
+	hasPersistentStorageAttribute, ok := attributes["has_persistent_storage"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`has_persistent_storage is missing from object`)
+
+		return NewCoreClustersValueUnknown(), diags
+	}
+
+	hasPersistentStorageVal, ok := hasPersistentStorageAttribute.(basetypes.BoolValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`has_persistent_storage expected to be basetypes.BoolValue, was: %T`, hasPersistentStorageAttribute))
+	}
+
 	idAttribute, ok := attributes["id"]
 
 	if !ok {
@@ -951,21 +991,22 @@ func NewCoreClustersValue(attributeTypes map[string]attr.Type, attributes map[st
 	}
 
 	return CoreClustersValue{
-		ApiAddress:        apiAddressVal,
-		CreatedAt:         createdAtVal,
-		EnvironmentName:   environmentNameVal,
-		Id:                idVal,
-		IsReconciling:     isReconcilingVal,
-		KeypairName:       keypairNameVal,
-		KubeConfig:        kubeConfigVal,
-		KubernetesVersion: kubernetesVersionVal,
-		MasterFlavor:      masterFlavorVal,
-		Name:              nameVal,
-		NodeGroups:        nodeGroupsVal,
-		Nodes:             nodesVal,
-		Status:            statusVal,
-		StatusReason:      statusReasonVal,
-		state:             attr.ValueStateKnown,
+		ApiAddress:           apiAddressVal,
+		CreatedAt:            createdAtVal,
+		EnvironmentName:      environmentNameVal,
+		HasPersistentStorage: hasPersistentStorageVal,
+		Id:                   idVal,
+		IsReconciling:        isReconcilingVal,
+		KeypairName:          keypairNameVal,
+		KubeConfig:           kubeConfigVal,
+		KubernetesVersion:    kubernetesVersionVal,
+		MasterFlavor:         masterFlavorVal,
+		Name:                 nameVal,
+		NodeGroups:           nodeGroupsVal,
+		Nodes:                nodesVal,
+		Status:               statusVal,
+		StatusReason:         statusReasonVal,
+		state:                attr.ValueStateKnown,
 	}, diags
 }
 
@@ -1037,25 +1078,26 @@ func (t CoreClustersType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = CoreClustersValue{}
 
 type CoreClustersValue struct {
-	ApiAddress        basetypes.StringValue `tfsdk:"api_address"`
-	CreatedAt         basetypes.StringValue `tfsdk:"created_at"`
-	EnvironmentName   basetypes.StringValue `tfsdk:"environment_name"`
-	Id                basetypes.Int64Value  `tfsdk:"id"`
-	IsReconciling     basetypes.BoolValue   `tfsdk:"is_reconciling"`
-	KeypairName       basetypes.StringValue `tfsdk:"keypair_name"`
-	KubeConfig        basetypes.StringValue `tfsdk:"kube_config"`
-	KubernetesVersion basetypes.StringValue `tfsdk:"kubernetes_version"`
-	MasterFlavor      basetypes.ObjectValue `tfsdk:"master_flavor"`
-	Name              basetypes.StringValue `tfsdk:"name"`
-	NodeGroups        basetypes.ListValue   `tfsdk:"node_groups"`
-	Nodes             basetypes.ListValue   `tfsdk:"nodes"`
-	Status            basetypes.StringValue `tfsdk:"status"`
-	StatusReason      basetypes.StringValue `tfsdk:"status_reason"`
-	state             attr.ValueState
+	ApiAddress           basetypes.StringValue `tfsdk:"api_address"`
+	CreatedAt            basetypes.StringValue `tfsdk:"created_at"`
+	EnvironmentName      basetypes.StringValue `tfsdk:"environment_name"`
+	HasPersistentStorage basetypes.BoolValue   `tfsdk:"has_persistent_storage"`
+	Id                   basetypes.Int64Value  `tfsdk:"id"`
+	IsReconciling        basetypes.BoolValue   `tfsdk:"is_reconciling"`
+	KeypairName          basetypes.StringValue `tfsdk:"keypair_name"`
+	KubeConfig           basetypes.StringValue `tfsdk:"kube_config"`
+	KubernetesVersion    basetypes.StringValue `tfsdk:"kubernetes_version"`
+	MasterFlavor         basetypes.ObjectValue `tfsdk:"master_flavor"`
+	Name                 basetypes.StringValue `tfsdk:"name"`
+	NodeGroups           basetypes.ListValue   `tfsdk:"node_groups"`
+	Nodes                basetypes.ListValue   `tfsdk:"nodes"`
+	Status               basetypes.StringValue `tfsdk:"status"`
+	StatusReason         basetypes.StringValue `tfsdk:"status_reason"`
+	state                attr.ValueState
 }
 
 func (v CoreClustersValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 14)
+	attrTypes := make(map[string]tftypes.Type, 15)
 
 	var val tftypes.Value
 	var err error
@@ -1063,6 +1105,7 @@ func (v CoreClustersValue) ToTerraformValue(ctx context.Context) (tftypes.Value,
 	attrTypes["api_address"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["created_at"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["environment_name"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["has_persistent_storage"] = basetypes.BoolType{}.TerraformType(ctx)
 	attrTypes["id"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["is_reconciling"] = basetypes.BoolType{}.TerraformType(ctx)
 	attrTypes["keypair_name"] = basetypes.StringType{}.TerraformType(ctx)
@@ -1085,7 +1128,7 @@ func (v CoreClustersValue) ToTerraformValue(ctx context.Context) (tftypes.Value,
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 14)
+		vals := make(map[string]tftypes.Value, 15)
 
 		val, err = v.ApiAddress.ToTerraformValue(ctx)
 
@@ -1110,6 +1153,14 @@ func (v CoreClustersValue) ToTerraformValue(ctx context.Context) (tftypes.Value,
 		}
 
 		vals["environment_name"] = val
+
+		val, err = v.HasPersistentStorage.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["has_persistent_storage"] = val
 
 		val, err = v.Id.ToTerraformValue(ctx)
 
@@ -1308,14 +1359,15 @@ func (v CoreClustersValue) ToObjectValue(ctx context.Context) (basetypes.ObjectV
 	}
 
 	attributeTypes := map[string]attr.Type{
-		"api_address":        basetypes.StringType{},
-		"created_at":         basetypes.StringType{},
-		"environment_name":   basetypes.StringType{},
-		"id":                 basetypes.Int64Type{},
-		"is_reconciling":     basetypes.BoolType{},
-		"keypair_name":       basetypes.StringType{},
-		"kube_config":        basetypes.StringType{},
-		"kubernetes_version": basetypes.StringType{},
+		"api_address":            basetypes.StringType{},
+		"created_at":             basetypes.StringType{},
+		"environment_name":       basetypes.StringType{},
+		"has_persistent_storage": basetypes.BoolType{},
+		"id":                     basetypes.Int64Type{},
+		"is_reconciling":         basetypes.BoolType{},
+		"keypair_name":           basetypes.StringType{},
+		"kube_config":            basetypes.StringType{},
+		"kubernetes_version":     basetypes.StringType{},
 		"master_flavor": basetypes.ObjectType{
 			AttrTypes: MasterFlavorValue{}.AttributeTypes(ctx),
 		},
@@ -1341,20 +1393,21 @@ func (v CoreClustersValue) ToObjectValue(ctx context.Context) (basetypes.ObjectV
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
-			"api_address":        v.ApiAddress,
-			"created_at":         v.CreatedAt,
-			"environment_name":   v.EnvironmentName,
-			"id":                 v.Id,
-			"is_reconciling":     v.IsReconciling,
-			"keypair_name":       v.KeypairName,
-			"kube_config":        v.KubeConfig,
-			"kubernetes_version": v.KubernetesVersion,
-			"master_flavor":      masterFlavor,
-			"name":               v.Name,
-			"node_groups":        nodeGroups,
-			"nodes":              nodes,
-			"status":             v.Status,
-			"status_reason":      v.StatusReason,
+			"api_address":            v.ApiAddress,
+			"created_at":             v.CreatedAt,
+			"environment_name":       v.EnvironmentName,
+			"has_persistent_storage": v.HasPersistentStorage,
+			"id":                     v.Id,
+			"is_reconciling":         v.IsReconciling,
+			"keypair_name":           v.KeypairName,
+			"kube_config":            v.KubeConfig,
+			"kubernetes_version":     v.KubernetesVersion,
+			"master_flavor":          masterFlavor,
+			"name":                   v.Name,
+			"node_groups":            nodeGroups,
+			"nodes":                  nodes,
+			"status":                 v.Status,
+			"status_reason":          v.StatusReason,
 		})
 
 	return objVal, diags
@@ -1384,6 +1437,10 @@ func (v CoreClustersValue) Equal(o attr.Value) bool {
 	}
 
 	if !v.EnvironmentName.Equal(other.EnvironmentName) {
+		return false
+	}
+
+	if !v.HasPersistentStorage.Equal(other.HasPersistentStorage) {
 		return false
 	}
 
@@ -1444,14 +1501,15 @@ func (v CoreClustersValue) Type(ctx context.Context) attr.Type {
 
 func (v CoreClustersValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"api_address":        basetypes.StringType{},
-		"created_at":         basetypes.StringType{},
-		"environment_name":   basetypes.StringType{},
-		"id":                 basetypes.Int64Type{},
-		"is_reconciling":     basetypes.BoolType{},
-		"keypair_name":       basetypes.StringType{},
-		"kube_config":        basetypes.StringType{},
-		"kubernetes_version": basetypes.StringType{},
+		"api_address":            basetypes.StringType{},
+		"created_at":             basetypes.StringType{},
+		"environment_name":       basetypes.StringType{},
+		"has_persistent_storage": basetypes.BoolType{},
+		"id":                     basetypes.Int64Type{},
+		"is_reconciling":         basetypes.BoolType{},
+		"keypair_name":           basetypes.StringType{},
+		"kube_config":            basetypes.StringType{},
+		"kubernetes_version":     basetypes.StringType{},
 		"master_flavor": basetypes.ObjectType{
 			AttrTypes: MasterFlavorValue{}.AttributeTypes(ctx),
 		},

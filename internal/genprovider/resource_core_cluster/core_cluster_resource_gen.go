@@ -48,6 +48,9 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"has_persistent_storage": schema.BoolAttribute{
+				Computed: true,
+			},
 			"id": schema.Int64Attribute{
 				Computed: true,
 			},
@@ -368,25 +371,26 @@ func CoreClusterResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type CoreClusterModel struct {
-	ApiAddress        types.String      `tfsdk:"api_address"`
-	CreatedAt         types.String      `tfsdk:"created_at"`
-	DeploymentMode    types.String      `tfsdk:"deployment_mode"`
-	EnvironmentName   types.String      `tfsdk:"environment_name"`
-	Id                types.Int64       `tfsdk:"id"`
-	IsReconciling     types.Bool        `tfsdk:"is_reconciling"`
-	KeypairName       types.String      `tfsdk:"keypair_name"`
-	KubeConfig        types.String      `tfsdk:"kube_config"`
-	KubernetesVersion types.String      `tfsdk:"kubernetes_version"`
-	MasterCount       types.Int64       `tfsdk:"master_count"`
-	MasterFlavor      MasterFlavorValue `tfsdk:"master_flavor"`
-	MasterFlavorName  types.String      `tfsdk:"master_flavor_name"`
-	Name              types.String      `tfsdk:"name"`
-	NodeCount         types.Int64       `tfsdk:"node_count"`
-	NodeFlavorName    types.String      `tfsdk:"node_flavor_name"`
-	NodeGroups        types.List        `tfsdk:"node_groups"`
-	Nodes             types.List        `tfsdk:"nodes"`
-	Status            types.String      `tfsdk:"status"`
-	StatusReason      types.String      `tfsdk:"status_reason"`
+	ApiAddress           types.String      `tfsdk:"api_address"`
+	CreatedAt            types.String      `tfsdk:"created_at"`
+	DeploymentMode       types.String      `tfsdk:"deployment_mode"`
+	EnvironmentName      types.String      `tfsdk:"environment_name"`
+	HasPersistentStorage types.Bool        `tfsdk:"has_persistent_storage"`
+	Id                   types.Int64       `tfsdk:"id"`
+	IsReconciling        types.Bool        `tfsdk:"is_reconciling"`
+	KeypairName          types.String      `tfsdk:"keypair_name"`
+	KubeConfig           types.String      `tfsdk:"kube_config"`
+	KubernetesVersion    types.String      `tfsdk:"kubernetes_version"`
+	MasterCount          types.Int64       `tfsdk:"master_count"`
+	MasterFlavor         MasterFlavorValue `tfsdk:"master_flavor"`
+	MasterFlavorName     types.String      `tfsdk:"master_flavor_name"`
+	Name                 types.String      `tfsdk:"name"`
+	NodeCount            types.Int64       `tfsdk:"node_count"`
+	NodeFlavorName       types.String      `tfsdk:"node_flavor_name"`
+	NodeGroups           types.List        `tfsdk:"node_groups"`
+	Nodes                types.List        `tfsdk:"nodes"`
+	Status               types.String      `tfsdk:"status"`
+	StatusReason         types.String      `tfsdk:"status_reason"`
 }
 
 var _ basetypes.ObjectTypable = MasterFlavorType{}
